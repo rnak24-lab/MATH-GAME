@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>수학 님 게임 - Math NIM Game</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+    <!-- 홈 화면 -->
+    <div id="screen-home" class="screen active">
+      <div class="home-container">
+        <div class="spacer"></div>
+        <div class="title-emoji">🧮</div>
+        <h1 class="title-gradient">수학 님 게임</h1>
+        <p class="subtitle">Math NIM Game</p>
+
+        <div class="sua-home" id="sua-bounce">
+          <div class="sua-face-home">😊</div>
+          <span class="sua-tag">🎀 수아</span>
+        </div>
+
+        <p class="home-msg">수아와 두뇌싸움 할 준비 됐어?</p>
+
+        <div class="spacer"></div>
+
+        <button class="btn btn-primary btn-full" onclick="Game.startGame()">게임 시작!</button>
+        <p class="clear-info" id="clear-info">클리어: 0/100 스테이지</p>
+        <div class="spacer-sm"></div>
+      </div>
+    </div>
+
+    <!-- 튜토리얼 화면 -->
+    <div id="screen-tutorial" class="screen">
+      <div class="tutorial-container">
+        <div class="spacer"></div>
+        <div class="tutorial-dots" id="tutorial-dots"></div>
+        <div class="spacer-sm"></div>
+        <div class="tutorial-emoji" id="tutorial-emoji">👋</div>
+        <h2 class="tutorial-title" id="tutorial-title"></h2>
+        <div class="tutorial-desc-box">
+          <p class="tutorial-desc" id="tutorial-desc"></p>
+        </div>
+        <div class="spacer"></div>
+        <button class="btn btn-primary btn-full" id="tutorial-next-btn" onclick="Game.tutorialNext()">다음</button>
+        <button class="btn-text" id="tutorial-skip-btn" onclick="Game.tutorialSkip()">건너뛰기</button>
+        <div class="spacer-sm"></div>
+      </div>
+    </div>
+
+    <!-- 월드 선택 화면 -->
+    <div id="screen-world" class="screen">
+      <div class="screen-header">
+        <button class="btn-back" onclick="Game.goHome()">← 뒤로</button>
+        <h2>월드 선택</h2>
+        <div></div>
+      </div>
+      <div class="world-list" id="world-list"></div>
+    </div>
+
+    <!-- 스테이지 선택 화면 -->
+    <div id="screen-stage" class="screen">
+      <div class="screen-header">
+        <button class="btn-back" onclick="Game.goWorld()">← 뒤로</button>
+        <h2 id="stage-world-title"></h2>
+        <div></div>
+      </div>
+      <div class="stage-grid" id="stage-grid"></div>
+    </div>
+
+    <!-- 게임 화면 -->
+    <div id="screen-game" class="screen">
+      <div class="screen-header">
+        <button class="btn-back" onclick="Game.goStageSelect()">← 뒤로</button>
+        <h2 id="game-stage-title"></h2>
+        <button class="btn-hint" id="btn-hint" onclick="Game.useHint()">💡 힌트</button>
+      </div>
+      <!-- 선공/후공 선택 -->
+      <div id="turn-choice" class="turn-choice">
+        <div class="sua-widget" id="sua-choice">
+          <div class="speech-bubble" id="choice-dialogue"></div>
+          <div class="bubble-tail"></div>
+          <div class="sua-face" id="choice-face">😊</div>
+          <span class="sua-tag">🎀 수아</span>
+        </div>
+        <div class="game-info-card" id="game-info-card"></div>
+        <h3>누가 먼저 시작할까요?</h3>
+        <div class="turn-buttons">
+          <button class="btn btn-primary" onclick="Game.chooseTurn(true)">내가 먼저!</button>
+          <button class="btn btn-secondary" onclick="Game.chooseTurn(false)">수아 먼저!</button>
+        </div>
+      </div>
+      <!-- 게임 보드 -->
+      <div id="game-board" class="game-board hidden">
+        <div class="sua-widget sua-small" id="sua-game">
+          <div class="speech-bubble speech-sm" id="game-dialogue"></div>
+          <div class="bubble-tail"></div>
+          <div class="sua-face sua-face-sm" id="game-face">😊</div>
+          <span class="sua-tag">🎀 수아</span>
+        </div>
+        <div class="turn-indicator" id="turn-indicator"></div>
+        <div class="board-area" id="board-area"></div>
+        <div class="action-area" id="action-area"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 힌트 모달 -->
+  <div id="modal-hint" class="modal hidden">
+    <div class="modal-content">
+      <h3>💡 수아의 비밀 힌트</h3>
+      <p id="hint-text"></p>
+      <button class="btn btn-primary" onclick="Game.closeHint()">고마워!</button>
+    </div>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>

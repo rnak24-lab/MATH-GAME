@@ -1,0 +1,309 @@
+/* ─── Reset & Base ─── */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; overflow: hidden; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
+  background: #FFF3E0;
+  color: #2D2D2D;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+#app { height: 100%; position: relative; }
+
+/* ─── Screens ─── */
+.screen {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.3s ease;
+  overflow-y: auto;
+}
+.screen.active { opacity: 1; pointer-events: auto; }
+
+/* ─── Colors ─── */
+:root {
+  --primary: #FF6B9D;
+  --primary-dark: #E91E63;
+  --secondary: #7C4DFF;
+  --bg: #FFF8E1;
+  --surface: #fff;
+  --text: #2D2D2D;
+  --text2: #757575;
+  --success: #4CAF50;
+  --error: #F44336;
+  --warning: #FF9800;
+  --w0: #66BB6A; --w1: #42A5F5; --w2: #8D6E63; --w3: #AB47BC; --w4: #EF5350;
+}
+
+/* ─── Buttons ─── */
+.btn {
+  border: none; cursor: pointer; font-weight: bold;
+  border-radius: 24px; font-size: 18px;
+  padding: 14px 32px; transition: all 0.2s;
+}
+.btn:active { transform: scale(0.96); }
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-primary:hover { background: var(--primary-dark); }
+.btn-secondary { background: var(--secondary); color: #fff; }
+.btn-full { width: 100%; max-width: 320px; }
+.btn-text { background: none; border: none; color: var(--text2); cursor: pointer; padding: 12px; font-size: 14px; }
+.btn-back { background: none; border: none; font-size: 16px; cursor: pointer; color: var(--text); padding: 8px; }
+.btn-hint {
+  background: none; border: 1px solid var(--warning); color: var(--warning);
+  border-radius: 20px; padding: 6px 14px; font-size: 14px; cursor: pointer;
+}
+.btn-hint:disabled { opacity: 0.4; cursor: default; }
+.btn:disabled { opacity: 0.5; cursor: default; }
+
+.hidden { display: none !important; }
+
+/* ─── Home Screen ─── */
+.home-container {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; min-height: 100%; padding: 24px;
+  background: linear-gradient(to bottom, #FFF3E0, #FFE0B2);
+}
+.spacer { flex: 1; }
+.spacer-sm { flex: 0.5; min-height: 16px; }
+.title-emoji { font-size: 64px; margin-bottom: 16px; }
+.title-gradient {
+  font-size: 40px; font-weight: bold;
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.subtitle { font-size: 18px; color: var(--text2); letter-spacing: 2px; margin-top: 8px; }
+.home-msg { font-size: 18px; margin-top: 16px; }
+.clear-info { font-size: 12px; color: var(--text2); margin-top: 16px; }
+
+/* ─── Sua Home ─── */
+.sua-home { display: flex; flex-direction: column; align-items: center; margin-top: 32px; }
+.sua-face-home {
+  width: 100px; height: 100px; border-radius: 50%;
+  background: linear-gradient(135deg, #FFCDD2, #F8BBD0);
+  border: 3px solid var(--primary);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 50px;
+  box-shadow: 0 4px 16px rgba(255, 107, 157, 0.3);
+  animation: bounce 2s ease-in-out infinite;
+}
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+}
+.sua-tag {
+  background: var(--primary); color: #fff; font-size: 12px; font-weight: bold;
+  padding: 4px 16px; border-radius: 100px; margin-top: 8px;
+}
+
+/* ─── Tutorial ─── */
+.tutorial-container {
+  display: flex; flex-direction: column; align-items: center;
+  min-height: 100%; padding: 24px;
+  background: linear-gradient(to bottom, #FCE4EC, #FFF3E0);
+}
+.tutorial-dots { display: flex; gap: 6px; }
+.tutorial-dot {
+  width: 8px; height: 8px; border-radius: 4px;
+  background: rgba(255, 107, 157, 0.2); transition: all 0.3s;
+}
+.tutorial-dot.active { width: 24px; background: var(--primary); }
+.tutorial-dot.done { background: var(--primary); }
+.tutorial-emoji { font-size: 80px; margin: 24px 0; }
+.tutorial-title { font-size: 28px; font-weight: bold; margin-bottom: 16px; }
+.tutorial-desc-box {
+  background: rgba(255,255,255,0.8); border-radius: 16px;
+  padding: 24px; max-width: 320px; width: 100%;
+}
+.tutorial-desc { font-size: 18px; line-height: 1.6; text-align: center; white-space: pre-line; }
+
+/* ─── Screen Header ─── */
+.screen-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px; flex-shrink: 0;
+}
+.screen-header h2 { font-size: 18px; font-weight: bold; }
+
+/* ─── World Select ─── */
+.world-list { padding: 16px; flex: 1; overflow-y: auto; }
+.world-card {
+  display: flex; align-items: center; padding: 20px;
+  background: #fff; border-radius: 16px; margin-bottom: 16px;
+  border: 2px solid #e0e0e0; cursor: pointer;
+  transition: all 0.2s;
+}
+.world-card:active { transform: scale(0.98); }
+.world-card.locked { background: #eee; cursor: default; opacity: 0.7; }
+.world-card.locked:active { transform: none; }
+.world-icon {
+  width: 64px; height: 64px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 32px; flex-shrink: 0;
+}
+.world-info { flex: 1; margin-left: 16px; }
+.world-info h3 { font-size: 18px; margin-bottom: 4px; }
+.world-info .stages-label { font-size: 12px; color: var(--text2); }
+.progress-bar {
+  width: 100%; height: 8px; background: #e0e0e0;
+  border-radius: 4px; margin-top: 8px; overflow: hidden;
+}
+.progress-fill { height: 100%; border-radius: 4px; transition: width 0.3s; }
+.world-clear-label { font-size: 12px; font-weight: bold; margin-top: 4px; }
+.world-arrow { font-size: 20px; color: #bbb; margin-left: 8px; }
+
+/* ─── Stage Select ─── */
+.stage-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 10px; padding: 16px; flex: 1; overflow-y: auto;
+  align-content: start;
+}
+.stage-cell {
+  aspect-ratio: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  background: #fff; border-radius: 12px; border: 2px solid #e0e0e0;
+  cursor: pointer; transition: all 0.2s; font-size: 14px;
+}
+.stage-cell:active { transform: scale(0.95); }
+.stage-cell.cleared { border-color: var(--success); background: rgba(76, 175, 80, 0.1); }
+.stage-cell.playable { border-width: 2px; }
+.stage-cell.locked { background: #eee; cursor: default; opacity: 0.6; }
+.stage-cell.locked:active { transform: none; }
+.stage-cell .emoji { font-size: 20px; }
+.stage-cell .num { font-weight: bold; margin-top: 4px; }
+
+/* ─── Game Screen ─── */
+.turn-choice {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 24px; flex: 1; overflow-y: auto;
+}
+.game-info-card {
+  background: #fff; border-radius: 16px; padding: 20px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin: 16px 0;
+  text-align: center; width: 100%; max-width: 340px;
+}
+.game-info-card h3 { font-size: 20px; margin-bottom: 8px; }
+.game-info-card p { font-size: 14px; color: var(--text); line-height: 1.5; white-space: pre-line; }
+.game-info-card .info-detail { font-size: 16px; font-weight: bold; color: var(--secondary); margin-top: 12px; }
+.turn-buttons { display: flex; gap: 16px; margin-top: 24px; width: 100%; max-width: 340px; }
+.turn-buttons .btn { flex: 1; }
+
+/* ─── Sua Widget ─── */
+.sua-widget { display: flex; flex-direction: column; align-items: center; }
+.speech-bubble {
+  background: #fff; border-radius: 16px; padding: 10px 16px;
+  border: 1px solid rgba(255,107,157,0.3);
+  box-shadow: 0 2px 8px rgba(255,107,157,0.1);
+  font-size: 14px; text-align: center; max-width: 240px;
+  min-height: 36px; display: flex; align-items: center; justify-content: center;
+}
+.speech-sm { font-size: 12px; max-width: 200px; padding: 6px 12px; }
+.bubble-tail {
+  width: 0; height: 0;
+  border-left: 8px solid transparent; border-right: 8px solid transparent;
+  border-top: 8px solid #fff; margin-bottom: 4px;
+}
+.sua-face {
+  width: 100px; height: 100px; border-radius: 50%;
+  background: linear-gradient(135deg, rgba(255,107,157,0.2), rgba(124,77,255,0.2));
+  border: 3px solid var(--primary);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 50px;
+}
+.sua-face-sm { width: 70px; height: 70px; font-size: 35px; }
+.sua-small .sua-tag { font-size: 10px; padding: 2px 10px; }
+
+/* ─── Turn Indicator ─── */
+.turn-indicator {
+  text-align: center; padding: 6px 20px;
+  border-radius: 100px; font-weight: bold; font-size: 14px;
+  color: #fff; margin: 8px auto; display: inline-block;
+}
+.turn-indicator.player { background: var(--success); }
+.turn-indicator.ai { background: var(--secondary); }
+.turn-indicator.win { background: var(--success); }
+.turn-indicator.lose { background: var(--error); }
+
+/* ─── Board Area ─── */
+.board-area { flex: 1; padding: 8px 16px; overflow-y: auto; }
+.stone-row {
+  background: rgba(255,255,255,0.9); border-radius: 12px;
+  border: 2px solid #e0e0e0; padding: 16px; margin-bottom: 12px;
+  transition: border-color 0.2s;
+}
+.stone-row.interactive { border-color: var(--primary); }
+.stone-row-label { font-size: 12px; color: var(--text2); font-weight: bold; text-align: center; margin-bottom: 8px; }
+.stones-wrap {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  justify-content: center;
+}
+.stone {
+  width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+  font-size: 24px; border-radius: 50%; border: 2px solid transparent;
+  cursor: pointer; transition: all 0.2s;
+}
+.stone.selected { border-color: var(--error); background: rgba(244,67,54,0.15); font-size: 28px; }
+.stone-count { text-align: center; font-weight: bold; margin-top: 8px; font-size: 14px; }
+.stone-selected-info { text-align: center; font-size: 12px; color: var(--text2); margin-top: 4px; }
+.stone-selected-info span { color: var(--primary); font-weight: bold; }
+
+/* Pepero */
+.pepero-wrap { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; padding: 8px; }
+.pepero-pile {
+  background: #fff; border: 1px solid #e0e0e0; border-radius: 12px;
+  padding: 10px; cursor: pointer; transition: all 0.2s;
+  display: flex; flex-direction: column; align-items: center;
+}
+.pepero-pile.selected { border-color: var(--primary); border-width: 2px; background: rgba(255,107,157,0.05); }
+.pepero-pile.disabled { opacity: 0.5; cursor: default; }
+.pepero-items { display: flex; flex-wrap: wrap; gap: 2px; justify-content: center; }
+.pepero-label { font-size: 14px; font-weight: bold; margin-top: 4px; }
+
+.split-slider-card {
+  background: #fff; border-radius: 12px; padding: 16px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-top: 16px;
+  text-align: center;
+}
+.split-slider-card h4 { font-size: 16px; margin-bottom: 12px; }
+.split-slider { width: 100%; accent-color: var(--primary); }
+.split-result { font-size: 20px; font-weight: bold; color: var(--primary); margin-top: 8px; }
+
+/* ─── Action Area ─── */
+.action-area { padding: 12px 24px 20px; flex-shrink: 0; }
+.action-area .btn { width: 100%; }
+.game-over-msg {
+  text-align: center; padding: 12px; border-radius: 12px; margin-bottom: 12px;
+  font-size: 18px; font-weight: bold;
+}
+.game-over-msg.win { background: rgba(76,175,80,0.1); border: 1px solid var(--success); color: var(--success); }
+.game-over-msg.lose { background: rgba(244,67,54,0.1); border: 1px solid var(--error); color: var(--error); }
+.game-over-buttons { display: flex; gap: 12px; }
+.game-over-buttons .btn { flex: 1; }
+
+/* ─── Modal ─── */
+.modal {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 100; padding: 24px;
+}
+.modal-content {
+  background: #fff; border-radius: 20px; padding: 32px;
+  text-align: center; max-width: 320px; width: 100%;
+}
+.modal-content h3 { font-size: 20px; margin-bottom: 16px; }
+.modal-content p { font-size: 18px; margin-bottom: 24px; line-height: 1.5; }
+
+/* ─── Game Board Layout ─── */
+.game-board {
+  display: flex; flex-direction: column; flex: 1; overflow: hidden;
+  align-items: center;
+}
+.game-board .board-area { width: 100%; }
+.game-board .action-area { width: 100%; }
+
+/* ─── Responsive ─── */
+@media (max-width: 400px) {
+  .title-gradient { font-size: 32px; }
+  .stone { width: 30px; height: 30px; font-size: 20px; }
+  .stone.selected { font-size: 24px; }
+}
