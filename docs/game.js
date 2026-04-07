@@ -29,42 +29,81 @@ const Save = {
   canUnlockNextWorld(world) { return this.getWorldClearCount(world) >= 3; },
 };
 
-// ─── Sua Character ───
-const Sua = {
-  emotions: { happy: '😊', confident: '😏', neutral: '😐', worried: '😟', sad: '😢', angry: '😠' },
+// ─── Black Cat Character ───
+const Cat = {
+  emotions: { happy: '😺', confident: '😼', neutral: '🐱', worried: '🙀', sad: '😿', sleepy: '😸' },
   emotion: 'neutral',
+  lastInputTime: Date.now(),
+  sleepTimer: null,
+  isSleeping: false,
 
-  get emoji() { return this.emotions[this.emotion]; },
+  get emoji() { return this.isSleeping ? '😴' : this.emotions[this.emotion]; },
 
-  updateEmotion({ isSuaTurn, suaIsWinning, isGameOver, suaWon }) {
-    if (isGameOver) { this.emotion = suaWon ? 'happy' : 'sad'; return; }
-    if (isSuaTurn) { this.emotion = suaIsWinning ? 'confident' : 'worried'; }
-    else { this.emotion = suaIsWinning ? 'confident' : 'neutral'; }
+  resetSleepTimer() {
+    this.lastInputTime = Date.now();
+    if (this.isSleeping) {
+      this.isSleeping = false;
+      // 화들짝 깨어남
+      this._showAction('❗ *화들짝!*');
+    }
+    this._startSleepWatch();
   },
 
-  getDialogue({ isSuaTurn, suaIsWinning, isGameOver, suaWon, isGameStart }) {
+  _startSleepWatch() {
+    if (this.sleepTimer) clearTimeout(this.sleepTimer);
+    this.sleepTimer = setTimeout(() => {
+      if (!this.isSleeping) {
+        this.isSleeping = true;
+        this._showAction('💤 *꾸벅... 꾸벅...*');
+        // 10초 후 코골기
+        this.sleepTimer = setTimeout(() => {
+          if (this.isSleeping) {
+            this._showAction('💤💤 *드르렁...*');
+          }
+        }, 5000);
+      }
+    }, 5000);
+  },
+
+  _showAction(text) {
+    const el = document.getElementById('game-dialogue') || document.getElementById('choice-dialogue');
+    if (el) el.textContent = text;
+    const faceEl = document.getElementById('game-face') || document.getElementById('choice-face');
+    if (faceEl) faceEl.textContent = this.emoji;
+  },
+
+  updateEmotion({ isCatTurn, catIsWinning, isGameOver, catWon }) {
+    if (isGameOver) { this.emotion = catWon ? 'happy' : 'sad'; return; }
+    if (isCatTurn) { this.emotion = catIsWinning ? 'confident' : 'worried'; }
+    else { this.emotion = catIsWinning ? 'confident' : 'neutral'; }
+  },
+
+  getDialogue({ isCatTurn, catIsWinning, isGameOver, catWon, isGameStart }) {
     const pick = arr => arr[Math.floor(Math.random() * arr.length)];
 
     if (isGameStart) return pick([
-      '안녕! 나는 수아야~ 같이 해보자! 🎀',
-      '이번엔 내가 이길 거야!',
-      '준비됐어? 시작하자~!',
+      '*꼬리 살랑살랑* 냐~',
+      '*앞발로 돌 톡톡* ...!',
+      '*눈 반짝* 냐아~',
     ]);
     if (isGameOver) {
-      return suaWon
-        ? pick(['헤헤~ 내가 이겼다! 😊', '다음엔 더 잘할 수 있을 거야!', '역시 수학은 재밌어~'])
-        : pick(['으앙... 졌다... 😢', '다음엔 꼭 이길 거야!', '대단해! 어떻게 한 거야?']);
+      return catWon
+        ? pick(['*기지개 쭈욱~* 냐하~', '*앞발 핥기* 당연하지~', '*꼬리 흔들흔들*'])
+        : pick(['*시무룩... 등 돌림*', '*꼬리 축...* 냥...', '*귀 쫑긋* ...다음엔!']);
     }
-    if (isSuaTurn) {
-      return suaIsWinning
-        ? pick(['후후~ 내 차례야! 😏', '이번 수가 중요해~', '잘 생각해볼게!'])
-        : pick(['음... 어떻게 하지... 😟', '이거 좀 어려운데...', '잠깐만, 생각 중이야!']);
+    if (isCatTurn) {
+      return catIsWinning
+        ? pick(['*눈 반짝반짝* 냐핫!', '*꼬리 흔들* 이거지~', '*의기양양 앞발 핥기*'])
+        : pick(['*귀 눕힘* 냥...?', '*꼬리 바닥 탁탁*', '*불안한 눈* ...음냐']);
     }
-    return suaIsWinning
-      ? pick(['어디 한번 해봐~ 😏', '잘 생각해서 골라봐!', '쉽지 않을걸?'])
-      : pick(['네 차례야! 잘 해봐~', '어떤 수를 둘 건지 궁금해!', '신중하게 골라봐!']);
+    return catIsWinning
+      ? pick(['*도도하게 앉아서* ...', '*꼬리로 돌 가리킴*', '*하품* 빨리해~'])
+      : pick(['*꼬리 살랑*', '*고개 갸웃*', '*앞발 꾹꾹*']);
   },
 };
+
+// Backward compat alias
+const Sua = Cat;
 
 // ─── Game Modes ───
 const MODES = {
@@ -298,13 +337,13 @@ const AI = {
 
 // ─── Tutorial Steps ───
 const TUTORIAL_STEPS = [
-  { emoji: '👋', title: '안녕! 나는 수아야!', desc: '나와 함께 수학 님(NIM) 게임을 해보자!\n두뇌싸움 준비됐어?' },
+  { emoji: '🐱', title: '냐~ 반가워!', desc: '이 검은 고양이와 함께\n수학 님(NIM) 게임을 해보자!\n두뇌싸움 준비됐어?' },
   { emoji: '🪨', title: '님 게임이 뭐야?', desc: '돌이 놓여있어.\n번갈아가면서 돌을 가져가는 거야.\n마지막 돌을 가져가는 사람이 지는 거야!' },
   { emoji: '🎯', title: '한 줄 님게임', desc: '돌이 한 줄로 놓여있어.\n한 번에 1~k개까지 가져갈 수 있어.\n마지막 돌을 가져가면 지는 거야!' },
-  { emoji: '💡', title: '전략을 세워봐!', desc: '그냥 가져가면 안 돼!\n상대방이 마지막 돌을 가져가도록\n전략적으로 생각해야 해!' },
+  { emoji: '💡', title: '전략을 세워봐!', desc: '그냥 가져가면 안 돼!\n고양이가 마지막 돌을 가져가도록\n전략적으로 생각해야 해!' },
   { emoji: '🗺️', title: '5개의 월드', desc: '초원 마을 → 바다 왕국 → 빼빼로 숲\n→ 수정 궁전 → 드래곤 성\n\n월드마다 다른 규칙이 있어!' },
-  { emoji: '🔑', title: '힌트도 있어!', desc: '어려우면 힌트 열쇠를 사용해봐!\n최적의 수를 알려줄게.\n라운드당 3번까지 쓸 수 있어!' },
-  { emoji: '🎀', title: '자, 시작하자!', desc: '3스테이지를 클리어하면\n다음 월드가 열려!\n\n그럼 가보자~! 화이팅! 💪' },
+  { emoji: '🔑', title: '힌트도 있어!', desc: '어려우면 힌트를 사용해봐!\n최적의 수를 알려줄게.\n라운드당 3번까지 쓸 수 있어!' },
+  { emoji: '🐾', title: '자, 시작하자!', desc: '3스테이지를 클리어하면\n다음 월드가 열려!\n\n고양이를 이겨보자! 화이팅!' },
 ];
 
 // ─── Main Game Controller ───
@@ -464,7 +503,7 @@ const Game = {
     this.splitValueA = 1;
     this.hintsUsed = 0;
 
-    Sua.emotion = 'neutral';
+    Cat.emotion = 'neutral';
     const world = getWorldForStage(stageNum);
     const color = WORLDS[world].color;
 
@@ -472,9 +511,9 @@ const Game = {
     document.getElementById('game-stage-title').style.color = color;
 
     // Show turn choice
-    const dialogue = Sua.getDialogue({ isSuaTurn: false, suaIsWinning: false, isGameOver: false, suaWon: false, isGameStart: true });
+    const dialogue = Cat.getDialogue({ isCatTurn: false, catIsWinning: false, isGameOver: false, catWon: false, isGameStart: true });
     document.getElementById('choice-dialogue').textContent = dialogue;
-    document.getElementById('choice-face').textContent = Sua.emoji;
+    document.getElementById('choice-face').textContent = Cat.emoji;
 
     // Game info card
     const modeInfo = MODES[this.state.mode];
@@ -503,7 +542,7 @@ const Game = {
     document.getElementById('turn-choice').classList.add('hidden');
     document.getElementById('game-board').classList.remove('hidden');
 
-    this.updateSuaState();
+    this.updateCatState();
     this.renderBoard();
 
     if (!playerFirst) {
@@ -518,15 +557,16 @@ const Game = {
     const actionArea = document.getElementById('action-area');
     const turnEl = document.getElementById('turn-indicator');
 
-    // Update Sua
-    document.getElementById('game-dialogue').textContent = Sua.getDialogue({
-      isSuaTurn: !s.isPlayerTurn,
-      suaIsWinning: AI.isAIWinning(s),
+    // Update Cat
+    Cat.resetSleepTimer();
+    document.getElementById('game-dialogue').textContent = Cat.getDialogue({
+      isCatTurn: !s.isPlayerTurn,
+      catIsWinning: AI.isAIWinning(s),
       isGameOver: s.isGameOver,
-      suaWon: s.playerWon === false,
+      catWon: s.playerWon === false,
       isGameStart: false,
     });
-    document.getElementById('game-face').textContent = Sua.emoji;
+    document.getElementById('game-face').textContent = Cat.emoji;
 
     // Turn indicator
     if (s.isGameOver) {
@@ -541,7 +581,7 @@ const Game = {
       turnEl.textContent = '🎯 내 차례';
       turnEl.className = 'turn-indicator player';
     } else {
-      turnEl.textContent = '💭 수아 차례';
+      turnEl.textContent = '🐾 고양이 차례';
       turnEl.className = 'turn-indicator ai';
     }
 
@@ -558,8 +598,8 @@ const Game = {
     // Actions
     if (s.isGameOver) {
       const winLose = s.playerWon
-        ? '<div class="game-over-msg win">🎉 축하해! 수아를 이겼어!</div>'
-        : '<div class="game-over-msg lose">😢 아쉽다... 수아가 이겼어</div>';
+        ? '<div class="game-over-msg win">🎉 축하해! 고양이를 이겼어!</div>'
+        : '<div class="game-over-msg lose">😿 고양이한테 졌다...</div>';
       actionArea.innerHTML = `
         ${winLose}
         <div class="game-over-buttons">
@@ -581,7 +621,7 @@ const Game = {
         <button class="btn btn-primary" style="width:100%" ${disabled ? 'disabled' : ''} onclick="Game.playerMove()">${btnLabel}</button>
       `;
     } else {
-      actionArea.innerHTML = '<p style="text-align:center;color:var(--text2);padding:16px">수아가 생각하는 중... 💭</p>';
+      actionArea.innerHTML = '<p style="text-align:center;color:var(--text2);padding:16px">고양이가 생각하는 중... 🐾</p>';
     }
   },
 
@@ -694,7 +734,7 @@ const Game = {
 
     if (!success) return;
 
-    this.updateSuaState();
+    this.updateCatState();
     this.renderBoard();
 
     if (s.isGameOver) {
@@ -712,7 +752,7 @@ const Game = {
     const move = AI.getBestMove(s);
     makeMove(s, move.rowIndex, move.count);
 
-    this.updateSuaState();
+    this.updateCatState();
     this.renderBoard();
 
     if (s.isGameOver) {
@@ -720,15 +760,15 @@ const Game = {
     }
   },
 
-  // ─── Sua State ───
-  updateSuaState() {
+  // ─── Cat State ───
+  updateCatState() {
     const s = this.state;
-    const suaIsWinning = AI.isAIWinning(s);
-    Sua.updateEmotion({
-      isSuaTurn: !s.isPlayerTurn,
-      suaIsWinning,
+    const catIsWinning = AI.isAIWinning(s);
+    Cat.updateEmotion({
+      isCatTurn: !s.isPlayerTurn,
+      catIsWinning,
       isGameOver: s.isGameOver,
-      suaWon: s.playerWon === false,
+      catWon: s.playerWon === false,
     });
   },
 
