@@ -39,17 +39,17 @@ class DS {
 
   static String getWorldName(int world) {
     switch (world) {
-      case 0: return '🌙 뒷골목 공원';
-      case 1: return '⚓ 항구 창고';
-      case 2: return '🤠 서부 살룬';
-      case 3: return '🔥 지하 용광로';
-      case 4: return '🌌 우주 암시장';
+      case 0: return '🚪 Alley Corner';
+      case 1: return '🍺 Neon Tavern';
+      case 2: return '💨 Smoke Den';
+      case 3: return '🕶️ Shadow Market';
+      case 4: return '🎲 The Last Bet';
       default: return '???';
     }
   }
 
   static String getWorldEmoji(int world) {
-    const emojis = ['🌙', '⚓', '🤠', '🔥', '🌌'];
+    const emojis = ['🚪', '🍺', '💨', '🕶️', '🎲'];
     return world < emojis.length ? emojis[world] : '❓';
   }
 
