@@ -38,7 +38,7 @@ class _TutorialScreenState extends State<TutorialScreen> {
     _TutorialStep(
       emoji: '🌙',
       title: '5개의 테이블',
-      description: '뒷골목 공원 → 항구 창고 → 서부 살룬\n→ 지하 용광로 → 우주 암시장\n\n테이블마다 다른 규칙이 있어.',
+      description: 'Alley Corner → Neon Tavern → Smoke Den\n→ Shadow Market → The Last Bet\n\n테이블마다 다른 규칙이 있어.',
     ),
     _TutorialStep(
       emoji: '💡',

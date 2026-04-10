@@ -20,11 +20,11 @@ class DS {
   static const Color inactive = Color(0xFF6B6B6B);      // 안개 회색
 
   // 월드별 색상 (도박판 테마)
-  static const Color worldAlley = Color(0xFF2D5A3D);    // 뒷골목 공원 (이끼 다크 그린)
-  static const Color worldHarbor = Color(0xFF1A4A4A);   // 항구 창고 (바다 테일 그린)
-  static const Color worldSaloon = Color(0xFF8B7355);   // 서부 살룬 (모래 베이지)
-  static const Color worldForge = Color(0xFF8B2500);    // 지하 용광로 (불꽃 다크 레드)
-  static const Color worldSpace = Color(0xFF4A2D6B);    // 우주 암시장 (딥 스페이스 퍼플)
+  static const Color worldAlley = Color(0xFF2D5A3D);    // Alley Corner (이끼 다크 그린)
+  static const Color worldHarbor = Color(0xFF1A4A4A);   // Neon Tavern (바다 테일 그린)
+  static const Color worldSaloon = Color(0xFF8B7355);   // Smoke Den (모래 베이지)
+  static const Color worldForge = Color(0xFF8B2500);    // Shadow Market (불꽃 다크 레드)
+  static const Color worldSpace = Color(0xFF4A2D6B);    // The Last Bet (딥 스페이스 퍼플)
 
   static Color getWorldColor(int world) {
     switch (world) {
