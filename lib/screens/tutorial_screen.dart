@@ -3,7 +3,7 @@ import '../utils/design_system.dart';
 import '../services/game_save_service.dart';
 import 'world_select_screen.dart';
 
-/// 튜토리얼 화면 - 팝업으로 하나씩 안내
+/// 튜토리얼 화면 - 깜냥이가 도박판 규칙을 설명
 class TutorialScreen extends StatefulWidget {
   const TutorialScreen({super.key});
 
@@ -16,39 +16,39 @@ class _TutorialScreenState extends State<TutorialScreen> {
 
   final List<_TutorialStep> _steps = [
     _TutorialStep(
-      emoji: '👋',
-      title: '안녕! 나는 수아야!',
-      description: '나와 함께 수학 님(NIM) 게임을 해보자!\n두뇌싸움 준비됐어?',
+      emoji: '🎩',
+      title: '...앉아.',
+      description: '이 골목에서 판을 벌이려면\n규칙 정도는 알아야지.\n잘 들어.',
     ),
     _TutorialStep(
-      emoji: '🪨',
-      title: '님 게임이 뭐야?',
-      description: '돌이 놓여있어.\n번갈아가면서 돌을 가져가는 거야.\n마지막 돌을 가져가는 사람이 지는 거야!',
+      emoji: '🪙',
+      title: 'NIM 게임이란',
+      description: '칩이 놓여있어.\n번갈아가면서 칩을 가져가는 거야.\n마지막 칩을 가져가면... 지는 거지.',
     ),
     _TutorialStep(
-      emoji: '🎯',
-      title: '한 줄 님게임',
-      description: '돌이 한 줄로 놓여있어.\n한 번에 1~k개까지 가져갈 수 있어.\n마지막 돌을 가져가면 지는 거야!',
+      emoji: '🃏',
+      title: '기본 룰',
+      description: '칩이 한 줄로 놓여있어.\n한 번에 1~k개까지 가져갈 수 있어.\n마지막 칩을 집는 놈이 지는 거야.',
+    ),
+    _TutorialStep(
+      emoji: '🧠',
+      title: '머리를 써.',
+      description: '대충 가져가면 당하지.\n상대가 마지막 칩을 가져가도록\n몰아넣는 게 핵심이야.',
+    ),
+    _TutorialStep(
+      emoji: '🌙',
+      title: '5개의 테이블',
+      description: '뒷골목 공원 → 항구 창고 → 서부 살룬\n→ 지하 용광로 → 우주 암시장\n\n테이블마다 다른 규칙이 있어.',
     ),
     _TutorialStep(
       emoji: '💡',
-      title: '전략을 세워봐!',
-      description: '그냥 가져가면 안 돼!\n상대방이 마지막 돌을 가져가도록\n전략적으로 생각해야 해!',
+      title: '힌트가 필요하면',
+      description: '어려우면 귓속말을 해줄 수도 있어.\n최적의 수를 알려주지.\n라운드당 3번까지.',
     ),
     _TutorialStep(
-      emoji: '🗺️',
-      title: '5개의 월드',
-      description: '초원 마을 → 바다 왕국 → 빼빼로 숲\n→ 수정 궁전 → 드래곤 성\n\n월드마다 다른 규칙이 있어!',
-    ),
-    _TutorialStep(
-      emoji: '🔑',
-      title: '힌트도 있어!',
-      description: '어려우면 힌트 열쇠를 사용해봐!\n최적의 수를 알려줄게.\n라운드당 3번까지 쓸 수 있어!',
-    ),
-    _TutorialStep(
-      emoji: '🎀',
-      title: '자, 시작하자!',
-      description: '3스테이지를 클리어하면\n다음 월드가 열려!\n\n그럼 가보자~! 화이팅! 💪',
+      emoji: '🃏',
+      title: '자, 시작하지.',
+      description: '3판을 클리어하면\n다음 테이블이 열려.\n\n...재밌게 해보자.',
     ),
   ];
 
@@ -64,7 +64,7 @@ class _TutorialScreenState extends State<TutorialScreen> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFFFCE4EC), Color(0xFFFFF3E0)],
+            colors: [Color(0xFF0D0D0D), Color(0xFF1A1209), Color(0xFF0D0D0D)],
           ),
         ),
         child: SafeArea(
@@ -80,36 +80,40 @@ class _TutorialScreenState extends State<TutorialScreen> {
                   children: List.generate(_steps.length, (i) {
                     return Container(
                       width: i == _step ? 24 : 8,
-                      height: 8,
+                      height: 6,
                       margin: const EdgeInsets.symmetric(horizontal: 3),
                       decoration: BoxDecoration(
                         color: i <= _step
                             ? DS.primary
-                            : DS.primary.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(4),
+                            : DS.primary.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(3),
                       ),
                     );
                   }),
                 ),
                 const Spacer(),
                 // 이모지
-                Text(step.emoji, style: const TextStyle(fontSize: 80)),
+                Text(step.emoji, style: const TextStyle(fontSize: 72)),
                 const SizedBox(height: DS.spaceLG),
                 // 제목
-                Text(step.title, style: DS.heading2),
+                Text(step.title,
+                    style: DS.heading2.copyWith(fontStyle: FontStyle.italic)),
                 const SizedBox(height: DS.spaceMD),
                 // 설명
                 Container(
                   padding: const EdgeInsets.all(DS.spaceLG),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.8),
-                    borderRadius: BorderRadius.circular(DS.radiusLG),
+                    color: DS.panelBg,
+                    borderRadius: BorderRadius.circular(DS.radiusMD),
+                    border: Border.all(color: DS.primaryDark.withOpacity(0.3)),
                   ),
                   child: Text(
                     step.description,
-                    style: DS.body.copyWith(
+                    style: TextStyle(
                       fontSize: DS.fontLG,
                       height: 1.6,
+                      color: DS.textSecondary,
+                      fontStyle: FontStyle.italic,
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -123,7 +127,7 @@ class _TutorialScreenState extends State<TutorialScreen> {
                     onPressed: _next,
                     style: isLast ? DS.primaryButton : DS.secondaryButton,
                     child: Text(
-                      isLast ? '게임 시작하기!' : '다음',
+                      isLast ? '판에 참여하기' : '다음',
                       style: const TextStyle(fontSize: DS.fontLG),
                     ),
                   ),
@@ -133,7 +137,7 @@ class _TutorialScreenState extends State<TutorialScreen> {
                     onPressed: _skip,
                     child: const Text(
                       '건너뛰기',
-                      style: TextStyle(color: DS.textSecondary),
+                      style: TextStyle(color: DS.inactive),
                     ),
                   ),
                 const SizedBox(height: DS.spaceMD),

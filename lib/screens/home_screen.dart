@@ -4,7 +4,7 @@ import '../services/game_save_service.dart';
 import 'world_select_screen.dart';
 import 'tutorial_screen.dart';
 
-/// 메인 홈 화면
+/// 메인 홈 화면 - 비 내리는 밤 골목 도박판 테마
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -15,17 +15,17 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _animController;
-  late Animation<double> _bounceAnim;
+  late Animation<double> _flickerAnim;
 
   @override
   void initState() {
     super.initState();
     _animController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 2),
+      duration: const Duration(seconds: 3),
     )..repeat(reverse: true);
 
-    _bounceAnim = Tween<double>(begin: 0, end: 12).animate(
+    _flickerAnim = Tween<double>(begin: 0.7, end: 1.0).animate(
       CurvedAnimation(parent: _animController, curve: Curves.easeInOut),
     );
   }
@@ -45,7 +45,7 @@ class _HomeScreenState extends State<HomeScreen>
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFFFFF3E0), Color(0xFFFFE0B2)],
+            colors: [Color(0xFF0D0D0D), Color(0xFF1A1209)],
           ),
         ),
         child: SafeArea(
@@ -53,64 +53,76 @@ class _HomeScreenState extends State<HomeScreen>
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Spacer(flex: 2),
-              // 타이틀
-              const Text('🧮', style: TextStyle(fontSize: 64)),
+              // 가스등 아이콘
+              AnimatedBuilder(
+                animation: _flickerAnim,
+                builder: (context, child) {
+                  return Opacity(
+                    opacity: _flickerAnim.value,
+                    child: child,
+                  );
+                },
+                child: const Text('🏮', style: TextStyle(fontSize: 48)),
+              ),
               const SizedBox(height: DS.spaceMD),
+              // 타이틀 - 황동 간판 스타일
               ShaderMask(
                 shaderCallback: (bounds) => const LinearGradient(
-                  colors: [DS.primary, DS.secondary],
+                  colors: [Color(0xFFC9A84C), Color(0xFFE8B86D), Color(0xFFC9A84C)],
                 ).createShader(bounds),
                 child: const Text(
-                  '수학 님 게임',
+                  'NIM',
                   style: TextStyle(
-                    fontSize: 40,
+                    fontSize: 56,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
+                    letterSpacing: 8,
                   ),
                 ),
               ),
               const SizedBox(height: DS.spaceSM),
               const Text(
-                'Math NIM Game',
+                'The Gambler\'s Game',
                 style: TextStyle(
-                  fontSize: DS.fontLG,
+                  fontSize: DS.fontMD,
                   color: DS.textSecondary,
-                  fontWeight: FontWeight.w500,
-                  letterSpacing: 2,
+                  fontWeight: FontWeight.w400,
+                  letterSpacing: 3,
+                  fontStyle: FontStyle.italic,
                 ),
               ),
               const SizedBox(height: DS.spaceXL),
 
-              // 수아 캐릭터
+              // 깜냥이(나이트) 캐릭터
               AnimatedBuilder(
-                animation: _bounceAnim,
+                animation: _flickerAnim,
                 builder: (context, child) {
                   return Transform.translate(
-                    offset: Offset(0, -_bounceAnim.value),
+                    offset: Offset(0, -4 * (1 - _flickerAnim.value)),
                     child: child,
                   );
                 },
                 child: Column(
                   children: [
                     Container(
-                      width: 100,
-                      height: 100,
+                      width: 110,
+                      height: 110,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         gradient: const LinearGradient(
-                          colors: [Color(0xFFFFCDD2), Color(0xFFF8BBD0)],
+                          colors: [Color(0xFF2A1F14), Color(0xFF3D2B1F)],
                         ),
-                        border: Border.all(color: DS.primary, width: 3),
+                        border: Border.all(color: DS.primaryDark, width: 2),
                         boxShadow: [
                           BoxShadow(
-                            color: DS.primary.withOpacity(0.3),
-                            blurRadius: 16,
+                            color: DS.primary.withOpacity(0.2),
+                            blurRadius: 20,
                             offset: const Offset(0, 4),
                           ),
                         ],
                       ),
                       child: const Center(
-                        child: Text('😊', style: TextStyle(fontSize: 50)),
+                        child: Text('🎩', style: TextStyle(fontSize: 55)),
                       ),
                     ),
                     const SizedBox(height: DS.spaceSM),
@@ -120,13 +132,14 @@ class _HomeScreenState extends State<HomeScreen>
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: DS.primary,
-                        borderRadius: BorderRadius.circular(DS.radiusFull),
+                        color: DS.panelBg,
+                        borderRadius: BorderRadius.circular(DS.radiusMD),
+                        border: Border.all(color: DS.primaryDark.withOpacity(0.5)),
                       ),
                       child: const Text(
-                        '🎀 수아',
+                        '🃏 깜냥이',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: DS.primary,
                           fontWeight: FontWeight.bold,
                           fontSize: DS.fontSM,
                         ),
@@ -138,13 +151,17 @@ class _HomeScreenState extends State<HomeScreen>
 
               const SizedBox(height: DS.spaceMD),
               Text(
-                '수아와 두뇌싸움 할 준비 됐어?',
-                style: DS.body.copyWith(fontSize: DS.fontLG),
+                '...자리에 앉겠나?',
+                style: DS.body.copyWith(
+                  fontSize: DS.fontLG,
+                  fontStyle: FontStyle.italic,
+                  color: DS.textSecondary,
+                ),
               ),
 
               const Spacer(flex: 2),
 
-              // 게임 시작 버튼
+              // 게임 시작 버튼 - 나무 문패 스타일
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: DS.spaceXL),
                 child: SizedBox(
@@ -153,18 +170,20 @@ class _HomeScreenState extends State<HomeScreen>
                   child: ElevatedButton(
                     onPressed: () => _startGame(context),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: DS.primary,
-                      foregroundColor: Colors.white,
+                      backgroundColor: DS.panelBg,
+                      foregroundColor: DS.primary,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(DS.radiusXL),
+                        borderRadius: BorderRadius.circular(DS.radiusMD),
+                        side: const BorderSide(color: DS.primaryDark, width: 2),
                       ),
-                      elevation: 4,
+                      elevation: 6,
                     ),
                     child: const Text(
-                      '게임 시작!',
+                      '판에 참여하기',
                       style: TextStyle(
                         fontSize: DS.fontXL,
                         fontWeight: FontWeight.bold,
+                        letterSpacing: 2,
                       ),
                     ),
                   ),
@@ -175,7 +194,10 @@ class _HomeScreenState extends State<HomeScreen>
               // 진행 상황
               Text(
                 '클리어: ${GameSaveService.maxStageCleared}/100 스테이지',
-                style: DS.caption,
+                style: const TextStyle(
+                  color: DS.inactive,
+                  fontSize: DS.fontSM,
+                ),
               ),
               const Spacer(),
             ],

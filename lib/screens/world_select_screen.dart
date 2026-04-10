@@ -3,20 +3,26 @@ import '../utils/design_system.dart';
 import '../services/game_save_service.dart';
 import 'stage_select_screen.dart';
 
-/// 월드 선택 화면 (5개 월드)
+/// 월드 선택 화면 - 도박장 안쪽, 여러 테이블 테마
 class WorldSelectScreen extends StatelessWidget {
   const WorldSelectScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('월드 선택')),
+      appBar: AppBar(
+        title: const Text('테이블 선택'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios, color: DS.textSecondary),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ),
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFFFFF3E0), Color(0xFFFFE0B2)],
+            colors: [Color(0xFF0D0D0D), Color(0xFF1A1209)],
           ),
         ),
         child: ListView.builder(
@@ -33,7 +39,8 @@ class WorldSelectScreen extends StatelessWidget {
                 onTap: isUnlocked
                     ? () => Navigator.of(context).push(
                           MaterialPageRoute(
-                            builder: (_) => StageSelectScreen(worldIndex: index),
+                            builder: (_) =>
+                                StageSelectScreen(worldIndex: index),
                           ),
                         )
                     : null,
@@ -41,16 +48,18 @@ class WorldSelectScreen extends StatelessWidget {
                   duration: const Duration(milliseconds: 300),
                   padding: const EdgeInsets.all(DS.spaceLG),
                   decoration: BoxDecoration(
-                    color: isUnlocked ? Colors.white : Colors.grey.shade200,
-                    borderRadius: BorderRadius.circular(DS.radiusLG),
+                    color: isUnlocked ? DS.panelBg : DS.surface,
+                    borderRadius: BorderRadius.circular(DS.radiusMD),
                     border: Border.all(
-                      color: isUnlocked ? worldColor : Colors.grey.shade400,
-                      width: 2,
+                      color: isUnlocked
+                          ? worldColor.withOpacity(0.6)
+                          : DS.inactive.withOpacity(0.3),
+                      width: isUnlocked ? 2 : 1,
                     ),
                     boxShadow: isUnlocked
                         ? [
                             BoxShadow(
-                              color: worldColor.withOpacity(0.3),
+                              color: worldColor.withOpacity(0.15),
                               blurRadius: 12,
                               offset: const Offset(0, 4),
                             ),
@@ -66,8 +75,13 @@ class WorldSelectScreen extends StatelessWidget {
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color: isUnlocked
-                              ? worldColor.withOpacity(0.2)
-                              : Colors.grey.shade300,
+                              ? worldColor.withOpacity(0.3)
+                              : DS.inactive.withOpacity(0.2),
+                          border: Border.all(
+                            color: isUnlocked
+                                ? worldColor
+                                : DS.inactive.withOpacity(0.3),
+                          ),
                         ),
                         child: Center(
                           child: Text(
@@ -86,35 +100,42 @@ class WorldSelectScreen extends StatelessWidget {
                               isUnlocked
                                   ? DS.getWorldName(index)
                                   : '??? (잠김)',
-                              style: DS.heading3.copyWith(
+                              style: TextStyle(
                                 fontSize: DS.fontLG,
+                                fontWeight: FontWeight.bold,
                                 color: isUnlocked
                                     ? DS.textPrimary
-                                    : DS.textSecondary,
+                                    : DS.inactive,
                               ),
                             ),
                             const SizedBox(height: DS.spaceXS),
                             Text(
                               '스테이지 ${index * 20 + 1}~${(index + 1) * 20}',
-                              style: DS.caption,
+                              style: TextStyle(
+                                color: DS.inactive,
+                                fontSize: DS.fontSM,
+                              ),
                             ),
                             const SizedBox(height: DS.spaceSM),
                             // 진행도 바
                             ClipRRect(
-                              borderRadius: BorderRadius.circular(DS.radiusSM),
+                              borderRadius:
+                                  BorderRadius.circular(DS.radiusSM),
                               child: LinearProgressIndicator(
                                 value: clearCount / 20,
-                                minHeight: 8,
-                                backgroundColor: Colors.grey.shade200,
-                                valueColor: AlwaysStoppedAnimation(worldColor),
+                                minHeight: 6,
+                                backgroundColor: DS.surface,
+                                valueColor:
+                                    AlwaysStoppedAnimation(worldColor),
                               ),
                             ),
                             const SizedBox(height: DS.spaceXS),
                             Text(
                               '$clearCount/20 클리어',
-                              style: DS.caption.copyWith(
+                              style: TextStyle(
                                 color: worldColor,
                                 fontWeight: FontWeight.bold,
+                                fontSize: DS.fontSM,
                               ),
                             ),
                           ],
@@ -125,7 +146,7 @@ class WorldSelectScreen extends StatelessWidget {
                         Icon(
                           Icons.arrow_forward_ios,
                           color: worldColor,
-                          size: 20,
+                          size: 18,
                         ),
                     ],
                   ),

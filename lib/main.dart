@@ -25,7 +25,7 @@ class MathNimApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: '수학 님 게임',
+      title: 'NIM - The Gambler\'s Game',
       debugShowCheckedModeBanner: false,
       theme: DS.theme,
       home: const HomeScreen(),

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/game_state.dart';
 import '../utils/design_system.dart';
 
-/// 돌/구슬/보석 줄을 표시하는 위젯
+/// 칩/코인 줄을 표시하는 위젯 (포커 칩 스타일)
 class StoneRowWidget extends StatelessWidget {
   final int rowIndex;
   final int count;
@@ -27,11 +27,13 @@ class StoneRowWidget extends StatelessWidget {
       margin: const EdgeInsets.symmetric(vertical: DS.spaceSM),
       padding: const EdgeInsets.all(DS.spaceMD),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.9),
+        color: DS.panelBg.withOpacity(0.6),
         borderRadius: BorderRadius.circular(DS.radiusMD),
         border: Border.all(
-          color: isInteractive ? DS.primary : Colors.grey.shade300,
-          width: isInteractive ? 2 : 1,
+          color: isInteractive
+              ? DS.primaryDark.withOpacity(0.5)
+              : DS.inactive.withOpacity(0.2),
+          width: isInteractive ? 1.5 : 1,
         ),
       ),
       child: Column(
@@ -42,10 +44,14 @@ class StoneRowWidget extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: DS.spaceSM),
               child: Text(
                 '${rowIndex + 1}번째 줄',
-                style: DS.caption.copyWith(fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: DS.textSecondary,
+                  fontSize: DS.fontSM,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
-          // 돌 표시
+          // 칩 표시
           Wrap(
             spacing: 6,
             runSpacing: 6,
@@ -63,11 +69,13 @@ class StoneRowWidget extends StatelessWidget {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: isSelected
-                        ? DS.error.withOpacity(0.2)
-                        : Colors.transparent,
+                        ? DS.error.withOpacity(0.3)
+                        : DS.primaryDark.withOpacity(0.1),
                     border: Border.all(
-                      color: isSelected ? DS.error : Colors.transparent,
-                      width: 2,
+                      color: isSelected
+                          ? DS.error
+                          : DS.primaryDark.withOpacity(0.3),
+                      width: isSelected ? 2 : 1,
                     ),
                   ),
                   child: Center(
@@ -90,14 +98,15 @@ class StoneRowWidget extends StatelessWidget {
               style: DS.bodyBold,
             ),
           ),
-          // 선택 슬라이더 (인터랙티브 모드)
+          // 선택 슬라이더
           if (isInteractive && count > 0)
             Padding(
               padding: const EdgeInsets.only(top: DS.spaceSM),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Text('가져갈 수: ', style: DS.caption),
+                  Text('가져갈 수: ',
+                      style: TextStyle(color: DS.inactive, fontSize: DS.fontSM)),
                   Text(
                     '$selectedCount개',
                     style: DS.bodyBold.copyWith(color: DS.primary),
@@ -111,7 +120,7 @@ class StoneRowWidget extends StatelessWidget {
   }
 }
 
-/// 빼빼로 묶음을 표시하는 위젯
+/// 카드 묶음을 표시하는 위젯 (트럼프 카드 스타일)
 class PeperoWidget extends StatelessWidget {
   final int index;
   final int size;
@@ -135,10 +144,14 @@ class PeperoWidget extends StatelessWidget {
         margin: const EdgeInsets.all(DS.spaceXS),
         padding: const EdgeInsets.all(DS.spaceSM),
         decoration: BoxDecoration(
-          color: isSelected ? DS.primary.withOpacity(0.1) : Colors.white,
+          color: isSelected
+              ? DS.primary.withOpacity(0.1)
+              : DS.panelBg,
           borderRadius: BorderRadius.circular(DS.radiusMD),
           border: Border.all(
-            color: isSelected ? DS.primary : Colors.grey.shade300,
+            color: isSelected
+                ? DS.primary
+                : DS.inactive.withOpacity(0.3),
             width: isSelected ? 2 : 1,
           ),
         ),
@@ -149,7 +162,7 @@ class PeperoWidget extends StatelessWidget {
               spacing: 2,
               children: List.generate(
                 size,
-                (_) => const Text('🍫', style: TextStyle(fontSize: 20)),
+                (_) => const Text('🃏', style: TextStyle(fontSize: 20)),
               ),
             ),
             const SizedBox(height: 4),

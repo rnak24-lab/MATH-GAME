@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/sua_character.dart';
 import '../utils/design_system.dart';
 
-/// 수아 캐릭터 위젯 - 표정 + 말풍선
+/// 깜냥이(나이트) 캐릭터 위젯 - 표정 + 말풍선 (누아르 스타일)
 class SuaWidget extends StatelessWidget {
   final SuaCharacter sua;
   final String dialogue;
@@ -20,7 +20,7 @@ class SuaWidget extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // 말풍선
+        // 말풍선 (누아르 톤)
         Container(
           constraints: const BoxConstraints(maxWidth: 240),
           padding: const EdgeInsets.symmetric(
@@ -28,12 +28,12 @@ class SuaWidget extends StatelessWidget {
             vertical: DS.spaceSM,
           ),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(DS.radiusLG),
-            border: Border.all(color: DS.primary.withOpacity(0.3)),
+            color: DS.panelBg,
+            borderRadius: BorderRadius.circular(DS.radiusMD),
+            border: Border.all(color: DS.primaryDark.withOpacity(0.4)),
             boxShadow: [
               BoxShadow(
-                color: DS.primary.withOpacity(0.1),
+                color: Colors.black.withOpacity(0.3),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -41,7 +41,11 @@ class SuaWidget extends StatelessWidget {
           ),
           child: Text(
             dialogue,
-            style: DS.body.copyWith(fontSize: DS.fontSM),
+            style: TextStyle(
+              color: DS.textSecondary,
+              fontSize: DS.fontSM,
+              fontStyle: FontStyle.italic,
+            ),
             textAlign: TextAlign.center,
           ),
         ),
@@ -51,21 +55,25 @@ class SuaWidget extends StatelessWidget {
           painter: _BubbleTailPainter(),
         ),
         const SizedBox(height: DS.spaceXS),
-        // 수아 얼굴
+        // 깜냥이 얼굴
         Container(
           width: size,
           height: size,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            gradient: LinearGradient(
+            gradient: const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                DS.primary.withOpacity(0.2),
-                DS.secondary.withOpacity(0.2),
-              ],
+              colors: [Color(0xFF2A1F14), Color(0xFF1A1209)],
             ),
-            border: Border.all(color: DS.primary, width: 3),
+            border: Border.all(color: DS.primaryDark, width: 2),
+            boxShadow: [
+              BoxShadow(
+                color: DS.primary.withOpacity(0.15),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: Center(
             child: Text(
@@ -79,13 +87,14 @@ class SuaWidget extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
           decoration: BoxDecoration(
-            color: DS.primary,
-            borderRadius: BorderRadius.circular(DS.radiusFull),
+            color: DS.panelBg,
+            borderRadius: BorderRadius.circular(DS.radiusMD),
+            border: Border.all(color: DS.primaryDark.withOpacity(0.5)),
           ),
           child: Text(
-            '🎀 ${sua.name}',
+            '🃏 ${sua.name}',
             style: const TextStyle(
-              color: Colors.white,
+              color: DS.primary,
               fontSize: DS.fontSM,
               fontWeight: FontWeight.bold,
             ),
@@ -100,11 +109,11 @@ class _BubbleTailPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.white
+      ..color = DS.panelBg
       ..style = PaintingStyle.fill;
 
     final borderPaint = Paint()
-      ..color = DS.primary.withOpacity(0.3)
+      ..color = DS.primaryDark.withOpacity(0.4)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1;
 

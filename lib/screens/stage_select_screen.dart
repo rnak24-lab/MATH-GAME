@@ -4,7 +4,7 @@ import '../services/game_save_service.dart';
 import '../models/game_state.dart';
 import 'game_screen.dart';
 
-/// 스테이지 선택 화면 (월드당 20스테이지)
+/// 스테이지 선택 화면 - 카드 덱 스타일 (월드당 20스테이지)
 class StageSelectScreen extends StatelessWidget {
   final int worldIndex;
 
@@ -18,6 +18,10 @@ class StageSelectScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(DS.getWorldName(worldIndex)),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios, color: DS.textSecondary),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
       ),
       body: Container(
         decoration: BoxDecoration(
@@ -25,8 +29,9 @@ class StageSelectScreen extends StatelessWidget {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              worldColor.withOpacity(0.1),
-              worldColor.withOpacity(0.05),
+              const Color(0xFF0D0D0D),
+              worldColor.withOpacity(0.15),
+              const Color(0xFF0D0D0D),
             ],
           ),
         ),
@@ -58,17 +63,19 @@ class StageSelectScreen extends StatelessWidget {
                   color: isCleared
                       ? worldColor.withOpacity(0.2)
                       : isPlayable
-                          ? Colors.white
-                          : Colors.grey.shade200,
+                          ? DS.panelBg
+                          : DS.surface,
                   borderRadius: BorderRadius.circular(DS.radiusMD),
                   border: Border.all(
-                    color: isPlayable ? worldColor : Colors.grey.shade400,
+                    color: isPlayable
+                        ? worldColor.withOpacity(0.6)
+                        : DS.inactive.withOpacity(0.2),
                     width: isPlayable ? 2 : 1,
                   ),
                   boxShadow: isPlayable
                       ? [
                           BoxShadow(
-                            color: worldColor.withOpacity(0.2),
+                            color: worldColor.withOpacity(0.15),
                             blurRadius: 4,
                             offset: const Offset(0, 2),
                           ),
@@ -79,7 +86,7 @@ class StageSelectScreen extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     if (isCleared)
-                      const Text('⭐', style: TextStyle(fontSize: 20))
+                      Text('🪙', style: const TextStyle(fontSize: 20))
                     else if (!isPlayable)
                       const Text('🔒', style: TextStyle(fontSize: 20))
                     else
@@ -91,7 +98,7 @@ class StageSelectScreen extends StatelessWidget {
                       style: TextStyle(
                         fontSize: DS.fontMD,
                         fontWeight: FontWeight.bold,
-                        color: isPlayable ? DS.textPrimary : DS.textSecondary,
+                        color: isPlayable ? DS.textPrimary : DS.inactive,
                       ),
                     ),
                   ],
