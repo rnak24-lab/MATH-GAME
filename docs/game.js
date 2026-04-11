@@ -1,7 +1,178 @@
 // ═══════════════════════════════════════════════════════
-//  수학 님 게임 - Web Version
-//  Flutter 로직을 JavaScript로 포팅
+//  Math NIM Game - Web Version
 // ═══════════════════════════════════════════════════════
+
+// ─── i18n (Language System) ───
+const i18n = {
+  _lang: localStorage.getItem('lang') || 'en',
+  get lang() { return this._lang; },
+  set lang(v) { this._lang = v; localStorage.setItem('lang', v); },
+
+  texts: {
+    en: {
+      gameTitle: 'Math NIM Game',
+      subtitle: 'Math NIM Game',
+      catTag: '🐾 Black Cat',
+      homeMsg: 'Ready for a battle of wits with the cat?',
+      startBtn: 'Start Game!',
+      clearInfo: (n) => `Cleared: ${n}/100 Stages`,
+      next: 'Next',
+      skip: 'Skip',
+      startPlaying: 'Start Playing!',
+      worldSelect: 'Select World',
+      back: '← Back',
+      lockedWorld: '??? (Locked)',
+      stagesLabel: (a, b) => `Stage ${a}~${b}`,
+      clearLabel: (n) => `${n}/20 Cleared`,
+      whoFirst: 'Who goes first?',
+      meFirst: 'I go first!',
+      catFirst: 'Cat goes first!',
+      turnPlayer: '🎯 Your Turn',
+      turnAI: '🐾 Cat\'s Turn',
+      winMsg: '🎉 Victory!',
+      loseMsg: '😢 Defeat...',
+      winDetail: '🎉 You beat the cat!',
+      loseDetail: '😿 The cat won...',
+      goBack: 'Go Back',
+      retry: 'Retry',
+      nextStage: 'Next Stage →',
+      thinking: 'The cat is thinking... 🐾',
+      hintTitle: '💡 Secret Hint',
+      hintThanks: 'Thanks!',
+      hintBtn: '💡 Hint',
+      takeStones: (n) => `Take ${n}!`,
+      split: 'Split!',
+      rowLabel: (n) => `Row ${n}`,
+      stoneCount: (n) => `${n} stones`,
+      selectedInfo: (n) => `Taking: ${n}`,
+      peperoLabel: (n) => `${n} sticks`,
+      splitQuestion: (n) => `How to split ${n}?`,
+      splitResult: (a, b) => `Split into ${a} and ${b}`,
+      // Mode info
+      singleRowTitle: '🪨 Single Row NIM',
+      singleRowDesc: 'Take 1~k stones from one row\nLast to take loses!',
+      doubleRowTitle: '🔮 Double Row NIM',
+      doubleRowDesc: 'Take from one of two rows\nLast to take loses!',
+      peperoTitle: '🍫 Pepero Game',
+      peperoDesc: 'Split a bundle into two different numbers\nCan\'t split? You lose!',
+      tripleRowTitle: '💎 Triple Row NIM',
+      tripleRowDesc: 'Take from one of three rows\nLast to take loses!',
+      // Game detail
+      singleDetail: (stones, max) => `Stones: ${stones} | Max take: ${max}`,
+      multiDetail: (rows) => rows.map((r, i) => `Row ${i+1}: ${r}`).join(' | '),
+      peperoDetail: (n) => `Pepero bundle: ${n}`,
+      // Hint
+      hintSingle: (n) => `Take ${n}!`,
+      hintMulti: (row, n) => `Take ${n} from row ${row}!`,
+      hintPepero: (pile, a, b) => `Split ${pile} into ${a} and ${b}!`,
+      // Tutorial
+      tut: [
+        { emoji: '🐱', title: 'Hey there!', desc: 'Let\'s play the Math NIM Game\nwith this black cat!\nReady for a brain battle?' },
+        { emoji: '🪨', title: 'What is NIM?', desc: 'Stones are laid out.\nTake turns picking up stones.\nWhoever takes the last stone loses!' },
+        { emoji: '🎯', title: 'Single Row NIM', desc: 'Stones in one row.\nYou can take 1~k per turn.\nTake the last stone and you lose!' },
+        { emoji: '💡', title: 'Plan your strategy!', desc: 'Don\'t just grab randomly!\nThink strategically to make\nthe cat take the last stone!' },
+        { emoji: '🗺️', title: '5 Tables', desc: 'Alley Corner → Neon Tavern → Smoke Den\n→ Shadow Market → The Last Bet\n\nEach table has different rules!' },
+        { emoji: '🔑', title: 'Hints available!', desc: 'Stuck? Use a hint!\nIt shows the optimal move.\nUp to 3 hints per round!' },
+        { emoji: '🐾', title: 'Let\'s go!', desc: 'Clear Stage 3 to unlock\nthe next world!\n\nBeat the cat! Good luck!' },
+      ],
+      // Cat dialogues
+      catStart: ['*tail swish* Meow~', '*taps stones* ...!', '*eyes sparkle* Mya~'],
+      catWin: ['*stretches* Nyaha~', '*licks paw* Obviously~', '*tail wag*'],
+      catLose: ['*turns away sulking*', '*tail droops* Mew...', '*ears perk* ...next time!'],
+      catTurnWinning: ['*eyes sparkle* Nyahaha!', '*tail wag* Got it~', '*proudly licks paw*'],
+      catTurnLosing: ['*ears flatten* Mew...?', '*tail thumps floor*', '*nervous eyes* ...um'],
+      catWaitWinning: ['*sits smugly* ...', '*points with tail*', '*yawns* Hurry~'],
+      catWaitLosing: ['*tail swish*', '*tilts head*', '*kneads paws*'],
+      catSleep1: '💤 *nod... nod...*',
+      catSleep2: '💤💤 *snore...*',
+      catWake: '❗ *startled!*',
+      unlockTooltip: 'Clear Stage 3 of the previous world to unlock',
+      langLabel: 'Language',
+    },
+    kr: {
+      gameTitle: '수학 님 게임',
+      subtitle: 'Math NIM Game',
+      catTag: '🐾 검은 고양이',
+      homeMsg: '고양이와 두뇌싸움 할 준비 됐어?',
+      startBtn: '게임 시작!',
+      clearInfo: (n) => `클리어: ${n}/100 스테이지`,
+      next: '다음',
+      skip: '건너뛰기',
+      startPlaying: '게임 시작하기!',
+      worldSelect: '월드 선택',
+      back: '← 뒤로',
+      lockedWorld: '??? (잠김)',
+      stagesLabel: (a, b) => `스테이지 ${a}~${b}`,
+      clearLabel: (n) => `${n}/20 클리어`,
+      whoFirst: '누가 먼저 시작할까요?',
+      meFirst: '내가 먼저!',
+      catFirst: '고양이 먼저!',
+      turnPlayer: '🎯 내 차례',
+      turnAI: '🐾 고양이 차례',
+      winMsg: '🎉 승리!',
+      loseMsg: '😢 패배...',
+      winDetail: '🎉 축하해! 고양이를 이겼어!',
+      loseDetail: '😿 고양이한테 졌다...',
+      goBack: '돌아가기',
+      retry: '다시 하기',
+      nextStage: '다음 스테이지 →',
+      thinking: '고양이가 생각하는 중... 🐾',
+      hintTitle: '💡 비밀 힌트',
+      hintThanks: '고마워!',
+      hintBtn: '💡 힌트',
+      takeStones: (n) => `${n}개 가져가기!`,
+      split: '나누기!',
+      rowLabel: (n) => `${n}번째 줄`,
+      stoneCount: (n) => `${n}개`,
+      selectedInfo: (n) => `가져갈 수: ${n}개`,
+      peperoLabel: (n) => `${n}개`,
+      splitQuestion: (n) => `${n}를 어떻게 나눌까?`,
+      splitResult: (a, b) => `${a}와 ${b}로 나누기`,
+      singleRowTitle: '🪨 한 줄 님게임',
+      singleRowDesc: '돌 1줄에서 1~k개 가져가기\n마지막 돌을 가져가면 짐!',
+      doubleRowTitle: '🔮 두 줄 님게임',
+      doubleRowDesc: '돌 2줄에서 한 줄씩 가져가기\n마지막 돌을 가져가면 짐!',
+      peperoTitle: '🍫 빼빼로 게임',
+      peperoDesc: '묶음을 서로 다른 두 수로 나누기\n못 나누면 짐!',
+      tripleRowTitle: '💎 세 줄 님게임',
+      tripleRowDesc: '돌 3줄에서 한 줄씩 가져가기\n마지막 돌을 가져가면 짐!',
+      singleDetail: (stones, max) => `돌: ${stones}개 | 최대 ${max}개 가져가기`,
+      multiDetail: (rows) => rows.map((r, i) => `${i+1}줄: ${r}개`).join(' | '),
+      peperoDetail: (n) => `빼빼로 묶음: ${n}개`,
+      hintSingle: (n) => `${n}개를 가져가세요!`,
+      hintMulti: (row, n) => `${row}번째 줄에서 ${n}개를 가져가세요!`,
+      hintPepero: (pile, a, b) => `${pile}을 ${a}와 ${b}로 나누세요!`,
+      tut: [
+        { emoji: '🐱', title: '냐~ 반가워!', desc: '이 검은 고양이와 함께\n수학 님(NIM) 게임을 해보자!\n두뇌싸움 준비됐어?' },
+        { emoji: '🪨', title: '님 게임이 뭐야?', desc: '돌이 놓여있어.\n번갈아가면서 돌을 가져가는 거야.\n마지막 돌을 가져가는 사람이 지는 거야!' },
+        { emoji: '🎯', title: '한 줄 님게임', desc: '돌이 한 줄로 놓여있어.\n한 번에 1~k개까지 가져갈 수 있어.\n마지막 돌을 가져가면 지는 거야!' },
+        { emoji: '💡', title: '전략을 세워봐!', desc: '그냥 가져가면 안 돼!\n고양이가 마지막 돌을 가져가도록\n전략적으로 생각해야 해!' },
+        { emoji: '🗺️', title: '5개의 테이블', desc: 'Alley Corner → Neon Tavern → Smoke Den\n→ Shadow Market → The Last Bet\n\n테이블마다 다른 규칙이 있어!' },
+        { emoji: '🔑', title: '힌트도 있어!', desc: '어려우면 힌트를 사용해봐!\n최적의 수를 알려줄게.\n라운드당 3번까지 쓸 수 있어!' },
+        { emoji: '🐾', title: '자, 시작하자!', desc: '3스테이지를 클리어하면\n다음 월드가 열려!\n\n고양이를 이겨보자! 화이팅!' },
+      ],
+      catStart: ['*꼬리 살랑살랑* 냐~', '*앞발로 돌 톡톡* ...!', '*눈 반짝* 냐아~'],
+      catWin: ['*기지개 쭈욱~* 냐하~', '*앞발 핥기* 당연하지~', '*꼬리 흔들흔들*'],
+      catLose: ['*시무룩... 등 돌림*', '*꼬리 축...* 냥...', '*귀 쫑긋* ...다음엔!'],
+      catTurnWinning: ['*눈 반짝반짝* 냐핫!', '*꼬리 흔들* 이거지~', '*의기양양 앞발 핥기*'],
+      catTurnLosing: ['*귀 눕힘* 냥...?', '*꼬리 바닥 탁탁*', '*불안한 눈* ...음냐'],
+      catWaitWinning: ['*도도하게 앉아서* ...', '*꼬리로 돌 가리킴*', '*하품* 빨리해~'],
+      catWaitLosing: ['*꼬리 살랑*', '*고개 갸웃*', '*앞발 꾹꾹*'],
+      catSleep1: '💤 *꾸벅... 꾸벅...*',
+      catSleep2: '💤💤 *드르렁...*',
+      catWake: '❗ *화들짝!*',
+      unlockTooltip: '이전 월드의 3단계를 클리어하면 해금됩니다',
+      langLabel: '언어',
+    },
+  },
+
+  t(key, ...args) {
+    const val = this.texts[this._lang]?.[key] ?? this.texts['en']?.[key] ?? key;
+    return typeof val === 'function' ? val(...args) : val;
+  },
+};
+
+function T(key, ...args) { return i18n.t(key, ...args); }
 
 // ─── Save Service (localStorage) ───
 const Save = {
@@ -17,6 +188,10 @@ const Save = {
   get hintKeys() { return parseInt(localStorage.getItem('hint_keys') || '3'); },
   set hintKeys(v) { localStorage.setItem('hint_keys', v); },
 
+  isStageClear(stageNum) {
+    return stageNum <= this.maxStage;
+  },
+
   getWorldClearCount(world) {
     const max = this.maxStage;
     const start = world * 20 + 1;
@@ -26,7 +201,11 @@ const Save = {
     return max - start + 1;
   },
 
-  canUnlockNextWorld(world) { return this.getWorldClearCount(world) >= 3; },
+  // World unlock: clear stage 3 of the previous world
+  canUnlockNextWorld(world) {
+    const stage3 = world * 20 + 3; // stage 3 of the given world
+    return this.maxStage >= stage3;
+  },
 };
 
 // ─── Black Cat Character ───
@@ -43,8 +222,7 @@ const Cat = {
     this.lastInputTime = Date.now();
     if (this.isSleeping) {
       this.isSleeping = false;
-      // 화들짝 깨어남
-      this._showAction('❗ *화들짝!*');
+      this._showAction(T('catWake'));
     }
     this._startSleepWatch();
   },
@@ -54,20 +232,19 @@ const Cat = {
     this.sleepTimer = setTimeout(() => {
       if (!this.isSleeping) {
         this.isSleeping = true;
-        this._showAction('💤 *꾸벅... 꾸벅...*');
-        // 10초 후 코골기
+        this._showAction(T('catSleep1'));
         this.sleepTimer = setTimeout(() => {
           if (this.isSleeping) {
-            this._showAction('💤💤 *드르렁...*');
+            this._showAction(T('catSleep2'));
           }
         }, 5000);
       }
     }, 5000);
   },
 
-  _showAction(text) {
+  _showAction(textKey) {
     const el = document.getElementById('game-dialogue') || document.getElementById('choice-dialogue');
-    if (el) el.textContent = text;
+    if (el) el.textContent = textKey;
     const faceEl = document.getElementById('game-face') || document.getElementById('choice-face');
     if (faceEl) faceEl.textContent = this.emoji;
   },
@@ -81,24 +258,14 @@ const Cat = {
   getDialogue({ isCatTurn, catIsWinning, isGameOver, catWon, isGameStart }) {
     const pick = arr => arr[Math.floor(Math.random() * arr.length)];
 
-    if (isGameStart) return pick([
-      '*꼬리 살랑살랑* 냐~',
-      '*앞발로 돌 톡톡* ...!',
-      '*눈 반짝* 냐아~',
-    ]);
+    if (isGameStart) return pick(T('catStart'));
     if (isGameOver) {
-      return catWon
-        ? pick(['*기지개 쭈욱~* 냐하~', '*앞발 핥기* 당연하지~', '*꼬리 흔들흔들*'])
-        : pick(['*시무룩... 등 돌림*', '*꼬리 축...* 냥...', '*귀 쫑긋* ...다음엔!']);
+      return catWon ? pick(T('catWin')) : pick(T('catLose'));
     }
     if (isCatTurn) {
-      return catIsWinning
-        ? pick(['*눈 반짝반짝* 냐핫!', '*꼬리 흔들* 이거지~', '*의기양양 앞발 핥기*'])
-        : pick(['*귀 눕힘* 냥...?', '*꼬리 바닥 탁탁*', '*불안한 눈* ...음냐']);
+      return catIsWinning ? pick(T('catTurnWinning')) : pick(T('catTurnLosing'));
     }
-    return catIsWinning
-      ? pick(['*도도하게 앉아서* ...', '*꼬리로 돌 가리킴*', '*하품* 빨리해~'])
-      : pick(['*꼬리 살랑*', '*고개 갸웃*', '*앞발 꾹꾹*']);
+    return catIsWinning ? pick(T('catWaitWinning')) : pick(T('catWaitLosing'));
   },
 };
 
@@ -107,10 +274,10 @@ const Sua = Cat;
 
 // ─── Game Modes ───
 const MODES = {
-  singleRow:  { title: '🪨 한 줄 님게임', desc: '돌 1줄에서 1~k개 가져가기\n마지막 돌을 가져가면 짐!', emoji: '🪨' },
-  doubleRow:  { title: '🔮 두 줄 님게임', desc: '돌 2줄에서 한 줄씩 가져가기\n마지막 돌을 가져가면 짐!', emoji: '🔮' },
-  pepero:     { title: '🍫 빼빼로 게임', desc: '묶음을 서로 다른 두 수로 나누기\n못 나누면 짐!', emoji: '🍫' },
-  tripleRow:  { title: '💎 세 줄 님게임', desc: '돌 3줄에서 한 줄씩 가져가기\n마지막 돌을 가져가면 짐!', emoji: '💎' },
+  singleRow:  { titleKey: 'singleRowTitle', descKey: 'singleRowDesc', emoji: '🪨' },
+  doubleRow:  { titleKey: 'doubleRowTitle', descKey: 'doubleRowDesc', emoji: '🔮' },
+  pepero:     { titleKey: 'peperoTitle', descKey: 'peperoDesc', emoji: '🍫' },
+  tripleRow:  { titleKey: 'tripleRowTitle', descKey: 'tripleRowDesc', emoji: '💎' },
 };
 
 const WORLDS = [
@@ -335,27 +502,18 @@ const AI = {
   getHint(state) {
     const m = this.getBestMove(state);
     switch (state.mode) {
-      case 'singleRow': return `${m.count}개를 가져가세요!`;
+      case 'singleRow': return T('hintSingle', m.count);
       case 'doubleRow':
-      case 'tripleRow': return `${m.rowIndex + 1}번째 줄에서 ${m.count}개를 가져가세요!`;
+      case 'tripleRow': return T('hintMulti', m.rowIndex + 1, m.count);
       case 'pepero': {
         const pile = state.rows[m.rowIndex];
-        return `${pile}을 ${m.count}와 ${pile - m.count}로 나누세요!`;
+        return T('hintPepero', pile, m.count, pile - m.count);
       }
     }
   },
 };
 
-// ─── Tutorial Steps ───
-const TUTORIAL_STEPS = [
-  { emoji: '🐱', title: '냐~ 반가워!', desc: '이 검은 고양이와 함께\n수학 님(NIM) 게임을 해보자!\n두뇌싸움 준비됐어?' },
-  { emoji: '🪨', title: '님 게임이 뭐야?', desc: '돌이 놓여있어.\n번갈아가면서 돌을 가져가는 거야.\n마지막 돌을 가져가는 사람이 지는 거야!' },
-  { emoji: '🎯', title: '한 줄 님게임', desc: '돌이 한 줄로 놓여있어.\n한 번에 1~k개까지 가져갈 수 있어.\n마지막 돌을 가져가면 지는 거야!' },
-  { emoji: '💡', title: '전략을 세워봐!', desc: '그냥 가져가면 안 돼!\n고양이가 마지막 돌을 가져가도록\n전략적으로 생각해야 해!' },
-  { emoji: '🗺️', title: '5개의 테이블', desc: 'Alley Corner → Neon Tavern → Smoke Den\n→ Shadow Market → The Last Bet\n\n테이블마다 다른 규칙이 있어!' },
-  { emoji: '🔑', title: '힌트도 있어!', desc: '어려우면 힌트를 사용해봐!\n최적의 수를 알려줄게.\n라운드당 3번까지 쓸 수 있어!' },
-  { emoji: '🐾', title: '자, 시작하자!', desc: '3스테이지를 클리어하면\n다음 월드가 열려!\n\n고양이를 이겨보자! 화이팅!' },
-];
+// Tutorial steps are now loaded from i18n
 
 // ─── Main Game Controller ───
 const Game = {
@@ -375,8 +533,23 @@ const Game = {
   },
 
   goHome() {
-    document.getElementById('clear-info').textContent = `클리어: ${Save.maxStage}/100 스테이지`;
+    document.getElementById('clear-info').textContent = T('clearInfo', Save.maxStage);
     this.showScreen('home');
+    this.updateHomeTexts();
+  },
+
+  updateHomeTexts() {
+    document.querySelector('.title-gradient').textContent = T('gameTitle');
+    document.querySelector('.subtitle').textContent = T('subtitle');
+    document.querySelector('.sua-tag').textContent = T('catTag');
+    document.querySelector('.home-msg').textContent = T('homeMsg');
+    document.querySelector('#screen-home .btn-primary').textContent = T('startBtn');
+    document.getElementById('clear-info').textContent = T('clearInfo', Save.maxStage);
+  },
+
+  toggleLang() {
+    i18n.lang = i18n.lang === 'en' ? 'kr' : 'en';
+    this.updateHomeTexts();
   },
 
   goWorld() {
@@ -402,22 +575,24 @@ const Game = {
 
   // ─── Tutorial ───
   renderTutorial() {
-    const step = TUTORIAL_STEPS[this.tutorialStep];
-    const isLast = this.tutorialStep === TUTORIAL_STEPS.length - 1;
+    const steps = T('tut');
+    const step = steps[this.tutorialStep];
+    const isLast = this.tutorialStep === steps.length - 1;
 
     document.getElementById('tutorial-emoji').textContent = step.emoji;
     document.getElementById('tutorial-title').textContent = step.title;
     document.getElementById('tutorial-desc').textContent = step.desc;
 
     const nextBtn = document.getElementById('tutorial-next-btn');
-    nextBtn.textContent = isLast ? '게임 시작하기!' : '다음';
+    nextBtn.textContent = isLast ? T('startPlaying') : T('next');
     nextBtn.className = isLast ? 'btn btn-primary btn-full' : 'btn btn-secondary btn-full';
 
+    document.getElementById('tutorial-skip-btn').textContent = T('skip');
     document.getElementById('tutorial-skip-btn').style.display = isLast ? 'none' : '';
 
     // Dots
     const dotsEl = document.getElementById('tutorial-dots');
-    dotsEl.innerHTML = TUTORIAL_STEPS.map((_, i) => {
+    dotsEl.innerHTML = steps.map((_, i) => {
       let cls = 'tutorial-dot';
       if (i === this.tutorialStep) cls += ' active';
       else if (i < this.tutorialStep) cls += ' done';
@@ -426,7 +601,8 @@ const Game = {
   },
 
   tutorialNext() {
-    if (this.tutorialStep < TUTORIAL_STEPS.length - 1) {
+    const steps = T('tut');
+    if (this.tutorialStep < steps.length - 1) {
       this.tutorialStep++;
       this.renderTutorial();
     } else {
@@ -441,29 +617,54 @@ const Game = {
 
   // ─── World Select ───
   renderWorldList() {
+    document.querySelector('#screen-world h2').textContent = T('worldSelect');
+    document.querySelector('#screen-world .btn-back').textContent = T('back');
     const list = document.getElementById('world-list');
     list.innerHTML = WORLDS.map((w, i) => {
       const unlocked = i <= Save.worldUnlocked;
       const clearCount = Save.getWorldClearCount(i);
+      const tooltipAttr = !unlocked ? `title="${T('unlockTooltip')}"` : '';
       return `
         <div class="world-card ${unlocked ? '' : 'locked'}"
              style="${unlocked ? `border-color: ${w.color}; box-shadow: 0 4px 12px ${w.color}33` : ''}"
-             onclick="${unlocked ? `Game.openWorld(${i})` : ''}">
+             ${tooltipAttr}
+             onclick="${unlocked ? `Game.openWorld(${i})` : ''}"
+             ${!unlocked ? `onmouseenter="Game.showWorldTooltip(event)" onmouseleave="Game.hideWorldTooltip()"` : ''}>
           <div class="world-icon" style="background: ${unlocked ? w.color + '33' : '#ccc'}">
             ${unlocked ? w.emoji : '🔒'}
           </div>
           <div class="world-info">
-            <h3>${unlocked ? w.name : '??? (잠김)'}</h3>
-            <span class="stages-label">스테이지 ${i * 20 + 1}~${(i + 1) * 20}</span>
+            <h3>${unlocked ? w.name : T('lockedWorld')}</h3>
+            <span class="stages-label">${T('stagesLabel', i * 20 + 1, (i + 1) * 20)}</span>
             <div class="progress-bar">
               <div class="progress-fill" style="width: ${(clearCount / 20) * 100}%; background: ${w.color}"></div>
             </div>
-            <div class="world-clear-label" style="color: ${w.color}">${clearCount}/20 클리어</div>
+            <div class="world-clear-label" style="color: ${w.color}">${T('clearLabel', clearCount)}</div>
           </div>
           ${unlocked ? '<span class="world-arrow">›</span>' : ''}
         </div>
       `;
     }).join('');
+  },
+
+  showWorldTooltip(event) {
+    let tooltip = document.getElementById('world-tooltip');
+    if (!tooltip) {
+      tooltip = document.createElement('div');
+      tooltip.id = 'world-tooltip';
+      tooltip.className = 'world-tooltip';
+      document.body.appendChild(tooltip);
+    }
+    tooltip.textContent = T('unlockTooltip');
+    tooltip.style.display = 'block';
+    const rect = event.currentTarget.getBoundingClientRect();
+    tooltip.style.left = rect.left + rect.width / 2 + 'px';
+    tooltip.style.top = rect.top - 8 + 'px';
+  },
+
+  hideWorldTooltip() {
+    const tooltip = document.getElementById('world-tooltip');
+    if (tooltip) tooltip.style.display = 'none';
   },
 
   openWorld(index) {
@@ -476,6 +677,7 @@ const Game = {
   renderStageGrid(worldIndex) {
     const w = WORLDS[worldIndex];
     document.getElementById('stage-world-title').textContent = w.name;
+    document.querySelector('#screen-stage .btn-back').textContent = T('back');
     const grid = document.getElementById('stage-grid');
     const start = worldIndex * 20 + 1;
 
@@ -530,20 +732,32 @@ const Game = {
     const modeInfo = MODES[this.state.mode];
     let detail = '';
     switch (this.state.mode) {
-      case 'singleRow': detail = `돌: ${this.state.rows[0]}개 | 최대 ${this.state.maxTake}개 가져가기`; break;
+      case 'singleRow': detail = T('singleDetail', this.state.rows[0], this.state.maxTake); break;
       case 'doubleRow':
-      case 'tripleRow': detail = this.state.rows.map((r, i) => `${i + 1}줄: ${r}개`).join(' | '); break;
-      case 'pepero': detail = `빼빼로 묶음: ${this.state.rows[0]}개`; break;
+      case 'tripleRow': detail = T('multiDetail', this.state.rows); break;
+      case 'pepero': detail = T('peperoDetail', this.state.rows[0]); break;
     }
     document.getElementById('game-info-card').innerHTML = `
-      <h3>${modeInfo.title}</h3>
-      <p>${modeInfo.desc}</p>
+      <h3>${T(modeInfo.titleKey)}</h3>
+      <p>${T(modeInfo.descKey)}</p>
       <div class="info-detail">${detail}</div>
     `;
 
     document.getElementById('turn-choice').classList.remove('hidden');
     document.getElementById('game-board').classList.add('hidden');
+    document.getElementById('btn-hint').textContent = T('hintBtn');
     document.getElementById('btn-hint').disabled = false;
+    document.querySelector('#screen-game .btn-back').textContent = T('back');
+
+    // Update turn choice text
+    document.querySelector('#turn-choice h3').textContent = T('whoFirst');
+    const turnBtns = document.querySelectorAll('.turn-buttons .btn');
+    if (turnBtns[0]) turnBtns[0].textContent = T('meFirst');
+    if (turnBtns[1]) turnBtns[1].textContent = T('catFirst');
+
+    // Update cat tag in choice area
+    const choiceTag = document.querySelector('#sua-choice .sua-tag');
+    if (choiceTag) choiceTag.textContent = T('catTag');
 
     this.showScreen('game');
   },
@@ -579,20 +793,24 @@ const Game = {
     });
     document.getElementById('game-face').textContent = Cat.emoji;
 
+    // Update cat tag in game area
+    const gameTag = document.querySelector('#sua-game .sua-tag');
+    if (gameTag) gameTag.textContent = T('catTag');
+
     // Turn indicator
     if (s.isGameOver) {
       if (s.playerWon) {
-        turnEl.textContent = '🎉 승리!';
+        turnEl.textContent = T('winMsg');
         turnEl.className = 'turn-indicator win';
       } else {
-        turnEl.textContent = '😢 패배...';
+        turnEl.textContent = T('loseMsg');
         turnEl.className = 'turn-indicator lose';
       }
     } else if (s.isPlayerTurn) {
-      turnEl.textContent = '🎯 내 차례';
+      turnEl.textContent = T('turnPlayer');
       turnEl.className = 'turn-indicator player';
     } else {
-      turnEl.textContent = '🐾 고양이 차례';
+      turnEl.textContent = T('turnAI');
       turnEl.className = 'turn-indicator ai';
     }
 
@@ -609,30 +827,33 @@ const Game = {
     // Actions
     if (s.isGameOver) {
       const winLose = s.playerWon
-        ? '<div class="game-over-msg win">🎉 축하해! 고양이를 이겼어!</div>'
-        : '<div class="game-over-msg lose">😿 고양이한테 졌다...</div>';
+        ? `<div class="game-over-msg win">${T('winDetail')}</div>`
+        : `<div class="game-over-msg lose">${T('loseDetail')}</div>`;
+      const nextStageNum = s.stageNumber + 1;
+      const hasNext = s.playerWon && nextStageNum <= 100;
       actionArea.innerHTML = `
         ${winLose}
         <div class="game-over-buttons">
-          <button class="btn btn-secondary" onclick="Game.goStageSelect()">돌아가기</button>
-          <button class="btn btn-primary" onclick="Game.openStage(${s.stageNumber})">다시 하기</button>
+          <button class="btn btn-secondary" onclick="Game.goStageSelect()">${T('goBack')}</button>
+          <button class="btn btn-secondary" onclick="Game.openStage(${s.stageNumber})">${T('retry')}</button>
+          ${hasNext ? `<button class="btn btn-primary" onclick="Game.openNextStage(${nextStageNum})">${T('nextStage')}</button>` : ''}
         </div>
       `;
     } else if (s.isPlayerTurn) {
       let btnLabel = '';
       let disabled = true;
       if (s.mode === 'pepero') {
-        btnLabel = '나누기!';
+        btnLabel = T('split');
         disabled = this.selectedPeperoIndex < 0;
       } else {
-        btnLabel = `${this.selectedCount}개 가져가기!`;
+        btnLabel = T('takeStones', this.selectedCount);
         disabled = this.selectedCount <= 0;
       }
       actionArea.innerHTML = `
         <button class="btn btn-primary" style="width:100%" ${disabled ? 'disabled' : ''} onclick="Game.playerMove()">${btnLabel}</button>
       `;
     } else {
-      actionArea.innerHTML = '<p style="text-align:center;color:var(--text2);padding:16px">고양이가 생각하는 중... 🐾</p>';
+      actionArea.innerHTML = `<p style="text-align:center;color:var(--text2);padding:16px">${T('thinking')}</p>`;
     }
   },
 
@@ -652,10 +873,10 @@ const Game = {
 
       return `
         <div class="stone-row ${isInteractive ? 'interactive' : ''}">
-          ${showLabel ? `<div class="stone-row-label">${rowIdx + 1}번째 줄</div>` : ''}
+          ${showLabel ? `<div class="stone-row-label">${T('rowLabel', rowIdx + 1)}</div>` : ''}
           <div class="stones-wrap">${stones}</div>
-          <div class="stone-count">${count}개</div>
-          ${isInteractive && selected > 0 ? `<div class="stone-selected-info">가져갈 수: <span>${selected}개</span></div>` : ''}
+          <div class="stone-count">${T('stoneCount', count)}</div>
+          ${isInteractive && selected > 0 ? `<div class="stone-selected-info">${T('selectedInfo', selected)}</div>` : ''}
         </div>
       `;
     }).join('');
@@ -677,7 +898,7 @@ const Game = {
       return `
         <div class="${cls}" onclick="${isInteractive && canSplit ? `Game.selectPepero(${i})` : ''}">
           <div class="pepero-items">${items}</div>
-          <div class="pepero-label">${size}개</div>
+          <div class="pepero-label">${T('peperoLabel', size)}</div>
         </div>
       `;
     }).join('');
@@ -692,10 +913,10 @@ const Game = {
 
       html += `
         <div class="split-slider-card">
-          <h4>${pile}를 어떻게 나눌까?</h4>
+          <h4>${T('splitQuestion', pile)}</h4>
           <input type="range" class="split-slider" min="1" max="${maxA}" value="${a}"
                  oninput="Game.updateSplit(parseInt(this.value))">
-          <div class="split-result">${a}와 ${b}로 나누기</div>
+          <div class="split-result">${T('splitResult', a, b)}</div>
         </div>
       `;
     }
@@ -727,7 +948,7 @@ const Game = {
     }
     // Update display without full re-render
     const result = document.querySelector('.split-result');
-    if (result) result.textContent = `${val}와 ${pile - val}로 나누기`;
+    if (result) result.textContent = T('splitResult', val, pile - val);
   },
 
   // ─── Player Move ───
@@ -787,12 +1008,36 @@ const Game = {
   handleGameOver() {
     const s = this.state;
     if (s.playerWon) {
-      Save.maxStage = s.stageNumber;
+      // Ensure maxStage is updated (fixes next stage unlock bug)
+      const newMax = s.stageNumber;
+      if (newMax > Save.maxStage) {
+        localStorage.setItem('max_stage', String(newMax));
+      }
+      // Check world unlock: clearing stage 3 of current world unlocks next world
       const world = getWorldForStage(s.stageNumber);
-      if (Save.canUnlockNextWorld(world) && world < 4) {
-        Save.worldUnlocked = world + 1;
+      if (world < 4 && Save.canUnlockNextWorld(world)) {
+        const nextWorld = world + 1;
+        if (nextWorld > Save.worldUnlocked) {
+          localStorage.setItem('world_unlocked', String(nextWorld));
+        }
       }
     }
+  },
+
+  // ─── Open Next Stage (after win) ───
+  openNextStage(stageNum) {
+    // Check if we need to switch worlds
+    const world = getWorldForStage(stageNum);
+    if (world > this.currentWorld) {
+      if (world <= Save.worldUnlocked) {
+        this.currentWorld = world;
+      } else {
+        // World not unlocked yet, go back to stage select
+        this.goStageSelect();
+        return;
+      }
+    }
+    this.openStage(stageNum);
   },
 
   // ─── Hint ───
@@ -801,6 +1046,8 @@ const Game = {
     this.hintsUsed++;
     const hint = AI.getHint(this.state);
     document.getElementById('hint-text').textContent = hint;
+    document.querySelector('#modal-hint h3').textContent = T('hintTitle');
+    document.querySelector('#modal-hint .btn').textContent = T('hintThanks');
     document.getElementById('modal-hint').classList.remove('hidden');
     document.getElementById('btn-hint').disabled = this.hintsUsed >= 3;
   },
@@ -812,5 +1059,5 @@ const Game = {
 
 // ─── Init ───
 document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('clear-info').textContent = `클리어: ${Save.maxStage}/100 스테이지`;
+  Game.updateHomeTexts();
 });

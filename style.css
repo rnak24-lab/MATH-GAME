@@ -315,6 +315,40 @@ body {
 .game-board .board-area { width: 100%; }
 .game-board .action-area { width: 100%; }
 
+/* ─── Language Toggle Button ─── */
+.btn-lang {
+  background: transparent;
+  border: 1px solid var(--text2);
+  color: var(--text2);
+  padding: 6px 16px;
+  border-radius: 16px;
+  font-size: 13px;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: all 0.2s;
+}
+.btn-lang:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+/* ─── World Tooltip ─── */
+.world-tooltip {
+  display: none;
+  position: fixed;
+  z-index: 9999;
+  background: var(--panel);
+  color: var(--text);
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  white-space: nowrap;
+  transform: translate(-50%, -100%);
+  pointer-events: none;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+  border: 1px solid var(--primary);
+}
+
 /* ─── Responsive ─── */
 @media (max-width: 400px) {
   .title-gradient { font-size: 32px; }

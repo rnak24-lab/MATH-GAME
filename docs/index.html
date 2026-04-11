@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>수학 님 게임 - Math NIM Game</title>
+  <title>Math NIM Game</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -13,20 +13,21 @@
       <div class="home-container">
         <div class="spacer"></div>
         <div class="title-emoji">🧮</div>
-        <h1 class="title-gradient">수학 님 게임</h1>
+        <h1 class="title-gradient">Math NIM Game</h1>
         <p class="subtitle">Math NIM Game</p>
 
         <div class="sua-home" id="sua-bounce">
           <div class="sua-face-home">🐱</div>
-          <span class="sua-tag">🐾 검은 고양이</span>
+          <span class="sua-tag">🐾 Black Cat</span>
         </div>
 
-        <p class="home-msg">고양이와 두뇌싸움 할 준비 됐어?</p>
+        <p class="home-msg">Ready for a battle of wits with the cat?</p>
 
         <div class="spacer"></div>
 
-        <button class="btn btn-primary btn-full" onclick="Game.startGame()">게임 시작!</button>
-        <p class="clear-info" id="clear-info">클리어: 0/100 스테이지</p>
+        <button class="btn btn-primary btn-full" onclick="Game.startGame()">Start Game!</button>
+        <p class="clear-info" id="clear-info">Cleared: 0/100 Stages</p>
+        <button class="btn-lang" onclick="Game.toggleLang()">EN / KR</button>
         <div class="spacer-sm"></div>
       </div>
     </div>
@@ -43,8 +44,8 @@
           <p class="tutorial-desc" id="tutorial-desc"></p>
         </div>
         <div class="spacer"></div>
-        <button class="btn btn-primary btn-full" id="tutorial-next-btn" onclick="Game.tutorialNext()">다음</button>
-        <button class="btn-text" id="tutorial-skip-btn" onclick="Game.tutorialSkip()">건너뛰기</button>
+        <button class="btn btn-primary btn-full" id="tutorial-next-btn" onclick="Game.tutorialNext()">Next</button>
+        <button class="btn-text" id="tutorial-skip-btn" onclick="Game.tutorialSkip()">Skip</button>
         <div class="spacer-sm"></div>
       </div>
     </div>
@@ -52,8 +53,8 @@
     <!-- 월드 선택 화면 -->
     <div id="screen-world" class="screen">
       <div class="screen-header">
-        <button class="btn-back" onclick="Game.goHome()">← 뒤로</button>
-        <h2>월드 선택</h2>
+        <button class="btn-back" onclick="Game.goHome()">← Back</button>
+        <h2>Select World</h2>
         <div></div>
       </div>
       <div class="world-list" id="world-list"></div>
@@ -62,7 +63,7 @@
     <!-- 스테이지 선택 화면 -->
     <div id="screen-stage" class="screen">
       <div class="screen-header">
-        <button class="btn-back" onclick="Game.goWorld()">← 뒤로</button>
+        <button class="btn-back" onclick="Game.goWorld()">← Back</button>
         <h2 id="stage-world-title"></h2>
         <div></div>
       </div>
@@ -72,9 +73,9 @@
     <!-- 게임 화면 -->
     <div id="screen-game" class="screen">
       <div class="screen-header">
-        <button class="btn-back" onclick="Game.goStageSelect()">← 뒤로</button>
+        <button class="btn-back" onclick="Game.goStageSelect()">← Back</button>
         <h2 id="game-stage-title"></h2>
-        <button class="btn-hint" id="btn-hint" onclick="Game.useHint()">💡 힌트</button>
+        <button class="btn-hint" id="btn-hint" onclick="Game.useHint()">💡 Hint</button>
       </div>
       <!-- 선공/후공 선택 -->
       <div id="turn-choice" class="turn-choice">
@@ -85,10 +86,10 @@
           <span class="sua-tag">🐾 검은 고양이</span>
         </div>
         <div class="game-info-card" id="game-info-card"></div>
-        <h3>누가 먼저 시작할까요?</h3>
+        <h3>Who goes first?</h3>
         <div class="turn-buttons">
-          <button class="btn btn-primary" onclick="Game.chooseTurn(true)">내가 먼저!</button>
-          <button class="btn btn-secondary" onclick="Game.chooseTurn(false)">고양이 먼저!</button>
+          <button class="btn btn-primary" onclick="Game.chooseTurn(true)">I go first!</button>
+          <button class="btn btn-secondary" onclick="Game.chooseTurn(false)">Cat goes first!</button>
         </div>
       </div>
       <!-- 게임 보드 -->
@@ -109,9 +110,9 @@
   <!-- 힌트 모달 -->
   <div id="modal-hint" class="modal hidden">
     <div class="modal-content">
-      <h3>💡 비밀 힌트</h3>
+      <h3>💡 Secret Hint</h3>
       <p id="hint-text"></p>
-      <button class="btn btn-primary" onclick="Game.closeHint()">고마워!</button>
+      <button class="btn btn-primary" onclick="Game.closeHint()">Thanks!</button>
     </div>
   </div>
 
