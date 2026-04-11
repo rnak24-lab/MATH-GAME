@@ -114,11 +114,11 @@ const MODES = {
 };
 
 const WORLDS = [
-  { name: '🌿 초원 마을', color: '#66BB6A', emoji: '🌿' },
-  { name: '🌊 바다 왕국', color: '#42A5F5', emoji: '🌊' },
-  { name: '🍫 빼빼로 숲', color: '#8D6E63', emoji: '🍫' },
-  { name: '💎 수정 궁전', color: '#AB47BC', emoji: '💎' },
-  { name: '🐉 드래곤 성', color: '#EF5350', emoji: '🐉' },
+  { name: '🚪 Alley Corner', color: '#2D5A3D', emoji: '🚪' },
+  { name: '🍺 Neon Tavern', color: '#1A4A4A', emoji: '🍺' },
+  { name: '💨 Smoke Den', color: '#8B7355', emoji: '💨' },
+  { name: '🕶️ Shadow Market', color: '#8B2500', emoji: '🕶️' },
+  { name: '🎲 The Last Bet', color: '#4A2D6B', emoji: '🎲' },
 ];
 
 // ─── Game State ───
@@ -223,6 +223,8 @@ const AI = {
 
   _singleRow(state) {
     const n = state.rows[0], k = state.maxTake;
+    // EC-07 가드: 돌이 0 이하면 게임 종료 상태
+    if (n <= 0) return { rowIndex: 0, count: 0 };
     const rem = (n - 1) % (k + 1);
     if (rem === 0) return { rowIndex: 0, count: 1 };
     return { rowIndex: 0, count: Math.min(Math.max(rem, 1), k) };
@@ -230,15 +232,24 @@ const AI = {
 
   _multiRow(state) {
     const rows = state.rows;
+    // EC-02 가드: 모든 줄이 0이면 게임 종료 상태
+    if (!rows.length || rows.every(r => r === 0)) return { rowIndex: 0, count: 0 };
     let nimSum = 0;
     for (const r of rows) nimSum ^= r;
 
     const allSmall = rows.every(r => r <= 1);
     if (allSmall) {
       const onesCount = rows.filter(r => r === 1).length;
-      const idx = rows.findIndex(r => r === 1);
-      if (idx < 0) return { rowIndex: 0, count: 1 };
-      return { rowIndex: idx, count: 1 };
+      if (onesCount % 2 === 1) {
+        // 홀수개의 1 → 하나 가져가서 짝수로 만듦 (미제르 필승)
+        const idx = rows.findIndex(r => r === 1);
+        return { rowIndex: idx, count: 1 };
+      } else {
+        // 짝수개의 1 → 불리한 상황, 아무거나
+        const idx = rows.findIndex(r => r === 1);
+        if (idx < 0) return { rowIndex: 0, count: 1 };
+        return { rowIndex: idx, count: 1 };
+      }
     }
 
     if (nimSum === 0) {
@@ -341,7 +352,7 @@ const TUTORIAL_STEPS = [
   { emoji: '🪨', title: '님 게임이 뭐야?', desc: '돌이 놓여있어.\n번갈아가면서 돌을 가져가는 거야.\n마지막 돌을 가져가는 사람이 지는 거야!' },
   { emoji: '🎯', title: '한 줄 님게임', desc: '돌이 한 줄로 놓여있어.\n한 번에 1~k개까지 가져갈 수 있어.\n마지막 돌을 가져가면 지는 거야!' },
   { emoji: '💡', title: '전략을 세워봐!', desc: '그냥 가져가면 안 돼!\n고양이가 마지막 돌을 가져가도록\n전략적으로 생각해야 해!' },
-  { emoji: '🗺️', title: '5개의 월드', desc: '초원 마을 → 바다 왕국 → 빼빼로 숲\n→ 수정 궁전 → 드래곤 성\n\n월드마다 다른 규칙이 있어!' },
+  { emoji: '🗺️', title: '5개의 테이블', desc: 'Alley Corner → Neon Tavern → Smoke Den\n→ Shadow Market → The Last Bet\n\n테이블마다 다른 규칙이 있어!' },
   { emoji: '🔑', title: '힌트도 있어!', desc: '어려우면 힌트를 사용해봐!\n최적의 수를 알려줄게.\n라운드당 3번까지 쓸 수 있어!' },
   { emoji: '🐾', title: '자, 시작하자!', desc: '3스테이지를 클리어하면\n다음 월드가 열려!\n\n고양이를 이겨보자! 화이팅!' },
 ];
