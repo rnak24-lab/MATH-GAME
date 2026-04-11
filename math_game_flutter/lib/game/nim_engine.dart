@@ -29,6 +29,9 @@ class NimEngine {
 
   /// 한 줄 님게임 AI
   NimMove singleRowAI(int stones, int maxTake) {
+    // EC-01 가드: 게임 종료 상태 (돌이 0 이하)
+    if (stones <= 0) return NimMove(count: 0);
+
     // (n-1) % (maxTake+1) == 0 이면 지는 포지션
     int target = (stones - 1) % (maxTake + 1);
     if (target == 0) {
@@ -40,6 +43,11 @@ class NimEngine {
 
   /// 다중 줄 님게임 AI (XOR 전략)
   NimMove multiRowAI(List<int> rows) {
+    // EC-02 가드: 모든 줄이 0이면 게임 종료 상태
+    if (rows.isEmpty || rows.every((r) => r == 0)) {
+      return NimMove(count: 0);
+    }
+
     int nimSum = 0;
     for (int r in rows) {
       nimSum ^= r;
@@ -94,6 +102,11 @@ class NimEngine {
 
   /// 빼빼로 게임 AI
   NimMove peperoAI(List<int> piles) {
+    // EC-03/04 가드: 빈 배열이거나 모든 파일이 분할 불가(3 미만)
+    if (piles.isEmpty || piles.every((p) => p < 3)) {
+      return NimMove(isPepero: true, splitA: 0, splitB: 0);
+    }
+
     // Grundy 값 계산
     int totalGrundy = 0;
     for (int p in piles) {
