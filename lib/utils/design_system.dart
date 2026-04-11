@@ -4,20 +4,24 @@ import 'package:flutter/material.dart';
 class DS {
   DS._();
 
-  // ─── 색상 (누아르 도박판 테마) ───
-  static const Color primary = Color(0xFFE8B86D);       // 가스등 황금빛 (주 강조색)
+  // ─── 색상 (누아르 도박판 테마 — 단비 피그마 가이드라인 반영) ───
+  static const Color primary = Color(0xFFD4A017);       // 골드 (도박/카드 황금빛, 1차 포인트)
   static const Color primaryDark = Color(0xFFC9A84C);   // 앤티크 골드
-  static const Color secondary = Color(0xFF4A7C59);     // 녹색 펠트 (카드 테이블)
-  static const Color background = Color(0xFF0D0D0D);    // 칠흑 밤 골목
-  static const Color surface = Color(0xFF1A1209);       // 낡은 벽돌 벽
-  static const Color surfaceLight = Color(0xFF2A1F14);  // 그을린 나무 테이블
-  static const Color textPrimary = Color(0xFFE8B86D);   // 가스등 황금빛 텍스트
-  static const Color textSecondary = Color(0xFF8B7355); // 담배 연기빛 베이지
-  static const Color success = Color(0xFFC9A84C);       // 앤티크 골드 (승리)
-  static const Color error = Color(0xFFC0392B);         // 핏빛 레드
+  static const Color secondary = Color(0xFF2ECC71);     // 에메랄드 (소액 칩/이득 표시, 3차 포인트)
+  static const Color accent = Color(0xFFC0392B);        // 크림슨 레드 (위험/긴장감, 2차 포인트)
+  static const Color glow = Color(0xFFF5C518);          // 앰버 옐로우 (가로등 빛 번짐)
+  static const Color background = Color(0xFF0D0D0D);    // 딥 블랙 (골목 밤하늘)
+  static const Color surface = Color(0xFF1A1208);       // 다크 브라운 (낡은 골목 벽)
+  static const Color surfaceLight = Color(0xFF1F1A0F);  // 다크 앰버 (낡은 나무 테이블)
+  static const Color overlay = Color(0xB00A0A0A);       // 반투명 블랙 (골목 그림자)
+  static const Color textPrimary = Color(0xFFE8DCC8);   // 크림 베이지 (기본 텍스트)
+  static const Color textSecondary = Color(0xFF9B8B6E); // 모래 갈색 (보조 텍스트)
+  static const Color textAccent = Color(0xFFD4A017);    // 골드 (강조 텍스트)
+  static const Color success = Color(0xFF2ECC71);       // 에메랄드 (승리)
+  static const Color error = Color(0xFFC0392B);         // 크림슨 레드
   static const Color warning = Color(0xFFD4A853);       // 황동색
   static const Color panelBg = Color(0xFF3D2B1F);       // 마호가니 갈색 (패널)
-  static const Color inactive = Color(0xFF6B6B6B);      // 안개 회색
+  static const Color inactive = Color(0xFF4A3F2F);      // 다크 카키 (비활성)
 
   // 월드별 색상 (도박판 테마)
   static const Color worldAlley = Color(0xFF2D5A3D);    // Alley Corner (이끼 다크 그린)
