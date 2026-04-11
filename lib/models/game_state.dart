@@ -153,9 +153,8 @@ class GameState {
 
     if (checkGameOver()) {
       isGameOver = true;
-      // 마지막 돌을 가져간 사람이 짐
-      playerWon = !isPlayerTurn; // 현재 턴인 사람이 가져갔으니 그 사람이 짐
-      // 즉, 가져간 사람 = 현재 턴 → 현재 턴이 짐 → 상대방 승리
+      // 마지막 돌을 가져간 사람이 짐 (미제르 님)
+      // 현재 턴(isPlayerTurn)이 방금 돌을 가져갔으므로, 현재 턴이 짐 → 상대방 승리
       playerWon = !isPlayerTurn;
     }
 

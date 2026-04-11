@@ -23,6 +23,9 @@ class AIEngine {
     final n = state.rows[0];
     final k = state.maxTake;
 
+    // EC-01 가드: 게임 종료 상태 (돌이 0 이하)
+    if (n <= 0) return (rowIndex: 0, count: 0);
+
     // 미제르 님: 상대에게 1을 남기면 이김
     // n을 (k+1)로 나눈 나머지가 1이면 현재 플레이어가 불리
     final remainder = (n - 1) % (k + 1);
@@ -41,6 +44,11 @@ class AIEngine {
   /// 미제르 님: 모든 줄이 ≤1일 때 짝수 줄이 남으면 이김
   static ({int rowIndex, int count}) _multiRowMove(GameState state) {
     final rows = state.rows;
+
+    // EC-02 가드: 모든 줄이 0이면 게임 종료 상태
+    if (rows.isEmpty || rows.every((r) => r == 0)) {
+      return (rowIndex: 0, count: 0);
+    }
 
     // XOR (nim-sum) 계산
     int nimSum = 0;
@@ -110,6 +118,11 @@ class AIEngine {
   /// Grundy 값 기반 전략
   static ({int rowIndex, int count}) _peperoMove(GameState state) {
     final piles = state.rows;
+
+    // EC-03/04 가드: 빈 배열이거나 모든 파일이 분할 불가(3 미만)
+    if (piles.isEmpty || piles.every((p) => p < 3)) {
+      return (rowIndex: 0, count: 0);
+    }
 
     // 현재 XOR of Grundy values
     int totalGrundy = 0;
