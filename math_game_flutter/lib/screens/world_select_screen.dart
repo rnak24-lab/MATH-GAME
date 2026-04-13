@@ -1,80 +1,93 @@
 import 'package:flutter/material.dart';
 import '../game/stage_manager.dart';
+import '../providers/locale_provider.dart';
+import '../l10n/app_strings.dart';
 import 'stage_select_screen.dart';
 
 class WorldInfo {
   final int id;
-  final String name;
+  final String nameKey;
   final String emoji;
   final Color color;
-  final String subtitle;
+  final String subtitleKey;
 
   const WorldInfo({
     required this.id,
-    required this.name,
+    required this.nameKey,
     required this.emoji,
     required this.color,
-    required this.subtitle,
+    required this.subtitleKey,
   });
+
+  String name(AppStrings s) => s.get(nameKey);
+  String subtitle(AppStrings s) => s.get(subtitleKey);
 }
 
 const List<WorldInfo> worlds = [
   WorldInfo(
     id: 0,
-    name: 'Alley Corner',
+    nameKey: 'worldAlleyCorner',
     emoji: '🚪',
     color: Color(0xFF66BB6A),
-    subtitle: '한 줄 님게임',
+    subtitleKey: 'worldSubtitleSingleRow',
   ),
   WorldInfo(
     id: 1,
-    name: 'Neon Tavern',
+    nameKey: 'worldNeonTavern',
     emoji: '🍺',
     color: Color(0xFF42A5F5),
-    subtitle: '두 줄 님게임',
+    subtitleKey: 'worldSubtitleDoubleRow',
   ),
   WorldInfo(
     id: 2,
-    name: 'Smoke Den',
+    nameKey: 'worldSmokeDen',
     emoji: '💨',
     color: Color(0xFF8D6E63),
-    subtitle: '빼빼로 게임',
+    subtitleKey: 'worldSubtitlePepero',
   ),
   WorldInfo(
     id: 3,
-    name: 'Shadow Market',
+    nameKey: 'worldShadowMarket',
     emoji: '🕶️',
     color: Color(0xFFAB47BC),
-    subtitle: '세 줄 님게임',
+    subtitleKey: 'worldSubtitleTripleRow',
   ),
   WorldInfo(
     id: 4,
-    name: 'The Last Bet',
+    nameKey: 'worldTheLastBet',
     emoji: '🎲',
     color: Color(0xFFEF5350),
-    subtitle: '종합 도전',
+    subtitleKey: 'worldSubtitleChallenge',
   ),
 ];
 
 class WorldSelectScreen extends StatelessWidget {
   final StageManager stageManager;
+  final LocaleProvider localeProvider;
 
-  const WorldSelectScreen({super.key, required this.stageManager});
+  const WorldSelectScreen({
+    super.key,
+    required this.stageManager,
+    required this.localeProvider,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final s = localeProvider.strings;
+
     return Scaffold(
       backgroundColor: const Color(0xFFFFF3E0),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_rounded, color: Color(0xFF2C3E50)),
+          icon: const Icon(Icons.arrow_back_ios_rounded,
+              color: Color(0xFF2C3E50)),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          '월드 선택',
-          style: TextStyle(
+        title: Text(
+          s.get('worldSelect'),
+          style: const TextStyle(
             color: Color(0xFF2C3E50),
             fontWeight: FontWeight.w700,
           ),
@@ -93,6 +106,7 @@ class WorldSelectScreen extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: 16),
             child: _WorldCard(
               world: world,
+              strings: s,
               isUnlocked: isUnlocked,
               progress: progress,
               onTap: isUnlocked
@@ -103,6 +117,7 @@ class WorldSelectScreen extends StatelessWidget {
                           builder: (_) => StageSelectScreen(
                             stageManager: stageManager,
                             world: world,
+                            localeProvider: localeProvider,
                           ),
                         ),
                       );
@@ -118,12 +133,14 @@ class WorldSelectScreen extends StatelessWidget {
 
 class _WorldCard extends StatelessWidget {
   final WorldInfo world;
+  final AppStrings strings;
   final bool isUnlocked;
   final int progress;
   final VoidCallback? onTap;
 
   const _WorldCard({
     required this.world,
+    required this.strings,
     required this.isUnlocked,
     required this.progress,
     this.onTap,
@@ -143,7 +160,6 @@ class _WorldCard extends StatelessWidget {
           padding: const EdgeInsets.all(20),
           child: Row(
             children: [
-              // 월드 아이콘
               Container(
                 width: 60,
                 height: 60,
@@ -161,13 +177,14 @@ class _WorldCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 16),
-              // 월드 정보
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      isUnlocked ? world.name : '???',
+                      isUnlocked
+                          ? world.name(strings)
+                          : strings.get('worldLocked'),
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
@@ -178,7 +195,9 @@ class _WorldCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      isUnlocked ? world.subtitle : '이전 월드를 클리어하세요',
+                      isUnlocked
+                          ? world.subtitle(strings)
+                          : strings.get('clearPreviousWorld'),
                       style: TextStyle(
                         fontSize: 13,
                         color: Colors.grey[500],
@@ -186,7 +205,6 @@ class _WorldCard extends StatelessWidget {
                     ),
                     if (isUnlocked) ...[
                       const SizedBox(height: 8),
-                      // 프로그레스 바
                       Row(
                         children: [
                           Expanded(
@@ -195,8 +213,8 @@ class _WorldCard extends StatelessWidget {
                               child: LinearProgressIndicator(
                                 value: progress / 20,
                                 backgroundColor: Colors.grey[200],
-                                valueColor:
-                                    AlwaysStoppedAnimation<Color>(world.color),
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                    world.color),
                                 minHeight: 6,
                               ),
                             ),

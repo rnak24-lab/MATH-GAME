@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'game/stage_manager.dart';
+import 'providers/locale_provider.dart';
 import 'screens/home_screen.dart';
 
 void main() {
@@ -9,13 +10,28 @@ void main() {
   runApp(const MathNimApp());
 }
 
-class MathNimApp extends StatelessWidget {
+class MathNimApp extends StatefulWidget {
   const MathNimApp({super.key});
+
+  @override
+  State<MathNimApp> createState() => _MathNimAppState();
+}
+
+class _MathNimAppState extends State<MathNimApp> {
+  final LocaleProvider _localeProvider = LocaleProvider();
+
+  @override
+  void initState() {
+    super.initState();
+    _localeProvider.addListener(() {
+      if (mounted) setState(() {});
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Math NIM - 수학 님 게임',
+      title: 'Math NIM',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
@@ -24,13 +40,14 @@ class MathNimApp extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
-      home: const SplashScreen(),
+      home: SplashScreen(localeProvider: _localeProvider),
     );
   }
 }
 
 class SplashScreen extends StatefulWidget {
-  const SplashScreen({super.key});
+  final LocaleProvider localeProvider;
+  const SplashScreen({super.key, required this.localeProvider});
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
@@ -67,7 +84,10 @@ class _SplashScreenState extends State<SplashScreen>
 
   Future<void> _loadAndNavigate() async {
     final stageManager = StageManager();
-    await stageManager.load();
+    await Future.wait([
+      stageManager.load(),
+      widget.localeProvider.load(),
+    ]);
 
     await Future.delayed(const Duration(milliseconds: 2200));
 
@@ -75,7 +95,10 @@ class _SplashScreenState extends State<SplashScreen>
       Navigator.pushReplacement(
         context,
         PageRouteBuilder(
-          pageBuilder: (_, __, ___) => HomeScreen(stageManager: stageManager),
+          pageBuilder: (_, __, ___) => HomeScreen(
+            stageManager: stageManager,
+            localeProvider: widget.localeProvider,
+          ),
           transitionsBuilder: (_, anim, __, child) {
             return FadeTransition(opacity: anim, child: child);
           },
@@ -93,6 +116,8 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
+    final s = widget.localeProvider.strings;
+
     return Scaffold(
       body: Container(
         width: double.infinity,
@@ -137,7 +162,7 @@ class _SplashScreenState extends State<SplashScreen>
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        '수아와 함께하는 수학 님 게임',
+                        s.get('appSubtitle'),
                         style: TextStyle(
                           fontSize: 15,
                           color: Colors.white.withOpacity(0.8),

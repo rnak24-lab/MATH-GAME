@@ -1,12 +1,19 @@
 import 'package:flutter/material.dart';
 import '../widgets/sua_character.dart';
 import '../game/stage_manager.dart';
+import '../providers/locale_provider.dart';
 import 'world_select_screen.dart';
+import 'settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final StageManager stageManager;
+  final LocaleProvider localeProvider;
 
-  const HomeScreen({super.key, required this.stageManager});
+  const HomeScreen({
+    super.key,
+    required this.stageManager,
+    required this.localeProvider,
+  });
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -39,6 +46,8 @@ class _HomeScreenState extends State<HomeScreen>
 
   @override
   Widget build(BuildContext context) {
+    final s = widget.localeProvider.strings;
+
     return Scaffold(
       body: Container(
         width: double.infinity,
@@ -57,12 +66,34 @@ class _HomeScreenState extends State<HomeScreen>
         child: SafeArea(
           child: Column(
             children: [
-              const Spacer(flex: 2),
-              // 타이틀
+              // Settings button
+              Align(
+                alignment: Alignment.topRight,
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 12, top: 4),
+                  child: IconButton(
+                    icon: const Icon(Icons.settings_rounded,
+                        color: Color(0xFF7C4DFF), size: 28),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => SettingsScreen(
+                            localeProvider: widget.localeProvider,
+                            onChanged: () => setState(() {}),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+              const Spacer(flex: 1),
+              // Title
               _buildTitle(),
               const SizedBox(height: 8),
               Text(
-                '수학 님 게임',
+                s.get('mathNimSubtitle'),
                 style: TextStyle(
                   fontSize: 16,
                   color: Colors.grey[600],
@@ -70,7 +101,7 @@ class _HomeScreenState extends State<HomeScreen>
                 ),
               ),
               const Spacer(flex: 1),
-              // 수아 캐릭터
+              // Sua character
               const SuaCharacter(
                 face: SuaFace.happy1,
                 size: 150,
@@ -78,14 +109,14 @@ class _HomeScreenState extends State<HomeScreen>
               ),
               const SizedBox(height: 12),
               Text(
-                '안녕! 나는 수아야 🎀',
+                s.get('suaGreeting'),
                 style: TextStyle(
                   fontSize: 15,
                   color: Colors.grey[700],
                 ),
               ),
               const Spacer(flex: 1),
-              // 진행도
+              // Progress
               if (widget.stageManager.maxStage > 0)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 16),
@@ -99,7 +130,8 @@ class _HomeScreenState extends State<HomeScreen>
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      'Clear: ${widget.stageManager.maxStage}/100 Stages',
+                      s.get('clearProgress',
+                          ['${widget.stageManager.maxStage}']),
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
@@ -108,17 +140,16 @@ class _HomeScreenState extends State<HomeScreen>
                     ),
                   ),
                 ),
-              // 버튼들
+              // Buttons
               AnimatedOpacity(
                 opacity: _showButtons ? 1.0 : 0.0,
                 duration: const Duration(milliseconds: 800),
                 child: Column(
                   children: [
-                    // 시작하기 / 이어하기
                     _buildMainButton(
                       label: widget.stageManager.maxStage > 0
-                          ? '이어하기'
-                          : '시작하기',
+                          ? s.get('continueGame')
+                          : s.get('startGame'),
                       icon: widget.stageManager.maxStage > 0
                           ? Icons.play_arrow_rounded
                           : Icons.play_circle_outline_rounded,
@@ -126,21 +157,19 @@ class _HomeScreenState extends State<HomeScreen>
                       onTap: () => _goToGame(),
                     ),
                     const SizedBox(height: 12),
-                    // 스테이지 선택
                     if (widget.stageManager.maxStage > 0)
                       _buildMainButton(
-                        label: '스테이지 선택',
+                        label: s.get('selectStage'),
                         icon: Icons.grid_view_rounded,
                         color: const Color(0xFF7C4DFF),
                         onTap: () => _goToWorldSelect(),
                       ),
                     const SizedBox(height: 12),
-                    // 처음부터
                     if (widget.stageManager.maxStage > 0)
                       TextButton(
                         onPressed: () => _goToGame(fromStart: true),
                         child: Text(
-                          '처음부터 시작',
+                          s.get('startFromBeginning'),
                           style: TextStyle(
                             fontSize: 14,
                             color: Colors.grey[500],
@@ -218,12 +247,13 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   void _goToGame({bool fromStart = false}) {
-    int stage = fromStart ? 1 : widget.stageManager.maxStage + 1;
-    if (stage > 100) stage = 100;
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => WorldSelectScreen(stageManager: widget.stageManager),
+        builder: (_) => WorldSelectScreen(
+          stageManager: widget.stageManager,
+          localeProvider: widget.localeProvider,
+        ),
       ),
     );
   }
@@ -232,7 +262,10 @@ class _HomeScreenState extends State<HomeScreen>
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => WorldSelectScreen(stageManager: widget.stageManager),
+        builder: (_) => WorldSelectScreen(
+          stageManager: widget.stageManager,
+          localeProvider: widget.localeProvider,
+        ),
       ),
     );
   }

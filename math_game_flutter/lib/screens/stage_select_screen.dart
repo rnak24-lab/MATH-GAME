@@ -1,21 +1,25 @@
 import 'package:flutter/material.dart';
 import '../game/stage_manager.dart';
+import '../providers/locale_provider.dart';
 import 'world_select_screen.dart';
 import 'game_screen.dart';
 
 class StageSelectScreen extends StatelessWidget {
   final StageManager stageManager;
   final WorldInfo world;
+  final LocaleProvider localeProvider;
 
   const StageSelectScreen({
     super.key,
     required this.stageManager,
     required this.world,
+    required this.localeProvider,
   });
 
   @override
   Widget build(BuildContext context) {
     int worldStart = world.id * 20 + 1;
+    final s = localeProvider.strings;
 
     return Scaffold(
       backgroundColor: const Color(0xFFFFF3E0),
@@ -33,7 +37,7 @@ class StageSelectScreen extends StatelessWidget {
             Text(world.emoji, style: const TextStyle(fontSize: 22)),
             const SizedBox(width: 8),
             Text(
-              world.name,
+              world.name(s),
               style: const TextStyle(
                 color: Color(0xFF2C3E50),
                 fontWeight: FontWeight.w700,
@@ -72,6 +76,7 @@ class StageSelectScreen extends StatelessWidget {
                           builder: (_) => GameScreen(
                             stageManager: stageManager,
                             stageNumber: stage,
+                            localeProvider: localeProvider,
                           ),
                         ),
                       );

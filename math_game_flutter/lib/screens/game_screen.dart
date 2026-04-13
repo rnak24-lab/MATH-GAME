@@ -4,15 +4,19 @@ import '../game/stage_manager.dart';
 import '../game/nim_engine.dart';
 import '../models/game_state.dart';
 import '../widgets/sua_character.dart';
+import '../providers/locale_provider.dart';
+import '../l10n/app_strings.dart';
 
 class GameScreen extends StatefulWidget {
   final StageManager stageManager;
   final int stageNumber;
+  final LocaleProvider localeProvider;
 
   const GameScreen({
     super.key,
     required this.stageManager,
     required this.stageNumber,
+    required this.localeProvider,
   });
 
   @override
@@ -22,8 +26,9 @@ class GameScreen extends StatefulWidget {
 class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   final NimEngine _engine = NimEngine();
   late StageConfig _config;
+  AppStrings get s => widget.localeProvider.strings;
 
-  // 게임 상태
+  // Game state
   GamePhase _phase = GamePhase.turnChoice;
   TurnOwner _currentTurn = TurnOwner.player;
   List<int> _rows = [];
@@ -31,18 +36,17 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   int _turnCount = 0;
   int _totalInitialStones = 0;
 
-  // 선택 상태
+  // Selection state
   int _selectedRow = 0;
   int _selectedCount = 1;
-  // 빼빼로용
   int _selectedPile = 0;
   int _splitA = 1;
 
-  // 수아 상태
+  // Sua state
   SuaFace _suaFace = SuaFace.neutral;
   String _suaMessage = '';
 
-  // 힌트
+  // Hints
   int _hintsLeft = 3;
 
   @override
@@ -55,52 +59,54 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   }
 
   String _getGreeting() {
-    List<String> greetings = [
-      '스테이지 ${widget.stageNumber}! 준비됐어?',
-      '이번엔 내가 이길 거야~',
-      '흥, 이번 판은 자신있어!',
-      '한번 해볼까? 😊',
+    List<String> greetingKeys = [
+      'greetReady',
+      'greetWin',
+      'greetConfident',
+      'greetLetsGo',
     ];
-    return greetings[widget.stageNumber % greetings.length];
+    String key = greetingKeys[widget.stageNumber % greetingKeys.length];
+    if (key == 'greetReady') {
+      return s.get(key, ['${widget.stageNumber}']);
+    }
+    return s.get(key);
   }
 
   String _getModeTitle() {
     switch (_config.mode) {
       case GameMode.singleRow:
-        return '한 줄 님게임';
+        return s.get('modeSingleRow');
       case GameMode.doubleRow:
-        return '두 줄 님게임';
+        return s.get('modeDoubleRow');
       case GameMode.pepero:
-        return '빼빼로 게임';
+        return s.get('modePepero');
       case GameMode.tripleRow:
-        return '세 줄 님게임';
+        return s.get('modeTripleRow');
     }
   }
 
   String _getModeRule() {
     switch (_config.mode) {
       case GameMode.singleRow:
-        return '돌을 1~${_config.maxTake}개 가져갈 수 있어요.\n마지막 돌을 가져가는 사람이 져요!';
+        return s.get('ruleSingleRow', ['${_config.maxTake}']);
       case GameMode.doubleRow:
-        return '한 줄에서만 돌을 가져갈 수 있어요.\n마지막 돌을 가져가는 사람이 져요!';
+        return s.get('ruleDoubleRow');
       case GameMode.pepero:
-        return '빼빼로 묶음을 두 개로 나눠요.\n같은 수로는 나눌 수 없어요!\n더 나눌 수 없는 사람이 져요!';
+        return s.get('rulePepero');
       case GameMode.tripleRow:
-        return '한 줄에서만 돌을 가져갈 수 있어요.\n마지막 돌을 가져가는 사람이 져요!';
+        return s.get('ruleTripleRow');
     }
   }
 
-  // === 수아 표정 업데이트 ===
   void _updateSuaFace() {
     int remaining = _rows.reduce((a, b) => a + b);
     double progress = 1.0 - (remaining / _totalInitialStones);
-    bool isLate = progress > 0.5; // 후반전
+    bool isLate = progress > 0.5;
 
     bool aiWinning;
     if (_config.mode == GameMode.singleRow) {
       int n = _rows[0];
       aiWinning = (n - 1) % (_config.maxTake + 1) == 0;
-      // 상대 턴에서 체크하므로 반전
       if (_currentTurn == TurnOwner.sua) aiWinning = !aiWinning;
     } else {
       aiWinning = _engine.isAIWinning(_rows, _config.mode);
@@ -109,34 +115,31 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
 
     setState(() {
       if (aiWinning) {
-        // 수아가 유리 → 기쁜 표정
         _suaFace = isLate ? SuaFace.happy2 : SuaFace.happy1;
-        List<String> msgs = isLate
-            ? ['후후, 이대로면 내가 이길 것 같아~', '거의 다 됐어! 😆', '이번엔 내 승리!']
-            : ['좋은 흐름이야~', '이 정도면 괜찮은데?', '흐흐, 자신있어!'];
-        _suaMessage = msgs[_turnCount % msgs.length];
+        List<String> msgKeys = isLate
+            ? ['suaWinLate1', 'suaWinLate2', 'suaWinLate3']
+            : ['suaWinEarly1', 'suaWinEarly2', 'suaWinEarly3'];
+        _suaMessage = s.get(msgKeys[_turnCount % msgKeys.length]);
       } else {
-        // 수아가 불리 → 곤란한 표정
         _suaFace = isLate ? SuaFace.worried2 : SuaFace.worried1;
-        List<String> msgs = isLate
-            ? ['으으... 이러면 안되는데...', '어떡하지... 😰', '아앗, 불리해...!']
-            : ['음... 좀 어렵네...', '이건 좀 고민되는데...', '흐음...'];
-        _suaMessage = msgs[_turnCount % msgs.length];
+        List<String> msgKeys = isLate
+            ? ['suaLoseLate1', 'suaLoseLate2', 'suaLoseLate3']
+            : ['suaLoseEarly1', 'suaLoseEarly2', 'suaLoseEarly3'];
+        _suaMessage = s.get(msgKeys[_turnCount % msgKeys.length]);
       }
     });
   }
 
-  // === 턴 선택 ===
   void _chooseTurn(TurnOwner first) {
     setState(() {
       _currentTurn = first;
       _phase = GamePhase.playing;
       if (first == TurnOwner.player) {
         _suaFace = SuaFace.neutral;
-        _suaMessage = '좋아, 네가 먼저 해!';
+        _suaMessage = s.get('turnPlayerFirst');
       } else {
         _suaFace = SuaFace.confident;
-        _suaMessage = '내가 먼저 할게~';
+        _suaMessage = s.get('turnSuaFirst');
       }
     });
 
@@ -145,12 +148,10 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     }
   }
 
-  // === 게임 오버 체크 ===
   bool _checkGameOver() {
     int total = _rows.reduce((a, b) => a + b);
 
     if (_config.mode == GameMode.pepero) {
-      // 빼빼로: 모든 파일이 2 이하면 더 분할 불가
       bool canSplit = _rows.any((p) => p >= 3);
       if (!canSplit) {
         _endGame(_currentTurn == TurnOwner.player);
@@ -158,8 +159,6 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       }
     } else {
       if (total == 0) {
-        // 마지막 돌을 가져간 사람이 짐
-        // 현재 턴의 상대가 마지막 돌을 가져감
         _endGame(_currentTurn == TurnOwner.player);
         return true;
       }
@@ -173,23 +172,21 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       _playerWon = playerWins;
       if (playerWins) {
         _suaFace = SuaFace.worried2;
-        _suaMessage = '으으... 졌어... 다음엔 꼭 이길 거야!';
+        _suaMessage = s.get('suaLost');
       } else {
         _suaFace = SuaFace.happy2;
-        _suaMessage = '야호~! 내가 이겼다! 🎉';
+        _suaMessage = s.get('suaWon');
       }
     });
 
     if (playerWins) {
       widget.stageManager.clearStage(widget.stageNumber);
-      // 다음 스테이지 다이얼로그
       Future.delayed(const Duration(milliseconds: 1200), () {
         if (mounted) _showNextStageDialog();
       });
     }
   }
 
-  // === 다음 스테이지 다이얼로그 ===
   void _showNextStageDialog() {
     bool hasNext = widget.stageNumber < 100;
 
@@ -223,12 +220,11 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // 별 이펙트
                 const Text('⭐', style: TextStyle(fontSize: 50)),
                 const SizedBox(height: 12),
-                const Text(
-                  'Stage Clear!',
-                  style: TextStyle(
+                Text(
+                  s.get('stageClear'),
+                  style: const TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.w900,
                     color: Color(0xFF7C4DFF),
@@ -238,7 +234,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  '스테이지 ${widget.stageNumber} 클리어!',
+                  s.get('stageClearDesc', ['${widget.stageNumber}']),
                   style: TextStyle(
                     fontSize: 15,
                     color: Colors.grey[600],
@@ -247,7 +243,6 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                   ),
                 ),
                 const SizedBox(height: 8),
-                // 수아 미니
                 SuaCharacter(
                   face: SuaFace.worried1,
                   size: 80,
@@ -255,7 +250,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  '으으... 다음엔 안 질 거야!',
+                  s.get('suaNextTime'),
                   style: TextStyle(
                     fontSize: 13,
                     color: Colors.grey[500],
@@ -265,18 +260,18 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                 ),
                 const SizedBox(height: 24),
                 if (hasNext) ...[
-                  // 다음 스테이지 버튼
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
                       onPressed: () {
-                        Navigator.pop(context); // 다이얼로그 닫기
+                        Navigator.pop(context);
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
                             builder: (_) => GameScreen(
                               stageManager: widget.stageManager,
                               stageNumber: widget.stageNumber + 1,
+                              localeProvider: widget.localeProvider,
                             ),
                           ),
                         );
@@ -290,39 +285,38 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                         ),
                         elevation: 4,
                       ),
-                      child: const Row(
+                      child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            '다음 스테이지',
-                            style: TextStyle(
+                            s.get('nextStage'),
+                            style: const TextStyle(
                               fontSize: 17,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
-                          SizedBox(width: 6),
-                          Icon(Icons.arrow_forward_rounded, size: 20),
+                          const SizedBox(width: 6),
+                          const Icon(Icons.arrow_forward_rounded, size: 20),
                         ],
                       ),
                     ),
                   ),
                   const SizedBox(height: 10),
                 ],
-                // 돌아가기 버튼
                 SizedBox(
                   width: double.infinity,
                   child: TextButton(
                     onPressed: () {
-                      Navigator.pop(context); // 다이얼로그 닫기
-                      Navigator.pop(context); // 게임 화면 닫기
+                      Navigator.pop(context);
+                      Navigator.pop(context);
                     },
                     style: TextButton.styleFrom(
                       foregroundColor: Colors.grey[600],
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
-                    child: const Text(
-                      '스테이지 선택으로',
-                      style: TextStyle(fontSize: 14),
+                    child: Text(
+                      s.get('backToStageSelect'),
+                      style: const TextStyle(fontSize: 14),
                     ),
                   ),
                 ),
@@ -334,7 +328,6 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     );
   }
 
-  // === 플레이어 수 ===
   void _playerMove() {
     if (_phase != GamePhase.playing || _currentTurn != TurnOwner.player) return;
 
@@ -363,7 +356,6 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     }
   }
 
-  // === 수아 AI 수 ===
   void _suaPlay() {
     if (_phase != GamePhase.playing) return;
 
@@ -387,13 +379,14 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         _rows.add(move.splitA);
         _rows.add(move.splitB);
         _rows.sort((x, y) => y.compareTo(x));
-        _suaMessage = '${move.splitA}과 ${move.splitB}로 나눌게!';
+        _suaMessage = s.get('suaSplit', ['${move.splitA}', '${move.splitB}']);
       } else {
         _rows[move.rowIndex] -= move.count;
         if (_config.mode == GameMode.singleRow) {
-          _suaMessage = '${move.count}개 가져갈게~';
+          _suaMessage = s.get('suaTakeN', ['${move.count}']);
         } else {
-          _suaMessage = '${move.rowIndex + 1}번 줄에서 ${move.count}개!';
+          _suaMessage = s.get('suaTakeFromRow',
+              ['${move.count}', '${move.rowIndex + 1}']);
         }
       }
       _turnCount++;
@@ -405,7 +398,6 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     }
   }
 
-  // === 힌트 ===
   void _showHint() {
     if (_hintsLeft <= 0 || _currentTurn != TurnOwner.player) return;
 
@@ -425,11 +417,12 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
 
     String hintText;
     if (hint.isPepero) {
-      hintText = '💡 ${hint.splitA}과 ${hint.splitB}로 나눠보세요!';
+      hintText = s.get('hintPepero', ['${hint.splitA}', '${hint.splitB}']);
     } else if (_config.mode == GameMode.singleRow) {
-      hintText = '💡 ${hint.count}개를 가져가보세요!';
+      hintText = s.get('hintSingleRow', ['${hint.count}']);
     } else {
-      hintText = '💡 ${hint.rowIndex + 1}번 줄에서 ${hint.count}개를 가져가보세요!';
+      hintText = s.get('hintMultiRow',
+          ['${hint.count}', '${hint.rowIndex + 1}']);
     }
 
     setState(() => _hintsLeft--);
@@ -494,21 +487,18 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     }
   }
 
-  // === 턴 선택 화면 ===
   Widget _buildTurnChoice() {
     return Padding(
       padding: const EdgeInsets.all(24),
       child: Column(
         children: [
           const Spacer(),
-          // 수아
           SuaWithBubble(
             face: _suaFace,
             message: _suaMessage,
             size: 120,
           ),
           const SizedBox(height: 24),
-          // 규칙 카드
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(20),
@@ -544,7 +534,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  '초기 상태: ${_rows.join(', ')}',
+                  s.get('initialState', [_rows.join(', ')]),
                   style: TextStyle(
                     fontSize: 13,
                     color: Colors.grey[500],
@@ -555,10 +545,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
             ),
           ),
           const SizedBox(height: 24),
-          // 누가 먼저?
-          const Text(
-            '누가 먼저 할까?',
-            style: TextStyle(
+          Text(
+            s.get('whoGoesFirst'),
+            style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w700,
               color: Color(0xFF2C3E50),
@@ -569,7 +558,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
             children: [
               Expanded(
                 child: _choiceButton(
-                  '내가 먼저!',
+                  s.get('meFirst'),
                   Icons.person,
                   const Color(0xFF42A5F5),
                   () => _chooseTurn(TurnOwner.player),
@@ -578,7 +567,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
               const SizedBox(width: 16),
               Expanded(
                 child: _choiceButton(
-                  '수아 먼저!',
+                  s.get('suaFirst'),
                   Icons.smart_toy,
                   const Color(0xFFFF6B9D),
                   () => _chooseTurn(TurnOwner.sua),
@@ -623,11 +612,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     );
   }
 
-  // === 게임 보드 ===
   Widget _buildGameBoard() {
     return Column(
       children: [
-        // 수아 영역
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: SuaWithBubble(
@@ -636,8 +623,6 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
             size: 100,
           ),
         ),
-
-        // 턴 표시
         Container(
           margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
           padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 20),
@@ -653,10 +638,10 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
           ),
           child: Text(
             _phase == GamePhase.gameOver
-                ? (_playerWon ? '🎉 승리!' : '😢 패배...')
+                ? (_playerWon ? s.get('victory') : s.get('defeat'))
                 : (_currentTurn == TurnOwner.player
-                    ? '🎯 내 턴'
-                    : '💭 수아 턴...'),
+                    ? s.get('myTurn')
+                    : s.get('suaTurn')),
             style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w700,
@@ -664,14 +649,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
             ),
           ),
         ),
-
-        // 게임 보드
         Expanded(child: _buildBoardArea()),
-
-        // 액션 영역
         if (_phase == GamePhase.playing && _currentTurn == TurnOwner.player)
           _buildActionArea(),
-
         if (_phase == GamePhase.gameOver && !_playerWon)
           Padding(
             padding: const EdgeInsets.all(16),
@@ -686,12 +666,13 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                           builder: (_) => GameScreen(
                             stageManager: widget.stageManager,
                             stageNumber: widget.stageNumber,
+                            localeProvider: widget.localeProvider,
                           ),
                         ),
                       );
                     },
                     icon: const Icon(Icons.refresh),
-                    label: const Text('다시하기'),
+                    label: Text(s.get('retry')),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF42A5F5),
                       foregroundColor: Colors.white,
@@ -707,7 +688,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                   child: OutlinedButton.icon(
                     onPressed: () => Navigator.pop(context),
                     icon: const Icon(Icons.arrow_back),
-                    label: const Text('돌아가기'),
+                    label: Text(s.get('goBack')),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.grey[600],
                       padding: const EdgeInsets.symmetric(vertical: 14),
@@ -724,7 +705,6 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     );
   }
 
-  // === 보드 영역 ===
   Widget _buildBoardArea() {
     if (_config.mode == GameMode.pepero) {
       return _buildPeperoBoard();
@@ -744,7 +724,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
               children: [
                 if (_rows.length > 1)
                   Text(
-                    '${rowIdx + 1}번 줄',
+                    s.get('rowLabel', ['${rowIdx + 1}']),
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
@@ -822,9 +802,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Text(
-            '빼빼로 묶음',
-            style: TextStyle(
+          Text(
+            s.get('peperoBundles'),
+            style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w700,
               color: Color(0xFF8D6E63),
@@ -869,7 +849,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                         style: TextStyle(fontSize: selectable ? 28 : 20),
                       ),
                       Text(
-                        '${_rows[i]}개',
+                        s.get('nPieces', ['${_rows[i]}']),
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
@@ -889,7 +869,6 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     );
   }
 
-  // === 액션 영역 ===
   Widget _buildActionArea() {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -924,8 +903,8 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
           children: [
             Text(
               _rows.length > 1
-                  ? '${_selectedRow + 1}번 줄에서 가져가기'
-                  : '가져갈 개수',
+                  ? s.get('takeFromRow', ['${_selectedRow + 1}'])
+                  : s.get('takeCount'),
               style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
@@ -933,7 +912,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
               ),
             ),
             Text(
-              '$_selectedCount개',
+              s.get('nPieces', ['$_selectedCount']),
               style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
@@ -966,7 +945,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
               elevation: 4,
             ),
             child: Text(
-              '$_selectedCount개 가져가기!',
+              s.get('takeNStones', ['$_selectedCount']),
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
@@ -980,10 +959,10 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
 
   Widget _buildPeperoAction() {
     if (_selectedPile >= _rows.length || _rows[_selectedPile] < 3) {
-      return const Center(
+      return Center(
         child: Text(
-          '나눌 수 있는 묶음을 선택하세요',
-          style: TextStyle(
+          s.get('selectSplittable'),
+          style: const TextStyle(
             fontSize: 14,
             color: Color(0xFF8D6E63),
           ),
@@ -992,8 +971,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     }
 
     int pile = _rows[_selectedPile];
-    int maxSplitA = (pile - 1) ~/ 2; // a < b이므로
-    // a != b 보장
+    int maxSplitA = (pile - 1) ~/ 2;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -1001,9 +979,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
-              '나누기',
-              style: TextStyle(
+            Text(
+              s.get('split'),
+              style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
                 color: Color(0xFF2C3E50),
@@ -1069,7 +1047,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
               elevation: 4,
             ),
             child: Text(
-              '$_splitA + ${pile - _splitA}로 나누기!',
+              s.get('splitAction', ['$_splitA', '${pile - _splitA}']),
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
