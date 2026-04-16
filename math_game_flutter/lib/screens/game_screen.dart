@@ -45,6 +45,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   // Midnight state
   MidnightFace _midnightFace = MidnightFace.neutral;
   String _midnightMessage = '';
+  bool _isAiAnimating = false;
 
   // Hints
   int _hintsLeft = 3;
@@ -329,7 +330,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   }
 
   void _playerMove() {
-    if (_phase != GamePhase.playing || _currentTurn != TurnOwner.player) return;
+    if (_phase != GamePhase.playing || _currentTurn != TurnOwner.player || _isAiAnimating) return;
 
     setState(() {
       if (_config.mode == GameMode.pepero) {
@@ -356,7 +357,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     }
   }
 
-  void _midnightPlay() {
+  Future<void> _midnightPlay() async {
     if (_phase != GamePhase.playing) return;
 
     NimMove move;
@@ -373,27 +374,80 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         break;
     }
 
+    _isAiAnimating = true;
+
+    // Phase 1: "Midnight의 차례..." 표시 (0.5초 딜레이)
     setState(() {
-      if (move.isPepero) {
+      _midnightFace = MidnightFace.neutral;
+      _midnightMessage = s.get('midnightThinking');
+    });
+    await Future.delayed(const Duration(milliseconds: 500));
+    if (!mounted || _phase != GamePhase.playing) return;
+
+    if (move.isPepero) {
+      // 빼빼로: 한번에 분할 (순차 애니메이션 대상 아님)
+      setState(() {
+        _midnightFace = MidnightFace.confident;
+        _midnightMessage = s.get('midnightSplit', ['${move.splitA}', '${move.splitB}']);
         _rows.removeAt(move.rowIndex);
         _rows.add(move.splitA);
         _rows.add(move.splitB);
         _rows.sort((x, y) => y.compareTo(x));
-        _midnightMessage = s.get('midnightSplit', ['${move.splitA}', '${move.splitB}']);
+      });
+    } else {
+      // Phase 2: 돌 1개씩 순차 제거 애니메이션
+      // Midnight 표정: 1개=neutral, 2개=happy1, 3개+=confident
+      MidnightFace takeFace;
+      if (move.count == 1) {
+        takeFace = MidnightFace.neutral;
+      } else if (move.count == 2) {
+        takeFace = MidnightFace.happy1;
       } else {
-        _rows[move.rowIndex] -= move.count;
+        takeFace = MidnightFace.confident;
+      }
+
+      for (int i = 0; i < move.count; i++) {
+        if (!mounted || _phase != GamePhase.playing) return;
+        setState(() {
+          _rows[move.rowIndex] -= 1;
+          _midnightFace = takeFace;
+          if (_config.mode == GameMode.singleRow) {
+            _midnightMessage = s.get('midnightTakeN', ['${i + 1}']);
+          } else {
+            _midnightMessage = s.get('midnightTakeFromRow',
+                ['${i + 1}', '${move.rowIndex + 1}']);
+          }
+        });
+        // 돌 1개당 0.4초 간격
+        await Future.delayed(const Duration(milliseconds: 400));
+      }
+      if (!mounted || _phase != GamePhase.playing) return;
+
+      // Phase 3: 총 가져간 수 카운터 표시
+      setState(() {
         if (_config.mode == GameMode.singleRow) {
-          _midnightMessage = s.get('midnightTakeN', ['${move.count}']);
+          _midnightMessage = s.get('midnightTookTotal', ['${move.count}']);
         } else {
-          _midnightMessage = s.get('midnightTakeFromRow',
+          _midnightMessage = s.get('midnightTookFromRowTotal',
               ['${move.count}', '${move.rowIndex + 1}']);
         }
-      }
+      });
+    }
+
+    // Phase 4: 종료 pause (0.3초) 후 턴 전환
+    await Future.delayed(const Duration(milliseconds: 300));
+    if (!mounted || _phase != GamePhase.playing) return;
+
+    setState(() {
       _turnCount++;
       _currentTurn = TurnOwner.player;
+      _isAiAnimating = false;
     });
 
     if (!_checkGameOver()) {
+      setState(() {
+        _midnightMessage = s.get('yourTurnNow');
+      });
       _updateMidnightFace();
     }
   }

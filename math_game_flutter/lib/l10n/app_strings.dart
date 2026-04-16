@@ -337,6 +337,24 @@ class AppStrings {
       'ko': '{0}과 {1}로 나눌게!',
     },
 
+    // ── Midnight Messages: AI turn animation ──
+    'midnightThinking': {
+      'en': "Midnight's turn...",
+      'ko': 'Midnight의 차례...',
+    },
+    'midnightTookTotal': {
+      'en': 'Midnight took {0}!',
+      'ko': 'Midnight이 {0}개 가져갔어!',
+    },
+    'midnightTookFromRowTotal': {
+      'en': 'Midnight took {0} from row {1}!',
+      'ko': 'Midnight이 {1}번 줄에서 {0}개 가져갔어!',
+    },
+    'yourTurnNow': {
+      'en': 'Your turn!',
+      'ko': '당신의 차례!',
+    },
+
     // ── Midnight Messages: Game Over ──
     'midnightLost': {
       'en': "Ugh... I lost... I'll win next time!",
