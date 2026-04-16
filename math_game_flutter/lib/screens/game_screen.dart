@@ -8,6 +8,7 @@ import '../widgets/banner_ad_widget.dart';
 import '../providers/locale_provider.dart';
 import '../l10n/app_strings.dart';
 import '../services/ad_service.dart';
+import '../game/tutorial_manager.dart';
 
 class GameScreen extends StatefulWidget {
   final StageManager stageManager;
@@ -54,12 +55,35 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   // Hints
   int _hintsLeft = 3;
 
+  // Tutorial (예린 시나리오, 월드별 1라운드만 활성)
+  List<TutorialStep> _tutorialSteps = const [];
+  int _tutorialIndex = 0;
+  bool _tutorialActive = false;
+
+  // 연속 패배 추적 (2회 연속 패배 시 자동 힌트)
+  int _consecutiveDefeats = 0;
+
   @override
   void initState() {
     super.initState();
     _config = _engine.generateStage(widget.stageNumber);
     _rows = List.from(_config.rows);
     _midnightMessage = _getGreeting();
+
+    // 월드별 1라운드 튜토리얼 활성화 여부 판정
+    if (TutorialManager.isTutorialStage(widget.stageNumber)) {
+      _tutorialSteps = TutorialManager.entrySteps(widget.stageNumber, s);
+      _tutorialActive = _tutorialSteps.isNotEmpty;
+    }
+  }
+
+  void _advanceTutorial() {
+    setState(() {
+      _tutorialIndex++;
+      if (_tutorialIndex >= _tutorialSteps.length) {
+        _tutorialActive = false;
+      }
+    });
   }
 
   String _getGreeting() {
@@ -212,9 +236,17 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       if (playerWins) {
         _midnightFace = MidnightFace.worried2;
         _midnightMessage = s.get('midnightLost');
+        _consecutiveDefeats = 0;
       } else {
         _midnightFace = MidnightFace.happy2;
         _midnightMessage = s.get('midnightWon');
+        _consecutiveDefeats++;
+        // 2회 연속 패배: 예린 정책 → 자동 힌트 메시지 append
+        if (_consecutiveDefeats >= 2 &&
+            TutorialManager.isTutorialStage(widget.stageNumber)) {
+          _midnightMessage =
+              '${s.get('midnightWon')}\n\n${TutorialManager.autoHintOnConsecutiveLoss(widget.stageNumber, s)}';
+        }
       }
     });
 
@@ -558,7 +590,86 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         ],
       ),
       body: SafeArea(
-        child: _buildBody(),
+        child: Stack(
+          children: [
+            _buildBody(),
+            if (_tutorialActive) _buildTutorialOverlay(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 튜토리얼 오버레이: 반투명 배경 + 말풍선 + 다음 버튼.
+  /// 각 월드 1라운드(Stage 1, 21, 41, 61, 81) 진입 시 표시.
+  Widget _buildTutorialOverlay() {
+    if (_tutorialIndex >= _tutorialSteps.length) {
+      return const SizedBox.shrink();
+    }
+    final step = _tutorialSteps[_tutorialIndex];
+    final bool isLast = _tutorialIndex == _tutorialSteps.length - 1;
+    return Positioned.fill(
+      child: GestureDetector(
+        onTap: _advanceTutorial,
+        child: Container(
+          color: Colors.black.withOpacity(0.55),
+          alignment: Alignment.center,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Midnight 말풍선 (크게)
+                MidnightWithBubble(
+                  face: _tutorialIndex == _tutorialSteps.length - 1
+                      ? MidnightFace.confident
+                      : MidnightFace.happy1,
+                  message: step.text,
+                  size: 140,
+                ),
+                const SizedBox(height: 20),
+                ElevatedButton(
+                  onPressed: _advanceTutorial,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFFF6B9D),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 40, vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                    elevation: 4,
+                  ),
+                  child: Text(
+                    isLast ? s.get('tutStart') : s.get('tutNext'),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                // 진행 표시 dots
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(_tutorialSteps.length, (i) {
+                    final active = i == _tutorialIndex;
+                    return Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                      width: active ? 10 : 6,
+                      height: active ? 10 : 6,
+                      decoration: BoxDecoration(
+                        color: active ? Colors.white : Colors.white54,
+                        shape: BoxShape.circle,
+                      ),
+                    );
+                  }),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

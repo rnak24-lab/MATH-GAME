@@ -383,6 +383,126 @@ class AppStrings {
       'ko': '💡 {1}번 줄에서 {0}개를 가져가보세요!',
     },
 
+    // ── Tutorial (예린 시나리오 W1~W5) ──
+    'tutNext': {
+      'en': 'Next',
+      'ko': '다음',
+    },
+    'tutStart': {
+      'en': 'Let\'s Start!',
+      'ko': '시작하기!',
+    },
+    // W1: 기초 NIM
+    'tutW1_1': {
+      'en': "Hi! I'm Midnight. Let me show you this game!",
+      'ko': '안녕! 나는 미드나잇. 이 게임을 알려줄게!',
+    },
+    'tutW1_2': {
+      'en': "There are stones here. We take turns grabbing them.",
+      'ko': '여기 돌이 있어. 우리가 번갈아 가져가는 거야.',
+    },
+    'tutW1_3': {
+      'en': "You can take 1 or 2 stones at a time.",
+      'ko': '한 번에 1개 또는 2개를 가져갈 수 있어.',
+    },
+    'tutW1_4': {
+      'en': "If you grab the LAST stone... you lose! Be careful!",
+      'ko': '마지막 돌을 가져가면... 지는 거야! 조심해!',
+    },
+    'tutW1_5': {
+      'en': "It's your turn! How many will you take?",
+      'ko': '네 차례야! 몇 개를 가져갈래?',
+    },
+    // W2: 2행 NIM
+    'tutW2_1': {
+      'en': "Now it's different! The stones are in two rows.",
+      'ko': '이번엔 좀 달라! 돌이 두 줄로 나뉘어 있어.',
+    },
+    'tutW2_2': {
+      'en': "You can only take from ONE row per turn.",
+      'ko': '한 번에 한 줄에서만 가져갈 수 있어.',
+    },
+    'tutW2_3': {
+      'en': "But within a row, take as many as you want!",
+      'ko': '한 줄에서는 원하는 만큼 가져가도 돼!',
+    },
+    'tutW2_4': {
+      'en': "Try tapping the top row first!",
+      'ko': '위쪽 줄을 한번 눌러볼래?',
+    },
+    // W3: 제한 NIM
+    'tutW3_1': {
+      'en': "This round has a limit!",
+      'ko': '이번 규칙에는 제한이 있어!',
+    },
+    'tutW3_2': {
+      'en': "You can only take UP TO 2 stones per row.",
+      'ko': '한 줄에서 가져갈 수 있는 건 최대 2개야.',
+    },
+    'tutW3_3': {
+      'en': "No more than that! Choose wisely.",
+      'ko': '3개 이상은 못 가져가! 잘 생각해서 골라봐.',
+    },
+    'tutW3_4': {
+      'en': "Your turn! Which row and how many?",
+      'ko': '이제 네 차례! 어떤 줄에서 몇 개?',
+    },
+    // W4: 복합 NIM
+    'tutW4_1': {
+      'en': "Now for real NIM! Three rows, each different!",
+      'ko': '드디어 진짜 NIM이야! 세 줄, 각각 다른 개수!',
+    },
+    'tutW4_2': {
+      'en': "Same rules: one row per turn, up to 3 stones.",
+      'ko': '규칙은 같아: 한 줄에서만, 최대 3개까지!',
+    },
+    'tutW4_3': {
+      'en': "Tip: watch the count of each row!",
+      'ko': '팁: 줄마다 남은 개수를 잘 봐!',
+    },
+    'tutW4_4': {
+      'en': "Where will you start?",
+      'ko': '어떤 줄에서 시작할래?',
+    },
+    // W5: 최종 도전
+    'tutW5_1': {
+      'en': "This is the last world. I'm playing for real now!",
+      'ko': '마지막 월드야. 여기부터는 내가 진심이야!',
+    },
+    'tutW5_2': {
+      'en': "You know the rules. You can review them in Settings.",
+      'ko': '규칙은 다 알지? 복습은 설정에서 할 수 있어.',
+    },
+    'tutW5_3': {
+      'en': "I won't go easy on you this time!",
+      'ko': '이번엔 쉽게 져주지 않을 거야!',
+    },
+    // 2회 연속 패배 힌트
+    'tutHintW1': {
+      'en': "Hint: Don't be forced to take the last stone.",
+      'ko': '힌트: 마지막 돌을 가져가지 않도록 해봐.',
+    },
+    'tutHintW2': {
+      'en': "Hint: Try to leave rows with equal counts.",
+      'ko': '힌트: 줄의 개수가 같게 남기도록 해봐.',
+    },
+    'tutHintW3': {
+      'en': "Hint: Leave fewer stones than your opponent can handle.",
+      'ko': '힌트: 상대보다 적게 남기는 게 핵심이야.',
+    },
+    'tutHintW4': {
+      'en': "Hint: Think one row at a time.",
+      'ko': '힌트: 한 줄씩 나눠서 생각해봐.',
+    },
+    'tutHintW5': {
+      'en': "Hint: Combine everything you learned.",
+      'ko': '힌트: 지금까지 배운 걸 다 떠올려봐.',
+    },
+    'tutHintGeneric': {
+      'en': "Hint: Think about what you want to leave for your opponent.",
+      'ko': '힌트: 상대에게 남길 돌을 먼저 생각해봐.',
+    },
+
     // ── Settings ──
     'language': {
       'en': 'Language',
