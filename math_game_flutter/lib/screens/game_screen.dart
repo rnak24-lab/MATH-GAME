@@ -101,10 +101,15 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   }
 
   /// 현재 rows 상태에서 "다음에 둘 사람 = player"가 반드시 패배하는지 (= Midnight이 이기는 상태).
-  /// NIM XOR 판정. singleRow는 별도 공식 ((n-1) % (maxTake+1) == 0). pepero 모드는 false 반환 (분할 게임, 다른 공식).
+  /// NIM XOR 판정. singleRow는 별도 공식 ((n-1) % (maxTake+1) == 0).
+  /// pepero는 Grundy 수 XOR == 0 이면 현재 턴 플레이어 패배 확정 (둘 수 없는 쪽이 짐 = normal play).
   bool _calculateMidnightWinsState() {
     if (_config.mode == GameMode.pepero) {
-      return false;
+      // 게임 종료 직전: 분할 가능한 돌이 없으면 현재 턴 player가 이미 진 상황이므로 Midnight이 이김.
+      bool canSplit = _rows.any((p) => p >= 3);
+      if (!canSplit) return true;
+      // NimEngine.isAIWinning은 "방금 둔 쪽이 유리" = "다음 턴 플레이어 패배 확정" 동일 의미.
+      return _engine.isAIWinning(_rows, GameMode.pepero);
     }
     if (_config.mode == GameMode.singleRow) {
       int n = _rows[0];
@@ -120,19 +125,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   }
 
   /// 플레이어 턴 시작 시점에 Midnight의 표정/메시지를 업데이트.
-  /// - midnightWins (XOR=0): happy, 2턴 이상 연속시 confident
+  /// - midnightWins (XOR=0 / Grundy XOR=0): happy, 2턴 이상 연속시 confident
   /// - 그 외: neutral
   void _updateExpressionForPlayerTurn() {
-    // 빼빼로 모드는 NIM XOR 판정 스킵 → 항상 neutral 유지
-    if (_config.mode == GameMode.pepero) {
-      setState(() {
-        _consecutiveLossTurns = 0;
-        _midnightFace = MidnightFace.neutral;
-        _midnightMessage = s.get('yourTurnNow');
-      });
-      return;
-    }
-
     bool midnightWins = _calculateMidnightWinsState();
 
     setState(() {
