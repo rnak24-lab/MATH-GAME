@@ -32,10 +32,13 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
-        <!-- AdMob: 현재 Google 공식 테스트 APP ID. 대표님 실제 ID 확정 시 교체. -->
+        <!-- AdMob APPLICATION_ID: 출시 RC(광고 비활성)를 위해 제거.
+             재활성 시: AdIds.adsEnabled=true 로 바꾸고 실제 APP ID 로 아래 meta-data 복구.
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-3940256099942544~3347511713" />
+            android:value="ca-app-pub-XXXXXXXXXXXXXXXX~XXXXXXXXXX" />
+        -->
+
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

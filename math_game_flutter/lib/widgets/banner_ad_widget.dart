@@ -4,6 +4,7 @@ import '../services/ad_service.dart';
 
 /// 하단 배너 광고 위젯. 로드 실패 또는 로딩 중에는 빈 공간 표시.
 /// 결과 화면(승/패) 하단에 배치 권장.
+/// [AdIds.adsEnabled] == false 이면 항상 SizedBox.shrink() 반환.
 class BannerAdWidget extends StatefulWidget {
   const BannerAdWidget({super.key});
 
@@ -18,6 +19,7 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
   @override
   void initState() {
     super.initState();
+    if (!AdIds.adsEnabled) return;
     _ad = AdService.instance.createBannerAd(
       onLoaded: () {
         if (mounted) setState(() => _loaded = true);
@@ -25,7 +27,7 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
       onFailed: () {
         if (mounted) setState(() => _loaded = false);
       },
-    )..load();
+    )?..load();
   }
 
   @override
@@ -36,6 +38,9 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
 
   @override
   Widget build(BuildContext context) {
+    if (!AdIds.adsEnabled) {
+      return const SizedBox.shrink();
+    }
     if (!_loaded || _ad == null) {
       // 배너 영역은 고정 높이 유지 (레이아웃 점프 방지)
       return const SizedBox(height: 50);
