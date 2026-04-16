@@ -34,7 +34,6 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   List<int> _rows = [];
   bool _playerWon = false;
   int _turnCount = 0;
-  int _totalInitialStones = 0;
 
   // Selection state
   int _selectedRow = 0;
@@ -47,6 +46,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   String _midnightMessage = '';
   bool _isAiAnimating = false;
 
+  // 플레이어 턴 시작 시 NIM 패배 상태 연속 카운트 (happy → confident 전환용)
+  int _consecutiveLossTurns = 0;
+
   // Hints
   int _hintsLeft = 3;
 
@@ -55,7 +57,6 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     super.initState();
     _config = _engine.generateStage(widget.stageNumber);
     _rows = List.from(_config.rows);
-    _totalInitialStones = _rows.reduce((a, b) => a + b);
     _midnightMessage = _getGreeting();
   }
 
@@ -99,34 +100,65 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     }
   }
 
-  void _updateMidnightFace() {
-    int remaining = _rows.reduce((a, b) => a + b);
-    double progress = 1.0 - (remaining / _totalInitialStones);
-    bool isLate = progress > 0.5;
-
-    bool aiWinning;
+  /// 현재 rows 상태에서 "다음에 둘 사람 = player"가 반드시 패배하는지 (= Midnight이 이기는 상태).
+  /// NIM XOR 판정. singleRow는 별도 공식 ((n-1) % (maxTake+1) == 0). pepero 모드는 false 반환 (분할 게임, 다른 공식).
+  bool _calculateMidnightWinsState() {
+    if (_config.mode == GameMode.pepero) {
+      return false;
+    }
     if (_config.mode == GameMode.singleRow) {
       int n = _rows[0];
-      aiWinning = (n - 1) % (_config.maxTake + 1) == 0;
-      if (_currentTurn == TurnOwner.midnight) aiWinning = !aiWinning;
-    } else {
-      aiWinning = _engine.isAIWinning(_rows, _config.mode);
-      if (_currentTurn == TurnOwner.player) aiWinning = !aiWinning;
+      if (n <= 0) return false;
+      return (n - 1) % (_config.maxTake + 1) == 0;
+    }
+    // doubleRow / tripleRow: nim XOR == 0 이면 현재 턴 플레이어 패배 확정
+    int nimSum = 0;
+    for (int r in _rows) {
+      nimSum ^= r;
+    }
+    return nimSum == 0;
+  }
+
+  /// 플레이어 턴 시작 시점에 Midnight의 표정/메시지를 업데이트.
+  /// - midnightWins (XOR=0): happy, 2턴 이상 연속시 confident
+  /// - 그 외: neutral
+  void _updateExpressionForPlayerTurn() {
+    // 빼빼로 모드는 NIM XOR 판정 스킵 → 항상 neutral 유지
+    if (_config.mode == GameMode.pepero) {
+      setState(() {
+        _consecutiveLossTurns = 0;
+        _midnightFace = MidnightFace.neutral;
+        _midnightMessage = s.get('yourTurnNow');
+      });
+      return;
     }
 
+    bool midnightWins = _calculateMidnightWinsState();
+
     setState(() {
-      if (aiWinning) {
-        _midnightFace = isLate ? MidnightFace.happy2 : MidnightFace.happy1;
-        List<String> msgKeys = isLate
-            ? ['midnightWinLate1', 'midnightWinLate2', 'midnightWinLate3']
-            : ['midnightWinEarly1', 'midnightWinEarly2', 'midnightWinEarly3'];
-        _midnightMessage = s.get(msgKeys[_turnCount % msgKeys.length]);
+      if (midnightWins) {
+        _consecutiveLossTurns++;
+        if (_consecutiveLossTurns >= 2) {
+          _midnightFace = MidnightFace.confident;
+          List<String> keys = [
+            'midnightWinLate1',
+            'midnightWinLate2',
+            'midnightWinLate3'
+          ];
+          _midnightMessage = s.get(keys[_turnCount % keys.length]);
+        } else {
+          _midnightFace = MidnightFace.happy1;
+          List<String> keys = [
+            'midnightWinEarly1',
+            'midnightWinEarly2',
+            'midnightWinEarly3'
+          ];
+          _midnightMessage = s.get(keys[_turnCount % keys.length]);
+        }
       } else {
-        _midnightFace = isLate ? MidnightFace.worried2 : MidnightFace.worried1;
-        List<String> msgKeys = isLate
-            ? ['midnightLoseLate1', 'midnightLoseLate2', 'midnightLoseLate3']
-            : ['midnightLoseEarly1', 'midnightLoseEarly2', 'midnightLoseEarly3'];
-        _midnightMessage = s.get(msgKeys[_turnCount % msgKeys.length]);
+        _consecutiveLossTurns = 0;
+        _midnightFace = MidnightFace.neutral;
+        _midnightMessage = s.get('yourTurnNow');
       }
     });
   }
@@ -135,11 +167,20 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     setState(() {
       _currentTurn = first;
       _phase = GamePhase.playing;
+      _consecutiveLossTurns = 0;
       if (first == TurnOwner.player) {
-        _midnightFace = MidnightFace.neutral;
+        // 첫 턴: NIM 판정 기반 표정 (player가 지는 상태면 happy, 아니면 neutral)
+        bool midnightWins = _calculateMidnightWinsState();
+        if (midnightWins) {
+          _consecutiveLossTurns = 1;
+          _midnightFace = MidnightFace.happy1;
+        } else {
+          _midnightFace = MidnightFace.neutral;
+        }
         _midnightMessage = s.get('turnPlayerFirst');
       } else {
-        _midnightFace = MidnightFace.confident;
+        // AI가 선공: AI턴 중 표정은 neutral 고정
+        _midnightFace = MidnightFace.neutral;
         _midnightMessage = s.get('turnMidnightFirst');
       }
     });
@@ -352,7 +393,10 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     });
 
     if (!_checkGameOver()) {
-      _updateMidnightFace();
+      // AI턴 진입 시 표정은 neutral 유지 (생각중 메시지만)
+      setState(() {
+        _midnightFace = MidnightFace.neutral;
+      });
       Future.delayed(const Duration(milliseconds: 1000), _midnightPlay);
     }
   }
@@ -385,9 +429,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     if (!mounted || _phase != GamePhase.playing) return;
 
     if (move.isPepero) {
-      // 빼빼로: 한번에 분할 (순차 애니메이션 대상 아님)
+      // 빼빼로: 한번에 분할 (순차 애니메이션 대상 아님). AI턴 중 표정은 neutral 유지.
       setState(() {
-        _midnightFace = MidnightFace.confident;
+        _midnightFace = MidnightFace.neutral;
         _midnightMessage = s.get('midnightSplit', ['${move.splitA}', '${move.splitB}']);
         _rows.removeAt(move.rowIndex);
         _rows.add(move.splitA);
@@ -396,21 +440,12 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       });
     } else {
       // Phase 2: 돌 1개씩 순차 제거 애니메이션
-      // Midnight 표정: 1개=neutral, 2개=happy1, 3개+=confident
-      MidnightFace takeFace;
-      if (move.count == 1) {
-        takeFace = MidnightFace.neutral;
-      } else if (move.count == 2) {
-        takeFace = MidnightFace.happy1;
-      } else {
-        takeFace = MidnightFace.confident;
-      }
-
+      // AI턴 중에는 개수와 무관하게 표정은 항상 neutral 고정
       for (int i = 0; i < move.count; i++) {
         if (!mounted || _phase != GamePhase.playing) return;
         setState(() {
           _rows[move.rowIndex] -= 1;
-          _midnightFace = takeFace;
+          _midnightFace = MidnightFace.neutral;
           if (_config.mode == GameMode.singleRow) {
             _midnightMessage = s.get('midnightTakeN', ['${i + 1}']);
           } else {
@@ -445,10 +480,8 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     });
 
     if (!_checkGameOver()) {
-      setState(() {
-        _midnightMessage = s.get('yourTurnNow');
-      });
-      _updateMidnightFace();
+      // 플레이어 턴 시작 시점 → NIM XOR 기반 표정 결정
+      _updateExpressionForPlayerTurn();
     }
   }
 
@@ -1085,7 +1118,10 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                   _splitA = 1;
                 });
                 if (!_checkGameOver()) {
-                  _updateMidnightFace();
+                  // AI턴 진입: 표정 neutral 고정
+                  setState(() {
+                    _midnightFace = MidnightFace.neutral;
+                  });
                   Future.delayed(
                       const Duration(milliseconds: 1000), _midnightPlay);
                 }
