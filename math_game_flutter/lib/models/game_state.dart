@@ -5,7 +5,7 @@ enum GameMode {
   tripleRow,   // 세 줄 님게임 (61-80)
 }
 
-enum TurnOwner { player, sua }
+enum TurnOwner { player, midnight }
 
 enum GamePhase { turnChoice, playing, gameOver }
 

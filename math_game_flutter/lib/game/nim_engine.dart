@@ -214,9 +214,12 @@ class NimEngine {
 
     switch (mode) {
       case GameMode.singleRow:
-        int n = 5 + (stageNumber - 1) * 2;
+        // 기본 최저 난이도 상승: 1~1 제한 폐지, 최소 1~2 선택.
+        // NIM 필승 전략(nimber, (n-1) % (maxTake+1)) 보존.
+        int n = 7 + (stageNumber - 1) * 2;
         if (n > 30) n = 30;
-        maxTake = 1 + (stageNumber ~/ 5);
+        // maxTake 최소 2 보장 (플레이어는 항상 1개 또는 2개 선택 가능)
+        maxTake = 2 + (stageNumber ~/ 5);
         if (maxTake > 5) maxTake = 5;
         rows = [n];
         break;

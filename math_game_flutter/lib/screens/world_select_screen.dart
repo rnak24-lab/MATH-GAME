@@ -3,6 +3,7 @@ import '../game/stage_manager.dart';
 import '../providers/locale_provider.dart';
 import '../l10n/app_strings.dart';
 import 'stage_select_screen.dart';
+import 'settings_screen.dart';
 
 class WorldInfo {
   final int id;
@@ -61,7 +62,7 @@ const List<WorldInfo> worlds = [
   ),
 ];
 
-class WorldSelectScreen extends StatelessWidget {
+class WorldSelectScreen extends StatefulWidget {
   final StageManager stageManager;
   final LocaleProvider localeProvider;
 
@@ -70,6 +71,14 @@ class WorldSelectScreen extends StatelessWidget {
     required this.stageManager,
     required this.localeProvider,
   });
+
+  @override
+  State<WorldSelectScreen> createState() => _WorldSelectScreenState();
+}
+
+class _WorldSelectScreenState extends State<WorldSelectScreen> {
+  StageManager get stageManager => widget.stageManager;
+  LocaleProvider get localeProvider => widget.localeProvider;
 
   @override
   Widget build(BuildContext context) {
@@ -93,6 +102,25 @@ class WorldSelectScreen extends StatelessWidget {
           ),
         ),
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings_rounded,
+                color: Color(0xFF7C4DFF), size: 26),
+            tooltip: s.get('settings'),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => SettingsScreen(
+                    localeProvider: localeProvider,
+                    onChanged: () => setState(() {}),
+                  ),
+                ),
+              );
+            },
+          ),
+          const SizedBox(width: 4),
+        ],
       ),
       body: ListView.builder(
         padding: const EdgeInsets.all(20),

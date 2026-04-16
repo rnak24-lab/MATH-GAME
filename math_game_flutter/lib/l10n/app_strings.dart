@@ -11,8 +11,8 @@ class AppStrings {
       'ko': 'Math NIM - 수학 님 게임',
     },
     'appSubtitle': {
-      'en': 'Math NIM Strategy Game with Sua',
-      'ko': '수아와 함께하는 수학 님 게임',
+      'en': 'Math NIM Strategy Game with Midnight',
+      'ko': 'Midnight와 함께하는 수학 님 게임',
     },
 
     // ── Home Screen ──
@@ -20,9 +20,9 @@ class AppStrings {
       'en': 'Math NIM Game',
       'ko': '수학 님 게임',
     },
-    'suaGreeting': {
-      'en': "Hi! I'm Sua!",
-      'ko': '안녕! 나는 수아야 🎀',
+    'midnightGreeting': {
+      'en': "Hi! I'm Midnight!",
+      'ko': '안녕! 나는 Midnight야 🎀',
     },
     'continueGame': {
       'en': 'Continue',
@@ -47,6 +47,14 @@ class AppStrings {
     'settings': {
       'en': 'Settings',
       'ko': '설정',
+    },
+    'selectLanguage': {
+      'en': 'Select Language',
+      'ko': '언어 선택',
+    },
+    'selectLanguageDesc': {
+      'en': 'Please choose your language.\nYou can change it later in Settings.',
+      'ko': '사용할 언어를 선택해주세요.\n나중에 설정에서 변경할 수 있습니다.',
     },
 
     // ── World Select ──
@@ -152,17 +160,17 @@ class AppStrings {
       'en': 'Me first!',
       'ko': '내가 먼저!',
     },
-    'suaFirst': {
-      'en': 'Sua first!',
-      'ko': '수아 먼저!',
+    'midnightFirst': {
+      'en': 'Midnight first!',
+      'ko': 'Midnight 먼저!',
     },
     'myTurn': {
       'en': '🎯 My Turn',
       'ko': '🎯 내 턴',
     },
-    'suaTurn': {
-      'en': "💭 Sua's Turn...",
-      'ko': '💭 수아 턴...',
+    'midnightTurn': {
+      'en': "💭 Midnight's Turn...",
+      'ko': '💭 Midnight 턴...',
     },
     'victory': {
       'en': '🎉 Victory!',
@@ -237,7 +245,7 @@ class AppStrings {
       'ko': '돌아가기',
     },
 
-    // ── Sua Messages: Greetings ──
+    // ── Midnight Messages: Greetings ──
     'greetReady': {
       'en': 'Stage {0}! Ready?',
       'ko': '스테이지 {0}! 준비됐어?',
@@ -258,87 +266,87 @@ class AppStrings {
       'en': 'OK, you go first!',
       'ko': '좋아, 네가 먼저 해!',
     },
-    'turnSuaFirst': {
+    'turnMidnightFirst': {
       'en': "I'll go first~",
       'ko': '내가 먼저 할게~',
     },
 
-    // ── Sua Messages: AI winning ──
-    'suaWinLate1': {
+    // ── Midnight Messages: AI winning ──
+    'midnightWinLate1': {
       'en': "Hehe, looks like I'll win~",
       'ko': '후후, 이대로면 내가 이길 것 같아~',
     },
-    'suaWinLate2': {
+    'midnightWinLate2': {
       'en': 'Almost there! 😆',
       'ko': '거의 다 됐어! 😆',
     },
-    'suaWinLate3': {
+    'midnightWinLate3': {
       'en': "It's my victory!",
       'ko': '이번엔 내 승리!',
     },
-    'suaWinEarly1': {
+    'midnightWinEarly1': {
       'en': 'Good start~',
       'ko': '좋은 흐름이야~',
     },
-    'suaWinEarly2': {
+    'midnightWinEarly2': {
       'en': "Not bad so far?",
       'ko': '이 정도면 괜찮은데?',
     },
-    'suaWinEarly3': {
+    'midnightWinEarly3': {
       'en': 'Hehe, feeling confident!',
       'ko': '흐흐, 자신있어!',
     },
 
-    // ── Sua Messages: AI losing ──
-    'suaLoseLate1': {
+    // ── Midnight Messages: AI losing ──
+    'midnightLoseLate1': {
       'en': "Ugh... this isn't good...",
       'ko': '으으... 이러면 안되는데...',
     },
-    'suaLoseLate2': {
+    'midnightLoseLate2': {
       'en': 'What should I do... 😰',
       'ko': '어떡하지... 😰',
     },
-    'suaLoseLate3': {
+    'midnightLoseLate3': {
       'en': "Ahh, I'm losing...!",
       'ko': '아앗, 불리해...!',
     },
-    'suaLoseEarly1': {
+    'midnightLoseEarly1': {
       'en': 'Hmm... this is tricky...',
       'ko': '음... 좀 어렵네...',
     },
-    'suaLoseEarly2': {
+    'midnightLoseEarly2': {
       'en': 'This one needs thinking...',
       'ko': '이건 좀 고민되는데...',
     },
-    'suaLoseEarly3': {
+    'midnightLoseEarly3': {
       'en': 'Hmm...',
       'ko': '흐음...',
     },
 
-    // ── Sua Messages: AI moves ──
-    'suaTakeN': {
+    // ── Midnight Messages: AI moves ──
+    'midnightTakeN': {
       'en': "I'll take {0}~",
       'ko': '{0}개 가져갈게~',
     },
-    'suaTakeFromRow': {
+    'midnightTakeFromRow': {
       'en': '{0} from row {1}!',
       'ko': '{1}번 줄에서 {0}개!',
     },
-    'suaSplit': {
+    'midnightSplit': {
       'en': "I'll split into {0} and {1}!",
       'ko': '{0}과 {1}로 나눌게!',
     },
 
-    // ── Sua Messages: Game Over ──
-    'suaLost': {
+    // ── Midnight Messages: Game Over ──
+    'midnightLost': {
       'en': "Ugh... I lost... I'll win next time!",
       'ko': '으으... 졌어... 다음엔 꼭 이길 거야!',
     },
-    'suaWon': {
+    'midnightWon': {
       'en': 'Yay~! I won! 🎉',
       'ko': '야호~! 내가 이겼다! 🎉',
     },
-    'suaNextTime': {
+    'midnightNextTime': {
       'en': "Ugh... I'll get you next time!",
       'ko': '으으... 다음엔 안 질 거야!',
     },

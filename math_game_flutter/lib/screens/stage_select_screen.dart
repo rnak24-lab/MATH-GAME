@@ -3,8 +3,9 @@ import '../game/stage_manager.dart';
 import '../providers/locale_provider.dart';
 import 'world_select_screen.dart';
 import 'game_screen.dart';
+import 'settings_screen.dart';
 
-class StageSelectScreen extends StatelessWidget {
+class StageSelectScreen extends StatefulWidget {
   final StageManager stageManager;
   final WorldInfo world;
   final LocaleProvider localeProvider;
@@ -15,6 +16,15 @@ class StageSelectScreen extends StatelessWidget {
     required this.world,
     required this.localeProvider,
   });
+
+  @override
+  State<StageSelectScreen> createState() => _StageSelectScreenState();
+}
+
+class _StageSelectScreenState extends State<StageSelectScreen> {
+  StageManager get stageManager => widget.stageManager;
+  WorldInfo get world => widget.world;
+  LocaleProvider get localeProvider => widget.localeProvider;
 
   @override
   Widget build(BuildContext context) {
@@ -46,6 +56,25 @@ class StageSelectScreen extends StatelessWidget {
           ],
         ),
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings_rounded,
+                color: Color(0xFF7C4DFF), size: 26),
+            tooltip: s.get('settings'),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => SettingsScreen(
+                    localeProvider: localeProvider,
+                    onChanged: () => setState(() {}),
+                  ),
+                ),
+              );
+            },
+          ),
+          const SizedBox(width: 4),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(20),

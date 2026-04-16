@@ -3,7 +3,7 @@ import 'dart:async';
 import '../game/stage_manager.dart';
 import '../game/nim_engine.dart';
 import '../models/game_state.dart';
-import '../widgets/sua_character.dart';
+import '../widgets/midnight_character.dart';
 import '../providers/locale_provider.dart';
 import '../l10n/app_strings.dart';
 
@@ -42,9 +42,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   int _selectedPile = 0;
   int _splitA = 1;
 
-  // Sua state
-  SuaFace _suaFace = SuaFace.neutral;
-  String _suaMessage = '';
+  // Midnight state
+  MidnightFace _midnightFace = MidnightFace.neutral;
+  String _midnightMessage = '';
 
   // Hints
   int _hintsLeft = 3;
@@ -55,7 +55,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     _config = _engine.generateStage(widget.stageNumber);
     _rows = List.from(_config.rows);
     _totalInitialStones = _rows.reduce((a, b) => a + b);
-    _suaMessage = _getGreeting();
+    _midnightMessage = _getGreeting();
   }
 
   String _getGreeting() {
@@ -98,7 +98,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     }
   }
 
-  void _updateSuaFace() {
+  void _updateMidnightFace() {
     int remaining = _rows.reduce((a, b) => a + b);
     double progress = 1.0 - (remaining / _totalInitialStones);
     bool isLate = progress > 0.5;
@@ -107,7 +107,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     if (_config.mode == GameMode.singleRow) {
       int n = _rows[0];
       aiWinning = (n - 1) % (_config.maxTake + 1) == 0;
-      if (_currentTurn == TurnOwner.sua) aiWinning = !aiWinning;
+      if (_currentTurn == TurnOwner.midnight) aiWinning = !aiWinning;
     } else {
       aiWinning = _engine.isAIWinning(_rows, _config.mode);
       if (_currentTurn == TurnOwner.player) aiWinning = !aiWinning;
@@ -115,17 +115,17 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
 
     setState(() {
       if (aiWinning) {
-        _suaFace = isLate ? SuaFace.happy2 : SuaFace.happy1;
+        _midnightFace = isLate ? MidnightFace.happy2 : MidnightFace.happy1;
         List<String> msgKeys = isLate
-            ? ['suaWinLate1', 'suaWinLate2', 'suaWinLate3']
-            : ['suaWinEarly1', 'suaWinEarly2', 'suaWinEarly3'];
-        _suaMessage = s.get(msgKeys[_turnCount % msgKeys.length]);
+            ? ['midnightWinLate1', 'midnightWinLate2', 'midnightWinLate3']
+            : ['midnightWinEarly1', 'midnightWinEarly2', 'midnightWinEarly3'];
+        _midnightMessage = s.get(msgKeys[_turnCount % msgKeys.length]);
       } else {
-        _suaFace = isLate ? SuaFace.worried2 : SuaFace.worried1;
+        _midnightFace = isLate ? MidnightFace.worried2 : MidnightFace.worried1;
         List<String> msgKeys = isLate
-            ? ['suaLoseLate1', 'suaLoseLate2', 'suaLoseLate3']
-            : ['suaLoseEarly1', 'suaLoseEarly2', 'suaLoseEarly3'];
-        _suaMessage = s.get(msgKeys[_turnCount % msgKeys.length]);
+            ? ['midnightLoseLate1', 'midnightLoseLate2', 'midnightLoseLate3']
+            : ['midnightLoseEarly1', 'midnightLoseEarly2', 'midnightLoseEarly3'];
+        _midnightMessage = s.get(msgKeys[_turnCount % msgKeys.length]);
       }
     });
   }
@@ -135,16 +135,16 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       _currentTurn = first;
       _phase = GamePhase.playing;
       if (first == TurnOwner.player) {
-        _suaFace = SuaFace.neutral;
-        _suaMessage = s.get('turnPlayerFirst');
+        _midnightFace = MidnightFace.neutral;
+        _midnightMessage = s.get('turnPlayerFirst');
       } else {
-        _suaFace = SuaFace.confident;
-        _suaMessage = s.get('turnSuaFirst');
+        _midnightFace = MidnightFace.confident;
+        _midnightMessage = s.get('turnMidnightFirst');
       }
     });
 
-    if (first == TurnOwner.sua) {
-      Future.delayed(const Duration(milliseconds: 800), _suaPlay);
+    if (first == TurnOwner.midnight) {
+      Future.delayed(const Duration(milliseconds: 800), _midnightPlay);
     }
   }
 
@@ -171,11 +171,11 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       _phase = GamePhase.gameOver;
       _playerWon = playerWins;
       if (playerWins) {
-        _suaFace = SuaFace.worried2;
-        _suaMessage = s.get('suaLost');
+        _midnightFace = MidnightFace.worried2;
+        _midnightMessage = s.get('midnightLost');
       } else {
-        _suaFace = SuaFace.happy2;
-        _suaMessage = s.get('suaWon');
+        _midnightFace = MidnightFace.happy2;
+        _midnightMessage = s.get('midnightWon');
       }
     });
 
@@ -243,14 +243,14 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                   ),
                 ),
                 const SizedBox(height: 8),
-                SuaCharacter(
-                  face: SuaFace.worried1,
+                MidnightCharacter(
+                  face: MidnightFace.worried1,
                   size: 80,
                   animate: false,
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  s.get('suaNextTime'),
+                  s.get('midnightNextTime'),
                   style: TextStyle(
                     fontSize: 13,
                     color: Colors.grey[500],
@@ -346,17 +346,17 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         _rows[_selectedRow] -= _selectedCount;
       }
       _turnCount++;
-      _currentTurn = TurnOwner.sua;
+      _currentTurn = TurnOwner.midnight;
       _selectedCount = 1;
     });
 
     if (!_checkGameOver()) {
-      _updateSuaFace();
-      Future.delayed(const Duration(milliseconds: 1000), _suaPlay);
+      _updateMidnightFace();
+      Future.delayed(const Duration(milliseconds: 1000), _midnightPlay);
     }
   }
 
-  void _suaPlay() {
+  void _midnightPlay() {
     if (_phase != GamePhase.playing) return;
 
     NimMove move;
@@ -379,13 +379,13 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         _rows.add(move.splitA);
         _rows.add(move.splitB);
         _rows.sort((x, y) => y.compareTo(x));
-        _suaMessage = s.get('suaSplit', ['${move.splitA}', '${move.splitB}']);
+        _midnightMessage = s.get('midnightSplit', ['${move.splitA}', '${move.splitB}']);
       } else {
         _rows[move.rowIndex] -= move.count;
         if (_config.mode == GameMode.singleRow) {
-          _suaMessage = s.get('suaTakeN', ['${move.count}']);
+          _midnightMessage = s.get('midnightTakeN', ['${move.count}']);
         } else {
-          _suaMessage = s.get('suaTakeFromRow',
+          _midnightMessage = s.get('midnightTakeFromRow',
               ['${move.count}', '${move.rowIndex + 1}']);
         }
       }
@@ -394,7 +394,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     });
 
     if (!_checkGameOver()) {
-      _updateSuaFace();
+      _updateMidnightFace();
     }
   }
 
@@ -493,9 +493,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       child: Column(
         children: [
           const Spacer(),
-          SuaWithBubble(
-            face: _suaFace,
-            message: _suaMessage,
+          MidnightWithBubble(
+            face: _midnightFace,
+            message: _midnightMessage,
             size: 120,
           ),
           const SizedBox(height: 24),
@@ -567,10 +567,10 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
               const SizedBox(width: 16),
               Expanded(
                 child: _choiceButton(
-                  s.get('suaFirst'),
+                  s.get('midnightFirst'),
                   Icons.smart_toy,
                   const Color(0xFFFF6B9D),
-                  () => _chooseTurn(TurnOwner.sua),
+                  () => _chooseTurn(TurnOwner.midnight),
                 ),
               ),
             ],
@@ -617,9 +617,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: SuaWithBubble(
-            face: _suaFace,
-            message: _suaMessage,
+          child: MidnightWithBubble(
+            face: _midnightFace,
+            message: _midnightMessage,
             size: 100,
           ),
         ),
@@ -641,7 +641,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                 ? (_playerWon ? s.get('victory') : s.get('defeat'))
                 : (_currentTurn == TurnOwner.player
                     ? s.get('myTurn')
-                    : s.get('suaTurn')),
+                    : s.get('midnightTurn')),
             style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w700,
@@ -1026,14 +1026,14 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                   _rows.add(b);
                   _rows.sort((x, y) => y.compareTo(x));
                   _turnCount++;
-                  _currentTurn = TurnOwner.sua;
+                  _currentTurn = TurnOwner.midnight;
                   _selectedPile = 0;
                   _splitA = 1;
                 });
                 if (!_checkGameOver()) {
-                  _updateSuaFace();
+                  _updateMidnightFace();
                   Future.delayed(
-                      const Duration(milliseconds: 1000), _suaPlay);
+                      const Duration(milliseconds: 1000), _midnightPlay);
                 }
               }
             },

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 
-/// 수아의 표정 단계
-enum SuaFace {
+/// Midnight의 표정 단계
+enum MidnightFace {
   happy1,      // 살짝 미소 (유리할 때 초반)
   happy2,      // 활짝 웃음 (유리할 때 후반)
   worried1,    // 살짝 곤란 (불리할 때 초반)
@@ -11,24 +11,24 @@ enum SuaFace {
   confident,   // 자신만만
 }
 
-/// 수아 캐릭터 위젯 - CustomPainter로 애니메이션 캐릭터 그림
-class SuaCharacter extends StatefulWidget {
-  final SuaFace face;
+/// Midnight 캐릭터 위젯 - CustomPainter로 애니메이션 캐릭터 그림
+class MidnightCharacter extends StatefulWidget {
+  final MidnightFace face;
   final double size;
   final bool animate;
 
-  const SuaCharacter({
+  const MidnightCharacter({
     super.key,
-    this.face = SuaFace.neutral,
+    this.face = MidnightFace.neutral,
     this.size = 200,
     this.animate = true,
   });
 
   @override
-  State<SuaCharacter> createState() => _SuaCharacterState();
+  State<MidnightCharacter> createState() => _MidnightCharacterState();
 }
 
-class _SuaCharacterState extends State<SuaCharacter>
+class _MidnightCharacterState extends State<MidnightCharacter>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _bounceAnim;
@@ -63,7 +63,7 @@ class _SuaCharacterState extends State<SuaCharacter>
           offset: Offset(0, -_bounceAnim.value),
           child: CustomPaint(
             size: Size(widget.size, widget.size * 1.4),
-            painter: _SuaPainter(face: widget.face),
+            painter: _MidnightPainter(face: widget.face),
           ),
         );
       },
@@ -71,10 +71,10 @@ class _SuaCharacterState extends State<SuaCharacter>
   }
 }
 
-class _SuaPainter extends CustomPainter {
-  final SuaFace face;
+class _MidnightPainter extends CustomPainter {
+  final MidnightFace face;
 
-  _SuaPainter({required this.face});
+  _MidnightPainter({required this.face});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -273,33 +273,33 @@ class _SuaPainter extends CustomPainter {
     final mouthY = h * 0.40;
 
     switch (face) {
-      case SuaFace.neutral:
+      case MidnightFace.neutral:
         _drawNeutralEyes(canvas, cx, eyeY, eyeSpacing, w);
         _drawNeutralMouth(canvas, cx, mouthY, w);
         break;
-      case SuaFace.happy1:
+      case MidnightFace.happy1:
         _drawHappyEyes(canvas, cx, eyeY, eyeSpacing, w, false);
         _drawSmile(canvas, cx, mouthY, w, false);
         _drawBlush(canvas, cx, eyeY, eyeSpacing, w);
         break;
-      case SuaFace.happy2:
+      case MidnightFace.happy2:
         _drawHappyEyes(canvas, cx, eyeY, eyeSpacing, w, true);
         _drawSmile(canvas, cx, mouthY, w, true);
         _drawBlush(canvas, cx, eyeY, eyeSpacing, w);
         _drawSparkles(canvas, cx, eyeY, w);
         break;
-      case SuaFace.worried1:
+      case MidnightFace.worried1:
         _drawWorriedEyes(canvas, cx, eyeY, eyeSpacing, w, false);
         _drawWorriedMouth(canvas, cx, mouthY, w, false);
         _drawSweat(canvas, cx, eyeY, w, false);
         break;
-      case SuaFace.worried2:
+      case MidnightFace.worried2:
         _drawWorriedEyes(canvas, cx, eyeY, eyeSpacing, w, true);
         _drawWorriedMouth(canvas, cx, mouthY, w, true);
         _drawSweat(canvas, cx, eyeY, w, true);
         _drawTeardrop(canvas, cx, eyeY, eyeSpacing, w);
         break;
-      case SuaFace.confident:
+      case MidnightFace.confident:
         _drawConfidentEyes(canvas, cx, eyeY, eyeSpacing, w);
         _drawSmirk(canvas, cx, mouthY, w);
         break;
@@ -582,16 +582,16 @@ class _SuaPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_SuaPainter oldDelegate) => oldDelegate.face != face;
+  bool shouldRepaint(_MidnightPainter oldDelegate) => oldDelegate.face != face;
 }
 
-/// 수아 + 말풍선 위젯
-class SuaWithBubble extends StatelessWidget {
-  final SuaFace face;
+/// Midnight + 말풍선 위젯
+class MidnightWithBubble extends StatelessWidget {
+  final MidnightFace face;
   final String message;
   final double size;
 
-  const SuaWithBubble({
+  const MidnightWithBubble({
     super.key,
     required this.face,
     required this.message,
@@ -634,8 +634,8 @@ class SuaWithBubble extends StatelessWidget {
           painter: _BubbleTailPainter(),
         ),
         const SizedBox(height: 4),
-        // 수아
-        SuaCharacter(face: face, size: size),
+        // Midnight
+        MidnightCharacter(face: face, size: size),
       ],
     );
   }
