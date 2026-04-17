@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../providers/locale_provider.dart';
+import 'privacy_policy_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   final LocaleProvider localeProvider;
@@ -102,6 +103,51 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             );
           }),
+          const SizedBox(height: 24),
+          _buildSectionTitle(s.get('aboutSettings')),
+          const SizedBox(height: 12),
+          Material(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            elevation: 1,
+            shadowColor: const Color(0xFF7C4DFF).withOpacity(0.2),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(16),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => PrivacyPolicyScreen(
+                      localeProvider: widget.localeProvider,
+                    ),
+                  ),
+                );
+              },
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 20, vertical: 16),
+                child: Row(
+                  children: [
+                    const Icon(Icons.privacy_tip_outlined,
+                        color: Color(0xFF7C4DFF)),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Text(
+                        s.get('privacyPolicy'),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF2C3E50),
+                        ),
+                      ),
+                    ),
+                    const Icon(Icons.chevron_right_rounded,
+                        color: Color(0xFF7C4DFF)),
+                  ],
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );

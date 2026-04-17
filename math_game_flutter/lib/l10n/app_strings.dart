@@ -520,6 +520,14 @@ class AppStrings {
       'en': 'Languages',
       'ko': '언어 설정',
     },
+    'privacyPolicy': {
+      'en': 'Privacy Policy',
+      'ko': '개인정보처리방침',
+    },
+    'aboutSettings': {
+      'en': 'About',
+      'ko': '정보',
+    },
   };
 
   String get(String key, [List<String>? args]) {
