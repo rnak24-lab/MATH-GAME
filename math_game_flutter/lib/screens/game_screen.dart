@@ -4,10 +4,8 @@ import '../game/stage_manager.dart';
 import '../game/nim_engine.dart';
 import '../models/game_state.dart';
 import '../widgets/midnight_character.dart';
-import '../widgets/banner_ad_widget.dart';
 import '../providers/locale_provider.dart';
 import '../l10n/app_strings.dart';
-import '../services/ad_service.dart';
 import '../game/tutorial_manager.dart';
 
 class GameScreen extends StatefulWidget {
@@ -252,8 +250,6 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
 
     if (playerWins) {
       widget.stageManager.clearStage(widget.stageNumber);
-      // 전면 광고: 3 스테이지 클리어마다 1회 (AdService 내부 카운터)
-      AdService.instance.maybeShowInterstitialOnStageClear();
       Future.delayed(const Duration(milliseconds: 1200), () {
         if (mounted) _showNextStageDialog();
       });
@@ -898,9 +894,6 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
               ],
             ),
           ),
-        // 결과 화면 하단 배너 광고 (승/패 관계없이 노출)
-        if (_phase == GamePhase.gameOver)
-          const Center(child: BannerAdWidget()),
       ],
     );
   }

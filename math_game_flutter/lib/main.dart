@@ -3,13 +3,10 @@ import 'package:flutter/services.dart';
 import 'game/stage_manager.dart';
 import 'providers/locale_provider.dart';
 import 'screens/home_screen.dart';
-import 'services/ad_service.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
-  // AdMob 초기화 (실패해도 앱은 정상 실행)
-  AdService.instance.init();
   runApp(const MathNimApp());
 }
 
