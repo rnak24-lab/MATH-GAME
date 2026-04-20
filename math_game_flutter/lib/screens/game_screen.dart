@@ -9,6 +9,7 @@ import '../providers/locale_provider.dart';
 import '../l10n/app_strings.dart';
 import '../services/ad_service.dart';
 import '../game/tutorial_manager.dart';
+import 'world_select_screen.dart' show worldForStage, WorldInfo;
 
 class GameScreen extends StatefulWidget {
   final StageManager stageManager;
@@ -558,8 +559,10 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    // (id=1141) 스테이지가 속한 월드의 배경 그라데이션 (연한 하단 톤 위주로 사용)
+    final WorldInfo worldInfo = worldForStage(widget.stageNumber);
     return Scaffold(
-      backgroundColor: const Color(0xFFFFF3E0),
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -589,12 +592,26 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
             ),
         ],
       ),
-      body: SafeArea(
-        child: Stack(
-          children: [
-            _buildBody(),
-            if (_tutorialActive) _buildTutorialOverlay(),
-          ],
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            // 플레이 화면은 가독성 위해 연한 하단 톤을 상단에 더 많이 배치
+            colors: [
+              worldInfo.bgGradient[2],
+              worldInfo.bgGradient[2],
+              worldInfo.bgGradient[1].withOpacity(0.25),
+            ],
+          ),
+        ),
+        child: SafeArea(
+          child: Stack(
+            children: [
+              _buildBody(),
+              if (_tutorialActive) _buildTutorialOverlay(),
+            ],
+          ),
         ),
       ),
     );
@@ -1094,6 +1111,12 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     if (_config.mode == GameMode.singleRow) {
       maxCanTake = maxCanTake.clamp(1, _config.maxTake);
     }
+    // (id=1143) 슬라이더 대신 버튼 그룹으로 "가져갈 개수" 선택.
+    // 현재 선택값이 maxCanTake를 넘으면 클램프 (rows가 줄어든 경우 대비).
+    if (_selectedCount > maxCanTake) {
+      _selectedCount = maxCanTake;
+    }
+    if (_selectedCount < 1) _selectedCount = 1;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -1121,16 +1144,56 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
             ),
           ],
         ),
-        const SizedBox(height: 8),
-        Slider(
-          value: _selectedCount.toDouble(),
-          min: 1,
-          max: maxCanTake.toDouble(),
-          divisions: maxCanTake > 1 ? maxCanTake - 1 : 1,
-          activeColor: const Color(0xFFFF6B9D),
-          onChanged: (val) => setState(() => _selectedCount = val.round()),
+        const SizedBox(height: 10),
+        // 가져갈 수 선택 버튼 그룹 (1 ~ maxCanTake)
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          alignment: WrapAlignment.center,
+          children: List.generate(maxCanTake, (i) {
+            final n = i + 1;
+            final selected = n == _selectedCount;
+            return SizedBox(
+              width: 52,
+              height: 44,
+              child: Material(
+                color: selected
+                    ? const Color(0xFFFF6B9D)
+                    : Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                elevation: selected ? 3 : 1,
+                shadowColor: const Color(0xFFFF6B9D).withOpacity(0.3),
+                child: InkWell(
+                  onTap: () => setState(() => _selectedCount = n),
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: selected
+                            ? const Color(0xFFFF6B9D)
+                            : Colors.grey.shade300,
+                        width: selected ? 2 : 1,
+                      ),
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      '$n',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        color: selected
+                            ? Colors.white
+                            : const Color(0xFF2C3E50),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 12),
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
