@@ -11,6 +11,8 @@ class WorldInfo {
   final String emoji;
   final Color color;
   final String subtitleKey;
+  // (id=1141) 월드별 고유 배경 그라데이션 (5색, 일관 규칙: 상단 어두움 → 하단 월드 색감).
+  final List<Color> bgGradient;
 
   const WorldInfo({
     required this.id,
@@ -18,12 +20,19 @@ class WorldInfo {
     required this.emoji,
     required this.color,
     required this.subtitleKey,
+    required this.bgGradient,
   });
 
   String name(AppStrings s) => s.get(nameKey);
   String subtitle(AppStrings s) => s.get(subtitleKey);
 }
 
+// (id=1141) 배경 디자인 규칙:
+// - 3색 선형 그라데이션 (topLeft → bottomRight)
+// - 상단: 분위기 어두운 톤 (월드의 테마색 어두운 버전)
+// - 중단: 월드 색 원본
+// - 하단: 연한 크림톤 (보드가 얹힐 때 가독성)
+// - 공통 톤 패턴으로 5개 월드 일관성 유지
 const List<WorldInfo> worlds = [
   WorldInfo(
     id: 0,
@@ -31,6 +40,7 @@ const List<WorldInfo> worlds = [
     emoji: '🚪',
     color: Color(0xFF66BB6A),
     subtitleKey: 'worldSubtitleSingleRow',
+    bgGradient: [Color(0xFF2E4F30), Color(0xFF66BB6A), Color(0xFFE8F5E9)],
   ),
   WorldInfo(
     id: 1,
@@ -38,6 +48,7 @@ const List<WorldInfo> worlds = [
     emoji: '🍺',
     color: Color(0xFF42A5F5),
     subtitleKey: 'worldSubtitleDoubleRow',
+    bgGradient: [Color(0xFF1A3A5C), Color(0xFF42A5F5), Color(0xFFE3F2FD)],
   ),
   WorldInfo(
     id: 2,
@@ -45,6 +56,7 @@ const List<WorldInfo> worlds = [
     emoji: '💨',
     color: Color(0xFF8D6E63),
     subtitleKey: 'worldSubtitlePepero',
+    bgGradient: [Color(0xFF3E2723), Color(0xFF8D6E63), Color(0xFFEFEBE9)],
   ),
   WorldInfo(
     id: 3,
@@ -52,6 +64,7 @@ const List<WorldInfo> worlds = [
     emoji: '🕶️',
     color: Color(0xFFAB47BC),
     subtitleKey: 'worldSubtitleTripleRow',
+    bgGradient: [Color(0xFF4A148C), Color(0xFFAB47BC), Color(0xFFF3E5F5)],
   ),
   WorldInfo(
     id: 4,
@@ -59,8 +72,15 @@ const List<WorldInfo> worlds = [
     emoji: '🎲',
     color: Color(0xFFEF5350),
     subtitleKey: 'worldSubtitleChallenge',
+    bgGradient: [Color(0xFF5D1A1A), Color(0xFFEF5350), Color(0xFFFFEBEE)],
   ),
 ];
+
+/// (id=1141) 글로벌 스테이지 번호로 월드 배경 가져오기 (GameScreen에서 사용).
+WorldInfo worldForStage(int stageNumber) {
+  int idx = ((stageNumber - 1) ~/ 20).clamp(0, worlds.length - 1);
+  return worlds[idx];
+}
 
 class WorldSelectScreen extends StatefulWidget {
   final StageManager stageManager;
@@ -138,8 +158,9 @@ class _WorldSelectScreenState extends State<WorldSelectScreen> {
               isUnlocked: isUnlocked,
               progress: progress,
               onTap: isUnlocked
-                  ? () {
-                      Navigator.push(
+                  ? () async {
+                      // (id=1144) 스테이지 선택 화면에서 돌아올 때 진행도/해금 상태 재갱신
+                      await Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (_) => StageSelectScreen(
@@ -149,6 +170,7 @@ class _WorldSelectScreenState extends State<WorldSelectScreen> {
                           ),
                         ),
                       );
+                      if (mounted) setState(() {});
                     }
                   : null,
             ),
@@ -209,10 +231,9 @@ class _WorldCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // (id=1140) 잠긴 월드도 제목은 항상 표시
                     Text(
-                      isUnlocked
-                          ? world.name(strings)
-                          : strings.get('worldLocked'),
+                      world.name(strings),
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
@@ -225,10 +246,11 @@ class _WorldCard extends StatelessWidget {
                     Text(
                       isUnlocked
                           ? world.subtitle(strings)
-                          : strings.get('clearPreviousWorld'),
+                          : strings.get('unlockHint3Stages'),
                       style: TextStyle(
                         fontSize: 13,
-                        color: Colors.grey[500],
+                        color: isUnlocked ? Colors.grey[500] : Colors.orange[700],
+                        fontWeight: isUnlocked ? FontWeight.normal : FontWeight.w600,
                       ),
                     ),
                     if (isUnlocked) ...[

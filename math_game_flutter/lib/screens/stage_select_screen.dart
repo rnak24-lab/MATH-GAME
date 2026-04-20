@@ -32,13 +32,15 @@ class _StageSelectScreenState extends State<StageSelectScreen> {
     final s = localeProvider.strings;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFFF3E0),
+      // (id=1141) 월드별 고유 배경 그라데이션
+      extendBodyBehindAppBar: false,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_rounded,
-              color: Color(0xFF2C3E50)),
+              color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
         title: Row(
@@ -49,7 +51,7 @@ class _StageSelectScreenState extends State<StageSelectScreen> {
             Text(
               world.name(s),
               style: const TextStyle(
-                color: Color(0xFF2C3E50),
+                color: Colors.white,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -59,7 +61,7 @@ class _StageSelectScreenState extends State<StageSelectScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.settings_rounded,
-                color: Color(0xFF7C4DFF), size: 26),
+                color: Colors.white, size: 26),
             tooltip: s.get('settings'),
             onPressed: () {
               Navigator.push(
@@ -76,7 +78,16 @@ class _StageSelectScreenState extends State<StageSelectScreen> {
           const SizedBox(width: 4),
         ],
       ),
-      body: Padding(
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: world.bgGradient,
+            stops: const [0.0, 0.35, 1.0],
+          ),
+        ),
+        child: Padding(
         padding: const EdgeInsets.all(20),
         child: GridView.builder(
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -98,8 +109,9 @@ class _StageSelectScreenState extends State<StageSelectScreen> {
               isPlayable: isPlayable,
               worldColor: world.color,
               onTap: isPlayable
-                  ? () {
-                      Navigator.push(
+                  ? () async {
+                      // (id=1144) 게임에서 복귀 시 setState로 진행/해금 갱신
+                      await Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (_) => GameScreen(
@@ -109,11 +121,13 @@ class _StageSelectScreenState extends State<StageSelectScreen> {
                           ),
                         ),
                       );
+                      if (mounted) setState(() {});
                     }
                   : null,
             );
           },
         ),
+      ),
       ),
     );
   }

@@ -110,6 +110,11 @@ class AppStrings {
       'en': 'Clear the previous world',
       'ko': '이전 월드를 클리어하세요',
     },
+    // (id=1140) 해금 조건 안내: 이전 월드 마지막 3스테이지 클리어
+    'unlockHint3Stages': {
+      'en': 'Clear the last 3 stages of the previous world to unlock',
+      'ko': '앞 월드 마지막 3스테이지를 깨면 해금돼요',
+    },
 
     // ── Game Screen: Mode Titles ──
     'modeSingleRow': {
