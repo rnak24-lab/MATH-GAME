@@ -21,16 +21,35 @@ class StageManager {
       maxStage = stage;
       final prefs = await SharedPreferences.getInstance();
       await prefs.setInt(_maxStageKey, maxStage);
+    }
+    // 월드 언락 체크는 clearStage 조건과 독립적으로 매번 재계산
+    // (id=1140) 규칙: 이전 월드 "마지막 3스테이지(18/19/20번 = 글로벌 stage-2/-1/0)" 모두 클리어 시 다음 월드 해금.
+    await _recalculateWorldUnlocked();
+  }
 
-      // 월드 언락 체크 (이전 월드에서 3스테이지 클리어 시)
-      int newWorldUnlock = (maxStage - 1) ~/ 20;
-      if (maxStage % 20 >= 3 || maxStage % 20 == 0) {
-        newWorldUnlock = ((maxStage - 1) ~/ 20) + 1;
+  /// (id=1140) 해금 규칙 재계산.
+  /// 월드 0(첫 월드)은 항상 해금. 월드 W(1~4)는 이전 월드 W-1의 마지막 3스테이지가 모두 클리어되면 해금.
+  /// 이전 월드 W-1의 마지막 3스테이지 = 글로벌 stage (W*20 - 2), (W*20 - 1), (W*20).
+  Future<void> _recalculateWorldUnlocked() async {
+    int unlocked = 0; // 월드 0은 기본 해금
+    for (int w = 1; w <= 4; w++) {
+      int lastStageOfPrevWorld = w * 20;
+      int first = lastStageOfPrevWorld - 2;
+      // 마지막 3스테이지(연속) 모두 클리어 여부 = maxStage >= lastStageOfPrevWorld
+      // (stage-by-stage 순차 클리어 전제에서는 동치)
+      if (maxStage >= lastStageOfPrevWorld) {
+        unlocked = w;
+      } else if (maxStage >= first) {
+        // 부분 클리어 중: 아직 3개 전부 못깬 상태 → 해금 안 됨
+        break;
+      } else {
+        break;
       }
-      if (newWorldUnlock > worldUnlocked && newWorldUnlock <= 4) {
-        worldUnlocked = newWorldUnlock;
-        await prefs.setInt(_worldUnlockedKey, worldUnlocked);
-      }
+    }
+    if (unlocked != worldUnlocked) {
+      worldUnlocked = unlocked;
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt(_worldUnlockedKey, worldUnlocked);
     }
   }
 
