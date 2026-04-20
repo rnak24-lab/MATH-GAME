@@ -121,6 +121,7 @@ class _SplashScreenState extends State<SplashScreen>
   Widget build(BuildContext context) {
     final s = widget.localeProvider.strings;
 
+    // (id=1142) 로딩화면: 대표님이 보내준 app_icon_master.png 이미지 + 하단 로딩 스피너
     return Scaffold(
       body: Container(
         width: double.infinity,
@@ -130,9 +131,9 @@ class _SplashScreenState extends State<SplashScreen>
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              Color(0xFFFF6B9D),
-              Color(0xFF7C4DFF),
-              Color(0xFF42A5F5),
+              Color(0xFF1A1A2E),
+              Color(0xFF16213E),
+              Color(0xFF0F3460),
             ],
           ),
         ),
@@ -142,47 +143,41 @@ class _SplashScreenState extends State<SplashScreen>
             return Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                // 앱 아이콘 마스터 이미지 (NIM GAME 로고)
                 Transform.scale(
                   scale: _scaleAnim.value,
-                  child: const Text(
-                    '🎲',
-                    style: TextStyle(fontSize: 72),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(32),
+                    child: Image.asset(
+                      'assets/app_icon_master.png',
+                      width: 200,
+                      height: 200,
+                      fit: BoxFit.cover,
+                    ),
                   ),
                 ),
-                const SizedBox(height: 24),
-                Opacity(
-                  opacity: _opacityAnim.value,
-                  child: Column(
-                    children: [
-                      const Text(
-                        'Math NIM',
-                        style: TextStyle(
-                          fontSize: 40,
-                          fontWeight: FontWeight.w900,
-                          color: Colors.white,
-                          letterSpacing: 3,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        s.get('appSubtitle'),
-                        style: TextStyle(
-                          fontSize: 15,
-                          color: Colors.white.withOpacity(0.8),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 60),
+                const SizedBox(height: 48),
+                // 하단 로딩 스피너 (빙글빙글)
                 Opacity(
                   opacity: _opacityAnim.value,
                   child: const SizedBox(
-                    width: 28,
-                    height: 28,
+                    width: 40,
+                    height: 40,
                     child: CircularProgressIndicator(
-                      strokeWidth: 2.5,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white70),
+                      strokeWidth: 3.5,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Opacity(
+                  opacity: _opacityAnim.value,
+                  child: Text(
+                    s.get('appSubtitle'),
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.white.withOpacity(0.6),
+                      letterSpacing: 1.2,
                     ),
                   ),
                 ),
