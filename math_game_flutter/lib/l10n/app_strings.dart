@@ -98,6 +98,10 @@ class AppStrings {
       'en': 'Triple Row NIM',
       'ko': '세 줄 님게임',
     },
+    'worldSubtitleQuadRow': {
+      'en': 'Quad Row NIM',
+      'ko': '네 줄 님게임',
+    },
     'worldSubtitleChallenge': {
       'en': 'Ultimate Challenge',
       'ko': '종합 도전',
@@ -133,6 +137,10 @@ class AppStrings {
       'en': 'Triple Row NIM',
       'ko': '세 줄 님게임',
     },
+    'modeQuadRow': {
+      'en': 'Quad Row NIM',
+      'ko': '네 줄 님게임',
+    },
 
     // ── Game Screen: Rules ──
     'ruleSingleRow': {
@@ -150,6 +158,10 @@ class AppStrings {
     'ruleTripleRow': {
       'en': 'You can only take stones from one row.\nThe one who takes the last stone loses!',
       'ko': '한 줄에서만 돌을 가져갈 수 있어요.\n마지막 돌을 가져가는 사람이 져요!',
+    },
+    'ruleQuadRow': {
+      'en': 'Four rows of stones!\nYou can only take stones from one row.\nThe one who takes the last stone loses!',
+      'ko': '네 줄의 돌이 있어요!\n한 줄에서만 돌을 가져갈 수 있어요.\n마지막 돌을 가져가는 사람이 져요!',
     },
     'initialState': {
       'en': 'Initial: {0}',
@@ -387,6 +399,11 @@ class AppStrings {
     'hintMultiRow': {
       'en': '😻 Psst~ try taking {0} from row {1}!',
       'ko': '😻 살짝 알려줄게~ {1}번 줄에서 {0}개!',
+    },
+    // (id=1201) nimSum=0 (이미 져버린 상태)에서 누르는 힌트: 다음 판 선공/후공 추천
+    'hintLosingNextChoice': {
+      'en': "😿 This round is mine already! Next time, pick '{0}' to win!",
+      'ko': "😿 이번 판은 Midnight이 이기는 상태야. 다시 도전할 때 '{0}'를 선택하면 이길 수 있어!",
     },
 
     // ── Tutorial (예린 시나리오 W1~W5) ──

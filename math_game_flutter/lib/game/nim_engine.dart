@@ -185,6 +185,7 @@ class NimEngine {
       return true; // singleRow는 별도 maxTake 필요
     }
 
+    // doubleRow / tripleRow / quadRow: 일반 NIM XOR
     int nimSum = 0;
     for (int r in rows) {
       nimSum ^= r;
@@ -204,9 +205,9 @@ class NimEngine {
     } else if (stageNumber <= 80) {
       mode = GameMode.tripleRow;
     } else {
-      // 81-100: 섞어서
-      int cycle = (stageNumber - 81) % 4;
-      mode = GameMode.values[cycle];
+      // 81-100: 월드5 = 네 줄 님게임 (quadRow) 최종 도전
+      // (id=1201) 대표님 확정: 기존 "섞어서" 구조 폐기, quadRow 전용으로 교체.
+      mode = GameMode.quadRow;
     }
 
     List<int> rows;
@@ -235,6 +236,17 @@ class NimEngine {
       case GameMode.tripleRow:
         int base = 2 + (stageNumber - 61) ~/ 3;
         rows = [base, base + 1, base + 3];
+        break;
+      case GameMode.quadRow:
+        // (id=1201) 월드5 quadRow: 점진 증가
+        // stage 81: [3, 4, 5, 6] → stage 100: [12, 14, 16, 18]
+        // 각 행별 증가분 (9, 10, 11, 12) / 19스테이지 선형 보간.
+        int step = stageNumber - 81; // 0 ~ 19
+        int r0 = 3 + (step * 9) ~/ 19;
+        int r1 = 4 + (step * 10) ~/ 19;
+        int r2 = 5 + (step * 11) ~/ 19;
+        int r3 = 6 + (step * 12) ~/ 19;
+        rows = [r0, r1, r2, r3];
         break;
     }
 

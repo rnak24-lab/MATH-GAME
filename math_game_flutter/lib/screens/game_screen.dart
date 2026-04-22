@@ -111,6 +111,8 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         return s.get('modePepero');
       case GameMode.tripleRow:
         return s.get('modeTripleRow');
+      case GameMode.quadRow:
+        return s.get('modeQuadRow');
     }
   }
 
@@ -124,6 +126,8 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         return s.get('rulePepero');
       case GameMode.tripleRow:
         return s.get('ruleTripleRow');
+      case GameMode.quadRow:
+        return s.get('ruleQuadRow');
     }
   }
 
@@ -143,12 +147,38 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       if (n <= 0) return false;
       return (n - 1) % (_config.maxTake + 1) == 0;
     }
-    // doubleRow / tripleRow: nim XOR == 0 이면 현재 턴 플레이어 패배 확정
+    // doubleRow / tripleRow / quadRow: nim XOR == 0 이면 현재 턴 플레이어 패배 확정
     int nimSum = 0;
     for (int r in _rows) {
       nimSum ^= r;
     }
     return nimSum == 0;
+  }
+
+  /// (id=1201) 이 스테이지의 "초기 상태"에서 선공 플레이어가 이기는가?
+  /// 힌트에서 "다시 도전할 때 선공/후공 어느 쪽을 고르면 되는지" 계산용.
+  ///  - singleRow: (n-1) % (maxTake+1) != 0 이면 선공 승.
+  ///  - multiRow (double/triple/quad): nimSum != 0 이면 선공 승.
+  ///  - pepero: Grundy XOR != 0 이면 선공 승.
+  bool _initialFirstPlayerWins() {
+    final initRows = _config.rows;
+    if (_config.mode == GameMode.singleRow) {
+      int n = initRows[0];
+      if (n <= 0) return false;
+      return (n - 1) % (_config.maxTake + 1) != 0;
+    }
+    if (_config.mode == GameMode.pepero) {
+      // 분할 불가 상태면 선공이 즉시 짐.
+      if (initRows.every((p) => p < 3)) return false;
+      // isAIWinning true = "방금 둔 쪽 유리 = 다음 턴 플레이어 패배" = Grundy XOR == 0
+      // → 초기 상태에서 Grundy XOR == 0 이면 "선공(=첫 수를 두는 플레이어)"은 진다.
+      return !_engine.isAIWinning(initRows, GameMode.pepero);
+    }
+    int nimSum = 0;
+    for (int r in initRows) {
+      nimSum ^= r;
+    }
+    return nimSum != 0;
   }
 
   /// 플레이어 턴 시작 시점에 Midnight의 표정/메시지를 업데이트.
@@ -443,6 +473,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         break;
       case GameMode.doubleRow:
       case GameMode.tripleRow:
+      case GameMode.quadRow:
         move = _engine.multiRowAI(_rows);
         break;
       case GameMode.pepero:
@@ -520,28 +551,44 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   void _showHint() {
     if (_hintsLeft <= 0 || _currentTurn != TurnOwner.player) return;
 
-    NimMove hint;
-    switch (_config.mode) {
-      case GameMode.singleRow:
-        hint = _engine.singleRowAI(_rows[0], _config.maxTake);
-        break;
-      case GameMode.doubleRow:
-      case GameMode.tripleRow:
-        hint = _engine.multiRowAI(_rows);
-        break;
-      case GameMode.pepero:
-        hint = _engine.peperoAI(_rows);
-        break;
-    }
+    // (id=1201) 4번: 현재 턴 플레이어가 이미 진 상태(nimSum=0/Grundy=0)인지 먼저 판정.
+    // 이 경우 "최선의 수"가 아니라 "다음 판에서 선공/후공 선택" 힌트를 준다.
+    //  - 힌트 3회 카운트는 그대로 소진 (대표님 지시: 3회 고정형 유지).
+    final bool canWin = !_calculateMidnightWinsState();
 
     String hintText;
-    if (hint.isPepero) {
-      hintText = s.get('hintPepero', ['${hint.splitA}', '${hint.splitB}']);
-    } else if (_config.mode == GameMode.singleRow) {
-      hintText = s.get('hintSingleRow', ['${hint.count}']);
+    if (!canWin) {
+      // 다음 게임 초기 상태에서 선공/후공 유불리 계산
+      // 초기 nimSum/Grundy != 0 이면 "선공"(내가 먼저)이 이기고, == 0 이면 "후공"(Midnight 먼저)이 이긴다.
+      bool initialFirstPlayerWins = _initialFirstPlayerWins();
+      String advice = initialFirstPlayerWins
+          ? s.get('meFirst')
+          : s.get('midnightFirst');
+      hintText = s.get('hintLosingNextChoice', [advice]);
     } else {
-      hintText = s.get('hintMultiRow',
-          ['${hint.count}', '${hint.rowIndex + 1}']);
+      NimMove hint;
+      switch (_config.mode) {
+        case GameMode.singleRow:
+          hint = _engine.singleRowAI(_rows[0], _config.maxTake);
+          break;
+        case GameMode.doubleRow:
+        case GameMode.tripleRow:
+        case GameMode.quadRow:
+          hint = _engine.multiRowAI(_rows);
+          break;
+        case GameMode.pepero:
+          hint = _engine.peperoAI(_rows);
+          break;
+      }
+
+      if (hint.isPepero) {
+        hintText = s.get('hintPepero', ['${hint.splitA}', '${hint.splitB}']);
+      } else if (_config.mode == GameMode.singleRow) {
+        hintText = s.get('hintSingleRow', ['${hint.count}']);
+      } else {
+        hintText = s.get('hintMultiRow',
+            ['${hint.count}', '${hint.rowIndex + 1}']);
+      }
     }
 
     setState(() => _hintsLeft--);
@@ -549,10 +596,12 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(hintText, style: const TextStyle(fontSize: 15)),
-        backgroundColor: const Color(0xFF7C4DFF),
+        backgroundColor: canWin
+            ? const Color(0xFF7C4DFF)
+            : const Color(0xFFFF6B9D),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        duration: const Duration(seconds: 3),
+        duration: Duration(seconds: canWin ? 3 : 5),
       ),
     );
   }

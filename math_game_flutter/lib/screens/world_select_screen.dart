@@ -71,7 +71,8 @@ const List<WorldInfo> worlds = [
     nameKey: 'worldTheLastBet',
     emoji: '🎲',
     color: Color(0xFFEF5350),
-    subtitleKey: 'worldSubtitleChallenge',
+    // (id=1201) 월드5 quadRow 전용. 기존 "섞어서" 컨셉 폐기.
+    subtitleKey: 'worldSubtitleQuadRow',
     bgGradient: [Color(0xFF5D1A1A), Color(0xFFEF5350), Color(0xFFFFEBEE)],
   ),
 ];
