@@ -255,137 +255,138 @@ class AppStrings {
       'en': 'Stage {0}! Ready?',
       'ko': '스테이지 {0}! 준비됐어?',
     },
+    // 톤: 승/패를 직접 말하지 않음. 웃음·놀림·장난기 위주.
     'greetWin': {
-      'en': "I'll win this time~",
-      'ko': '이번엔 내가 이길 거야~',
+      'en': "Hehe, shall we play? 😼",
+      'ko': '헤헤, 한판 놀아볼까? 😼',
     },
     'greetConfident': {
-      'en': "Hmph, I'm confident this round!",
-      'ko': '흥, 이번 판은 자신있어!',
+      'en': "Ooh, today feels fun~",
+      'ko': '오늘은 왠지 재밌을 것 같은데~',
     },
     'greetLetsGo': {
-      'en': "Let's go! 😊",
-      'ko': '한번 해볼까? 😊',
+      'en': "Let's have fun! 😸",
+      'ko': '즐겁게 해보자냥~ 😸',
     },
     'turnPlayerFirst': {
-      'en': 'OK, you go first!',
-      'ko': '좋아, 네가 먼저 해!',
+      'en': 'Ooh, you first? Go on~',
+      'ko': '오, 네가 먼저? 해봐~',
     },
     'turnMidnightFirst': {
-      'en': "I'll go first~",
-      'ko': '내가 먼저 할게~',
+      'en': "Hehe, me first then~ 😼",
+      'ko': '헤헤, 내가 먼저 갈게~ 😼',
     },
 
-    // ── Midnight Messages: AI winning ──
+    // ── Midnight Messages: 우위 상태 (놀리는/느긋한 느낌, 승패 직접 언급 X) ──
     'midnightWinLate1': {
-      'en': "Hehe, looks like I'll win~",
-      'ko': '후후, 이대로면 내가 이길 것 같아~',
+      'en': "Hehe~ 😼",
+      'ko': '헤헤~ 😼',
     },
     'midnightWinLate2': {
-      'en': 'Almost there! 😆',
-      'ko': '거의 다 됐어! 😆',
+      'en': "Hmm-hmm~ 🎵",
+      'ko': '흐음~ 🎵',
     },
     'midnightWinLate3': {
-      'en': "It's my victory!",
-      'ko': '이번엔 내 승리!',
+      'en': "Purr~ 😸",
+      'ko': '냐하~ 😸',
     },
     'midnightWinEarly1': {
-      'en': 'Good start~',
-      'ko': '좋은 흐름이야~',
+      'en': 'Interesting~',
+      'ko': '재밌어지는걸~',
     },
     'midnightWinEarly2': {
-      'en': "Not bad so far?",
-      'ko': '이 정도면 괜찮은데?',
+      'en': "Hmm, let's see?",
+      'ko': '흠, 어떻게 될까~?',
     },
     'midnightWinEarly3': {
-      'en': 'Hehe, feeling confident!',
-      'ko': '흐흐, 자신있어!',
+      'en': 'Hehe 🐾',
+      'ko': '헤헤 🐾',
     },
 
-    // ── Midnight Messages: AI losing ──
+    // ── Midnight Messages: 열세 상태 (감탄/놀람, 패배 직접 언급 X) ──
     'midnightLoseLate1': {
-      'en': "Ugh... this isn't good...",
-      'ko': '으으... 이러면 안되는데...',
+      'en': "Oho? 😺",
+      'ko': '오호? 😺',
     },
     'midnightLoseLate2': {
-      'en': 'What should I do... 😰',
-      'ko': '어떡하지... 😰',
+      'en': 'Wow, nice move~',
+      'ko': '우와, 좋은 수인걸~',
     },
     'midnightLoseLate3': {
-      'en': "Ahh, I'm losing...!",
-      'ko': '아앗, 불리해...!',
+      'en': "Mrr... sneaky~",
+      'ko': '므으... 얄밉네~',
     },
     'midnightLoseEarly1': {
-      'en': 'Hmm... this is tricky...',
-      'ko': '음... 좀 어렵네...',
+      'en': 'Hmm, tricky~',
+      'ko': '음, 까다로운걸~',
     },
     'midnightLoseEarly2': {
-      'en': 'This one needs thinking...',
-      'ko': '이건 좀 고민되는데...',
+      'en': 'Oh? Let me think...',
+      'ko': '어라? 생각 좀 해야겠어...',
     },
     'midnightLoseEarly3': {
-      'en': 'Hmm...',
-      'ko': '흐음...',
+      'en': 'Hmmm... 🤔',
+      'ko': '흐으음... 🤔',
     },
 
     // ── Midnight Messages: AI moves ──
     'midnightTakeN': {
-      'en': "I'll take {0}~",
-      'ko': '{0}개 가져갈게~',
+      'en': "I'll grab {0}~ 🐾",
+      'ko': '{0}개 콕~ 🐾',
     },
     'midnightTakeFromRow': {
-      'en': '{0} from row {1}!',
-      'ko': '{1}번 줄에서 {0}개!',
+      'en': 'Row {1}, {0} pieces~ 🐾',
+      'ko': '{1}번 줄에서 {0}개~ 🐾',
     },
     'midnightSplit': {
-      'en': "I'll split into {0} and {1}!",
-      'ko': '{0}과 {1}로 나눌게!',
+      'en': "Snap~ {0} and {1}! ✂️",
+      'ko': '톡~ {0}과 {1}로! ✂️',
     },
 
     // ── Midnight Messages: AI turn animation ──
     'midnightThinking': {
-      'en': "Midnight's turn...",
-      'ko': 'Midnight의 차례...',
+      'en': "Hehe, let me think~ 😼",
+      'ko': '헤헤, 뭘 가져갈까~ 😼',
     },
     'midnightTookTotal': {
-      'en': 'Midnight took {0}!',
-      'ko': 'Midnight이 {0}개 가져갔어!',
+      'en': 'Took {0}~ 🐾',
+      'ko': '{0}개 가져갔지롱~ 🐾',
     },
     'midnightTookFromRowTotal': {
-      'en': 'Midnight took {0} from row {1}!',
-      'ko': 'Midnight이 {1}번 줄에서 {0}개 가져갔어!',
+      'en': 'Row {1}, {0} pieces~ 🐾',
+      'ko': '{1}번 줄에서 {0}개~ 🐾',
     },
     'yourTurnNow': {
-      'en': 'Your turn!',
-      'ko': '당신의 차례!',
+      'en': 'Your turn~ 😸',
+      'ko': '자, 네 차례~ 😸',
     },
 
-    // ── Midnight Messages: Game Over ──
+    // ── Midnight Messages: Game Over (승/패 직접 언급 없이 톤만) ──
     'midnightLost': {
-      'en': "Ugh... I lost... I'll win next time!",
-      'ko': '으으... 졌어... 다음엔 꼭 이길 거야!',
+      'en': "Mrrr~ you got me this time! 🐾",
+      'ko': '므으~ 이번엔 당했네! 🐾',
     },
     'midnightWon': {
-      'en': 'Yay~! I won! 🎉',
-      'ko': '야호~! 내가 이겼다! 🎉',
+      'en': 'Hehe~ that was fun! 😼',
+      'ko': '헤헤~ 재밌었어! 😼',
     },
     'midnightNextTime': {
-      'en': "Ugh... I'll get you next time!",
-      'ko': '으으... 다음엔 안 질 거야!',
+      'en': "Come play again~ 😸",
+      'ko': '또 놀러 와~ 😸',
     },
 
-    // ── Hints ──
+    // ── Hints ── (😻 살짝 귀띔해주는 느낌)
     'hintPepero': {
-      'en': '💡 Try splitting into {0} and {1}!',
-      'ko': '💡 {0}과 {1}로 나눠보세요!',
+      'en': '😻 Psst~ try splitting into {0} and {1}!',
+      'ko': '😻 살짝 알려줄게~ {0}과 {1}로 나눠봐!',
     },
     'hintSingleRow': {
-      'en': '💡 Try taking {0}!',
-      'ko': '💡 {0}개를 가져가보세요!',
+      'en': '😻 Psst~ try taking {0}!',
+      'ko': '😻 살짝 알려줄게~ {0}개 가져가봐!',
     },
     'hintMultiRow': {
-      'en': '💡 Try taking {0} from row {1}!',
-      'ko': '💡 {1}번 줄에서 {0}개를 가져가보세요!',
+      'en': '😻 Psst~ try taking {0} from row {1}!',
+      'ko': '😻 살짝 알려줄게~ {1}번 줄에서 {0}개!',
     },
 
     // ── Tutorial (예린 시나리오 W1~W5) ──
