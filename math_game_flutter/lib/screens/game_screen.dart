@@ -11,6 +11,25 @@ import '../services/ad_service.dart';
 import '../game/tutorial_manager.dart';
 import 'world_select_screen.dart' show worldForStage, WorldInfo;
 
+/// Papers-Please풍 "심문 책상" 탑뷰 팔레트 (sepia noir).
+class _Pal {
+  static const deskTop = Color(0xFF3A332A); // 책상 상단(밝은 쪽)
+  static const deskBottom = Color(0xFF241F18); // 책상 하단(어두운 쪽)
+  static const grid = Color(0x12E8DCC0); // 책상 위 미세 그리드/마크
+  static const paper = Color(0xFFC8B790); // 낡은 종이 패널
+  static const paperEdge = Color(0xFFA68F66);
+  static const frame = Color(0xFF4A3D2C); // 짙은 나무 프레임
+  static const frameHi = Color(0xFF6E5C42); // 프레임 하이라이트(베벨)
+  static const cream = Color(0xFFEADFC6); // 어두운 배경 위 글자
+  static const ink = Color(0xFF332817); // 종이 위 글자
+  static const inkSoft = Color(0xFF6A5A3F);
+  static const gold = Color(0xFFC9A24B); // 강조(현재 턴/선택)
+  static const alarm = Color(0xFF9B3B2E); // 경고/패배/제거
+  static const win = Color(0xFF5E7D52); // 승리/성공
+}
+
+const String _mono = 'monospace';
+
 class GameScreen extends StatefulWidget {
   final StageManager stageManager;
   final int stageNumber;
@@ -49,6 +68,16 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   MidnightFace _midnightFace = MidnightFace.neutral;
   String _midnightMessage = '';
   bool _isAiAnimating = false;
+  bool _leaving = false; // Take 시 선택된 돌이 슈르륵 빠지는 중
+
+  // 진행 로그 / 선공자
+  TurnOwner? _firstMover;
+  final List<String> _moveLog = [];
+  bool _logOpen = false;
+
+  void _addLog(String line) {
+    _moveLog.add(line);
+  }
 
   // 플레이어 턴 시작 시 NIM 패배 상태 연속 카운트 (happy → confident 전환용)
   int _consecutiveLossTurns = 0;
@@ -220,6 +249,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       _currentTurn = first;
       _phase = GamePhase.playing;
       _consecutiveLossTurns = 0;
+      _firstMover = first;
+      _moveLog.clear();
+      _addLog(first == TurnOwner.player ? 'START · YOU first' : 'START · MIDNIGHT first');
       if (first == TurnOwner.player) {
         // 첫 턴: NIM 판정 기반 표정 (player가 지는 상태면 happy, 아니면 neutral)
         bool midnightWins = _calculateMidnightWinsState();
@@ -309,65 +341,75 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         return Center(
           child: Container(
             margin: const EdgeInsets.symmetric(horizontal: 32),
-            padding: const EdgeInsets.all(28),
+            padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFFFF6B9D).withOpacity(0.3),
-                  blurRadius: 20,
-                  spreadRadius: 2,
-                ),
+              color: _Pal.paper,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: _Pal.frame, width: 3),
+              boxShadow: const [
+                BoxShadow(color: Colors.black54, blurRadius: 24, spreadRadius: 2),
               ],
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text('⭐', style: TextStyle(fontSize: 50)),
-                const SizedBox(height: 12),
-                Text(
-                  s.get('stageClear'),
-                  style: const TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.w900,
-                    color: Color(0xFF7C4DFF),
-                    letterSpacing: 1,
-                    decoration: TextDecoration.none,
+                // 합격 도장 느낌
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: _Pal.win, width: 3),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    s.get('stageClear'),
+                    style: const TextStyle(
+                      fontFamily: _mono,
+                      fontSize: 24,
+                      fontWeight: FontWeight.w900,
+                      color: _Pal.win,
+                      letterSpacing: 2,
+                      decoration: TextDecoration.none,
+                    ),
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 10),
                 Text(
                   s.get('stageClearDesc', ['${widget.stageNumber}']),
-                  style: TextStyle(
-                    fontSize: 15,
-                    color: Colors.grey[600],
-                    fontWeight: FontWeight.w500,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontFamily: _mono,
+                    fontSize: 13,
+                    color: _Pal.inkSoft,
+                    fontWeight: FontWeight.w600,
                     decoration: TextDecoration.none,
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 MidnightCharacter(
                   face: MidnightFace.worried1,
-                  size: 80,
+                  size: 76,
                   animate: false,
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 4),
                 Text(
                   s.get('midnightNextTime'),
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.grey[500],
+                  style: const TextStyle(
+                    fontFamily: _mono,
+                    fontSize: 12,
+                    color: _Pal.inkSoft,
                     fontStyle: FontStyle.italic,
                     decoration: TextDecoration.none,
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 20),
                 if (hasNext) ...[
                   SizedBox(
                     width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () {
+                    child: _StampButton(
+                      label: s.get('nextStage'),
+                      color: _Pal.gold,
+                      onTap: () {
                         Navigator.pop(context);
                         Navigator.pushReplacement(
                           context,
@@ -380,29 +422,6 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                           ),
                         );
                       },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFFF6B9D),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        elevation: 4,
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            s.get('nextStage'),
-                            style: const TextStyle(
-                              fontSize: 17,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          const Icon(Icons.arrow_forward_rounded, size: 20),
-                        ],
-                      ),
                     ),
                   ),
                   const SizedBox(height: 10),
@@ -415,12 +434,12 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                       Navigator.pop(context);
                     },
                     style: TextButton.styleFrom(
-                      foregroundColor: Colors.grey[600],
-                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      foregroundColor: _Pal.inkSoft,
+                      padding: const EdgeInsets.symmetric(vertical: 10),
                     ),
                     child: Text(
                       s.get('backToStageSelect'),
-                      style: const TextStyle(fontSize: 14),
+                      style: const TextStyle(fontFamily: _mono, fontSize: 13),
                     ),
                   ),
                 ),
@@ -432,8 +451,31 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     );
   }
 
+  /// Take 버튼: 선택된 돌이 아래로 슈르륵 빠지는 애니메이션 후 실제 수를 둔다.
+  void _confirmTake() {
+    if (_phase != GamePhase.playing ||
+        _currentTurn != TurnOwner.player ||
+        _isAiAnimating ||
+        _leaving) return;
+    setState(() => _leaving = true);
+    Future.delayed(const Duration(milliseconds: 360), () {
+      if (!mounted) return;
+      setState(() => _leaving = false);
+      _playerMove();
+    });
+  }
+
   void _playerMove() {
-    if (_phase != GamePhase.playing || _currentTurn != TurnOwner.player || _isAiAnimating) return;
+    if (_phase != GamePhase.playing ||
+        _currentTurn != TurnOwner.player ||
+        _isAiAnimating) return;
+
+    final int tookCount = _selectedCount;
+    final int tookRow = _selectedRow;
+    final bool multi = _rows.length > 1;
+    _addLog(multi
+        ? 'YOU  −$tookCount · R${tookRow + 1}'
+        : 'YOU  −$tookCount');
 
     setState(() {
       if (_config.mode == GameMode.pepero) {
@@ -495,7 +537,8 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       // 빼빼로: 한번에 분할 (순차 애니메이션 대상 아님). AI턴 중 표정은 neutral 유지.
       setState(() {
         _midnightFace = MidnightFace.neutral;
-        _midnightMessage = s.get('midnightSplit', ['${move.splitA}', '${move.splitB}']);
+        _midnightMessage =
+            s.get('midnightSplit', ['${move.splitA}', '${move.splitB}']);
         _rows.removeAt(move.rowIndex);
         _rows.add(move.splitA);
         _rows.add(move.splitB);
@@ -512,8 +555,8 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
           if (_config.mode == GameMode.singleRow) {
             _midnightMessage = s.get('midnightTakeN', ['${i + 1}']);
           } else {
-            _midnightMessage = s.get('midnightTakeFromRow',
-                ['${i + 1}', '${move.rowIndex + 1}']);
+            _midnightMessage = s.get(
+                'midnightTakeFromRow', ['${i + 1}', '${move.rowIndex + 1}']);
           }
         });
         // 돌 1개당 0.4초 간격
@@ -526,8 +569,8 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         if (_config.mode == GameMode.singleRow) {
           _midnightMessage = s.get('midnightTookTotal', ['${move.count}']);
         } else {
-          _midnightMessage = s.get('midnightTookFromRowTotal',
-              ['${move.count}', '${move.rowIndex + 1}']);
+          _midnightMessage = s.get(
+              'midnightTookFromRowTotal', ['${move.count}', '${move.rowIndex + 1}']);
         }
       });
     }
@@ -535,6 +578,12 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     // Phase 4: 종료 pause (0.3초) 후 턴 전환
     await Future.delayed(const Duration(milliseconds: 300));
     if (!mounted || _phase != GamePhase.playing) return;
+
+    _addLog(move.isPepero
+        ? 'MIDNIGHT  split ${move.splitA}+${move.splitB}'
+        : (_rows.length > 1
+            ? 'MIDNIGHT  −${move.count} · R${move.rowIndex + 1}'
+            : 'MIDNIGHT  −${move.count}'));
 
     setState(() {
       _turnCount++;
@@ -552,18 +601,13 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     if (_hintsLeft <= 0 || _currentTurn != TurnOwner.player) return;
 
     // (id=1201) 4번: 현재 턴 플레이어가 이미 진 상태(nimSum=0/Grundy=0)인지 먼저 판정.
-    // 이 경우 "최선의 수"가 아니라 "다음 판에서 선공/후공 선택" 힌트를 준다.
-    //  - 힌트 3회 카운트는 그대로 소진 (대표님 지시: 3회 고정형 유지).
     final bool canWin = !_calculateMidnightWinsState();
 
     String hintText;
     if (!canWin) {
-      // 다음 게임 초기 상태에서 선공/후공 유불리 계산
-      // 초기 nimSum/Grundy != 0 이면 "선공"(내가 먼저)이 이기고, == 0 이면 "후공"(Midnight 먼저)이 이긴다.
       bool initialFirstPlayerWins = _initialFirstPlayerWins();
-      String advice = initialFirstPlayerWins
-          ? s.get('meFirst')
-          : s.get('midnightFirst');
+      String advice =
+          initialFirstPlayerWins ? s.get('meFirst') : s.get('midnightFirst');
       hintText = s.get('hintLosingNextChoice', [advice]);
     } else {
       NimMove hint;
@@ -586,8 +630,8 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       } else if (_config.mode == GameMode.singleRow) {
         hintText = s.get('hintSingleRow', ['${hint.count}']);
       } else {
-        hintText = s.get('hintMultiRow',
-            ['${hint.count}', '${hint.rowIndex + 1}']);
+        hintText =
+            s.get('hintMultiRow', ['${hint.count}', '${hint.rowIndex + 1}']);
       }
     }
 
@@ -595,70 +639,48 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(hintText, style: const TextStyle(fontSize: 15)),
-        backgroundColor: canWin
-            ? const Color(0xFF7C4DFF)
-            : const Color(0xFFFF6B9D),
+        content: Text(hintText,
+            style: const TextStyle(fontFamily: _mono, fontSize: 14)),
+        backgroundColor: canWin ? _Pal.frame : _Pal.alarm,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
         duration: Duration(seconds: canWin ? 3 : 5),
       ),
     );
   }
 
+  // ─────────────────────────────────────────────────────────────
+  // BUILD — Papers-Please풍 심문 책상(탑뷰)
+  // ─────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
-    // (id=1141) 스테이지가 속한 월드의 배경 그라데이션 (연한 하단 톤 위주로 사용)
     final WorldInfo worldInfo = worldForStage(widget.stageNumber);
+    final Color accent = worldInfo.bgGradient.first;
+
     return Scaffold(
-      backgroundColor: Colors.transparent,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_rounded,
-              color: Color(0xFF2C3E50)),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          'Stage ${widget.stageNumber}',
-          style: const TextStyle(
-            color: Color(0xFF2C3E50),
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        centerTitle: true,
-        actions: [
-          if (_phase == GamePhase.playing && _currentTurn == TurnOwner.player)
-            TextButton.icon(
-              onPressed: _hintsLeft > 0 ? _showHint : null,
-              icon: const Icon(Icons.lightbulb_outline, size: 18),
-              label: Text('$_hintsLeft'),
-              style: TextButton.styleFrom(
-                foregroundColor:
-                    _hintsLeft > 0 ? const Color(0xFFFF9800) : Colors.grey,
-              ),
-            ),
-        ],
-      ),
+      backgroundColor: _Pal.deskBottom,
       body: Container(
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            // 플레이 화면은 가독성 위해 연한 하단 톤을 상단에 더 많이 배치
-            colors: [
-              worldInfo.bgGradient[2],
-              worldInfo.bgGradient[2],
-              worldInfo.bgGradient[1].withOpacity(0.25),
-            ],
+            colors: [_Pal.deskTop, _Pal.deskBottom],
           ),
         ),
         child: SafeArea(
-          child: Stack(
+          child: Column(
             children: [
-              _buildBody(),
-              if (_tutorialActive) _buildTutorialOverlay(),
+              _topBar(accent),
+              Expanded(
+                child: Stack(
+                  children: [
+                    _buildBody(),
+                    if (_tutorialActive) _buildTutorialOverlay(),
+                  ],
+                ),
+              ),
+              _statusTicker(),
             ],
           ),
         ),
@@ -666,8 +688,178 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     );
   }
 
-  /// 튜토리얼 오버레이: 반투명 배경 + 말풍선 + 다음 버튼.
-  /// 각 월드 1라운드(Stage 1, 21, 41, 61, 81) 진입 시 표시.
+  /// 상단 바: 뒤로 / 스테이지·모드 / 힌트 — 어두운 나무 패널 + 모노 타이포.
+  Widget _topBar(Color accent) {
+    return Container(
+      height: 44,
+      decoration: const BoxDecoration(
+        color: _Pal.frame,
+        border: Border(bottom: BorderSide(color: _Pal.frameHi, width: 2)),
+      ),
+      child: Row(
+        children: [
+          IconButton(
+            icon: const Icon(Icons.arrow_back_ios_rounded,
+                color: _Pal.cream, size: 18),
+            onPressed: () => Navigator.pop(context),
+          ),
+          Container(width: 10, height: 10, color: accent),
+          const SizedBox(width: 8),
+          Text(
+            'STAGE ${widget.stageNumber}',
+            style: const TextStyle(
+              fontFamily: _mono,
+              color: _Pal.cream,
+              fontWeight: FontWeight.w800,
+              fontSize: 15,
+              letterSpacing: 1.5,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              '· ${_getModeTitle()}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontFamily: _mono,
+                color: _Pal.gold,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          if (_phase == GamePhase.playing && _currentTurn == TurnOwner.player)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: TextButton.icon(
+                onPressed: _hintsLeft > 0 ? _showHint : null,
+                icon: Icon(Icons.lightbulb_outline,
+                    size: 18,
+                    color: _hintsLeft > 0 ? _Pal.gold : _Pal.inkSoft),
+                label: Text('$_hintsLeft',
+                    style: TextStyle(
+                        fontFamily: _mono,
+                        color: _hintsLeft > 0 ? _Pal.gold : _Pal.inkSoft,
+                        fontWeight: FontWeight.w800)),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  /// 하단 상태 티커: 날짜/턴/모드 규칙을 흐르는 정보 바.
+  Widget _statusTicker() {
+    String status;
+    if (_phase == GamePhase.gameOver) {
+      status = _playerWon ? s.get('victory') : s.get('defeat');
+    } else if (_phase == GamePhase.turnChoice) {
+      status = s.get('whoGoesFirst');
+    } else {
+      status =
+          _currentTurn == TurnOwner.player ? s.get('myTurn') : s.get('midnightTurn');
+    }
+    return Container(
+      height: 26,
+      decoration: const BoxDecoration(
+        color: _Pal.deskBottom,
+        border: Border(top: BorderSide(color: _Pal.frame, width: 2)),
+      ),
+      alignment: Alignment.centerLeft,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: Text(
+        '▸ CASE #${widget.stageNumber.toString().padLeft(3, '0')}   ·   $status   ·   ${_getModeRule()}',
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(
+          fontFamily: _mono,
+          color: _Pal.inkSoft,
+          fontSize: 11,
+          letterSpacing: 0.5,
+        ),
+      ),
+    );
+  }
+
+  /// 중앙 배치 고양이 — 배경 투명 PNG, 정적(붕붕 애니 제거).
+  /// 발밑에 옅은 타원 그림자만 깔아 떠 보이지 않게 안착.
+  Widget _catFigure({double size = 110}) {
+    return SizedBox(
+      width: size,
+      height: size + 8,
+      child: Stack(
+        alignment: Alignment.bottomCenter,
+        children: [
+          // 바닥 그림자 (안정감)
+          Positioned(
+            bottom: 2,
+            child: Container(
+              width: size * 0.5,
+              height: 9,
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.28),
+                borderRadius: BorderRadius.circular(20),
+              ),
+            ),
+          ),
+          // 고양이 (정적, 투명)
+          MidnightCharacter(face: _midnightFace, size: size, animate: false),
+        ],
+      ),
+    );
+  }
+
+  /// 고양이 도발 말풍선 (꼬리가 아래=책상 쪽을 향함).
+  Widget _tauntBubble(String message) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 200),
+          child: Container(
+            key: ValueKey(message),
+            constraints: const BoxConstraints(maxWidth: 240),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+            decoration: BoxDecoration(
+              color: _Pal.paper,
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: _Pal.frame, width: 2),
+            ),
+            child: Text(
+              message,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontFamily: _mono,
+                fontSize: 13,
+                height: 1.35,
+                fontWeight: FontWeight.w600,
+                color: _Pal.ink,
+              ),
+            ),
+          ),
+        ),
+        CustomPaint(size: const Size(16, 9), painter: _BubbleTailDown()),
+      ],
+    );
+  }
+
+  /// 고양이 헤더: 도발 말풍선(위) + 중앙 고양이(아래). 가로 중앙 정렬.
+  Widget _catHeader({double catSize = 110}) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 6, 12, 2),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _tauntBubble(_midnightMessage),
+          const SizedBox(height: 2),
+          _catFigure(size: catSize),
+        ],
+      ),
+    );
+  }
+
   Widget _buildTutorialOverlay() {
     if (_tutorialIndex >= _tutorialSteps.length) {
       return const SizedBox.shrink();
@@ -678,45 +870,27 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       child: GestureDetector(
         onTap: _advanceTutorial,
         child: Container(
-          color: Colors.black.withOpacity(0.55),
+          color: Colors.black.withOpacity(0.66),
           alignment: Alignment.center,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Midnight 말풍선 (크게)
                 MidnightWithBubble(
-                  face: _tutorialIndex == _tutorialSteps.length - 1
+                  face: isLast
                       ? MidnightFace.confident
                       : MidnightFace.happy1,
                   message: step.text,
                   size: 140,
                 ),
                 const SizedBox(height: 20),
-                ElevatedButton(
-                  onPressed: _advanceTutorial,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFF6B9D),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 40, vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                    elevation: 4,
-                  ),
-                  child: Text(
-                    isLast ? s.get('tutStart') : s.get('tutNext'),
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
+                _StampButton(
+                  label: isLast ? s.get('tutStart') : s.get('tutNext'),
+                  color: _Pal.gold,
+                  onTap: _advanceTutorial,
                 ),
                 const SizedBox(height: 12),
-                // 진행 표시 dots
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: List.generate(_tutorialSteps.length, (i) {
@@ -726,7 +900,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                       width: active ? 10 : 6,
                       height: active ? 10 : 6,
                       decoration: BoxDecoration(
-                        color: active ? Colors.white : Colors.white54,
+                        color: active ? _Pal.gold : _Pal.cream.withOpacity(0.4),
                         shape: BoxShape.circle,
                       ),
                     );
@@ -750,179 +924,138 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     }
   }
 
+  // ── 선공 선택 = "사건 브리핑" ───────────────────────────────
   Widget _buildTurnChoice() {
-    return Padding(
-      padding: const EdgeInsets.all(24),
+    return SingleChildScrollView(
       child: Column(
         children: [
-          const Spacer(),
-          MidnightWithBubble(
-            face: _midnightFace,
-            message: _midnightMessage,
-            size: 120,
-          ),
-          const SizedBox(height: 24),
+          _catHeader(catSize: 108),
+          const SizedBox(height: 4),
+          // 사건 파일(도시에) 패널
           Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(20),
+            margin: const EdgeInsets.symmetric(horizontal: 20),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 10,
-                ),
-              ],
+              color: _Pal.paper,
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: _Pal.frame, width: 2),
             ),
             child: Column(
               children: [
-                Text(
-                  _getModeTitle(),
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF7C4DFF),
-                  ),
-                ),
-                const SizedBox(height: 8),
+                _dossierRow(s.get('whoGoesFirst').toUpperCase(), accent: true),
+                const Divider(color: _Pal.paperEdge, height: 18),
+                _dossierRow('MODE  —  ${_getModeTitle()}'),
+                const SizedBox(height: 6),
                 Text(
                   _getModeRule(),
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[700],
+                  style: const TextStyle(
+                    fontFamily: _mono,
+                    fontSize: 12.5,
+                    color: _Pal.inkSoft,
                     height: 1.5,
                   ),
                 ),
                 const SizedBox(height: 8),
-                Text(
-                  s.get('initialState', [_rows.join(', ')]),
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.grey[500],
-                    fontWeight: FontWeight.w600,
+                _dossierRow(
+                    'INIT  —  [ ${_rows.join('  ·  ')} ]'),
+              ],
+            ),
+          ),
+          const SizedBox(height: 18),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(
+              children: [
+                Expanded(
+                  child: _StampButton(
+                    label: s.get('meFirst'),
+                    color: _Pal.frameHi,
+                    icon: Icons.person,
+                    onTap: () => _chooseTurn(TurnOwner.player),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _StampButton(
+                    label: s.get('midnightFirst'),
+                    color: _Pal.alarm,
+                    icon: Icons.pets,
+                    onTap: () => _chooseTurn(TurnOwner.midnight),
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 24),
-          Text(
-            s.get('whoGoesFirst'),
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF2C3E50),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: _choiceButton(
-                  s.get('meFirst'),
-                  Icons.person,
-                  const Color(0xFF42A5F5),
-                  () => _chooseTurn(TurnOwner.player),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _choiceButton(
-                  s.get('midnightFirst'),
-                  Icons.smart_toy,
-                  const Color(0xFFFF6B9D),
-                  () => _chooseTurn(TurnOwner.midnight),
-                ),
-              ),
-            ],
-          ),
-          const Spacer(),
+          const SizedBox(height: 20),
         ],
       ),
     );
   }
 
-  Widget _choiceButton(
-      String label, IconData icon, Color color, VoidCallback onTap) {
-    return Material(
-      color: color,
-      borderRadius: BorderRadius.circular(16),
-      elevation: 4,
-      shadowColor: color.withOpacity(0.4),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          child: Column(
-            children: [
-              Icon(icon, color: Colors.white, size: 28),
-              const SizedBox(height: 6),
-              Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                ),
-              ),
-            ],
-          ),
+  Widget _dossierRow(String text, {bool accent = false}) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Text(
+        text,
+        style: TextStyle(
+          fontFamily: _mono,
+          fontSize: accent ? 15 : 13,
+          fontWeight: accent ? FontWeight.w900 : FontWeight.w700,
+          color: accent ? _Pal.alarm : _Pal.ink,
+          letterSpacing: accent ? 1 : 0.3,
         ),
       ),
     );
   }
 
+  // ── 플레이 / 결과 = 책상 위 ─────────────────────────────────
   Widget _buildGameBoard() {
     return Column(
       children: [
+        _catHeader(catSize: 90),
+        // 턴/결과 도장 배지
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: MidnightWithBubble(
-            face: _midnightFace,
-            message: _midnightMessage,
-            size: 100,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          child: _turnStamp(),
         ),
-        Container(
-          margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 20),
-          decoration: BoxDecoration(
-            color: _phase == GamePhase.gameOver
-                ? (_playerWon
-                    ? const Color(0xFF4CAF50)
-                    : const Color(0xFFF44336))
-                : (_currentTurn == TurnOwner.player
-                    ? const Color(0xFF42A5F5)
-                    : const Color(0xFFFF6B9D)),
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Text(
-            _phase == GamePhase.gameOver
-                ? (_playerWon ? s.get('victory') : s.get('defeat'))
-                : (_currentTurn == TurnOwner.player
-                    ? s.get('myTurn')
-                    : s.get('midnightTurn')),
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
+        // 진행 로그 / 선공 패널
+        _logPanel(),
+        const SizedBox(height: 4),
+        // 탑뷰 책상
+        Expanded(
+          child: Container(
+            margin: const EdgeInsets.fromLTRB(12, 4, 12, 4),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: _Pal.frame, width: 3),
+              boxShadow: const [
+                BoxShadow(
+                    color: Colors.black54, blurRadius: 12, offset: Offset(0, 4)),
+              ],
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: Stack(
+              children: [
+                Positioned.fill(child: CustomPaint(painter: _DeskPainter())),
+                Positioned.fill(child: _buildBoardArea()),
+              ],
             ),
           ),
         ),
-        Expanded(child: _buildBoardArea()),
         if (_phase == GamePhase.playing && _currentTurn == TurnOwner.player)
           _buildActionArea(),
         if (_phase == GamePhase.gameOver && !_playerWon)
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(12),
             child: Row(
               children: [
                 Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () {
+                  child: _StampButton(
+                    label: s.get('retry'),
+                    color: _Pal.frameHi,
+                    icon: Icons.refresh,
+                    onTap: () {
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
@@ -934,40 +1067,146 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                         ),
                       );
                     },
-                    icon: const Icon(Icons.refresh),
-                    label: Text(s.get('retry')),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF42A5F5),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                    ),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
                 Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.arrow_back),
-                    label: Text(s.get('goBack')),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.grey[600],
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                    ),
+                  child: _StampButton(
+                    label: s.get('goBack'),
+                    color: _Pal.frame,
+                    icon: Icons.arrow_back,
+                    onTap: () => Navigator.pop(context),
                   ),
                 ),
               ],
             ),
           ),
-        // 결과 화면 하단 배너 광고 (승/패 관계없이 노출)
         if (_phase == GamePhase.gameOver)
           const Center(child: BannerAdWidget()),
       ],
+    );
+  }
+
+  Widget _turnStamp() {
+    final bool over = _phase == GamePhase.gameOver;
+    final Color c = over
+        ? (_playerWon ? _Pal.win : _Pal.alarm)
+        : (_currentTurn == TurnOwner.player ? _Pal.gold : _Pal.alarm);
+    final String label = over
+        ? (_playerWon ? s.get('victory') : s.get('defeat'))
+        : (_currentTurn == TurnOwner.player
+            ? s.get('myTurn')
+            : s.get('midnightTurn'));
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+      decoration: BoxDecoration(
+        border: Border.all(color: c, width: 2.5),
+        borderRadius: BorderRadius.circular(4),
+        color: c.withOpacity(0.12),
+      ),
+      child: Text(
+        label.toUpperCase(),
+        style: TextStyle(
+          fontFamily: _mono,
+          fontSize: 14,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 2,
+          color: c == _Pal.gold ? _Pal.gold : c,
+        ),
+      ),
+    );
+  }
+
+  /// 진행 로그 + 선공자 패널 (접었다 펴기). 세로폰 공간 절약 위해 기본 접힘.
+  Widget _logPanel() {
+    final String first = _firstMover == null
+        ? '—'
+        : (_firstMover == TurnOwner.player ? 'YOU' : 'MIDNIGHT');
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: _Pal.deskBottom,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: _Pal.frame, width: 1.5),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          InkWell(
+            onTap: () => setState(() => _logOpen = !_logOpen),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              child: Row(
+                children: [
+                  const Text(
+                    '▸ LOG',
+                    style: TextStyle(
+                      fontFamily: _mono,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w900,
+                      color: _Pal.gold,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'FIRST · $first',
+                    style: const TextStyle(
+                      fontFamily: _mono,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: _Pal.cream,
+                    ),
+                  ),
+                  const Spacer(),
+                  Text(
+                    '${(_moveLog.length - 1).clamp(0, 999)} moves',
+                    style: const TextStyle(
+                      fontFamily: _mono,
+                      fontSize: 10,
+                      color: _Pal.inkSoft,
+                    ),
+                  ),
+                  Icon(
+                    _logOpen
+                        ? Icons.expand_less_rounded
+                        : Icons.expand_more_rounded,
+                    size: 18,
+                    color: _Pal.cream,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (_logOpen)
+            Container(
+              width: double.infinity,
+              constraints: const BoxConstraints(maxHeight: 92),
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+              child: ListView(
+                reverse: true,
+                shrinkWrap: true,
+                children: _moveLog.reversed.map((l) {
+                  final Color c = l.startsWith('MIDNIGHT')
+                      ? const Color(0xFFD98A6E)
+                      : (l.startsWith('YOU') ? _Pal.gold : _Pal.inkSoft);
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 1.5),
+                    child: Text(
+                      l,
+                      style: TextStyle(
+                        fontFamily: _mono,
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w600,
+                        color: c,
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+        ],
+      ),
     );
   }
 
@@ -978,105 +1217,96 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     return _buildStonesBoard();
   }
 
+  /// 돌을 탭해 가져갈 만큼 선택 → 선택된 돌은 내 쪽(아래)으로 슥 내려온다.
+  void _selectStone(int rowIdx, int tappedIndex) {
+    if (_currentTurn != TurnOwner.player || _isAiAnimating || _leaving) return;
+    final len = _rows[rowIdx];
+    int count = len - tappedIndex; // 탭한 돌 ~ 끝까지 선택
+    if (_config.mode == GameMode.singleRow) {
+      count = count.clamp(1, _config.maxTake);
+    } else {
+      count = count.clamp(1, len);
+    }
+    setState(() {
+      _selectedRow = rowIdx;
+      _selectedCount = count;
+    });
+  }
+
   Widget _buildStonesBoard() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: List.generate(_rows.length, (rowIdx) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Column(
-              children: [
-                if (_rows.length > 1)
-                  Text(
-                    s.get('rowLabel', ['${rowIdx + 1}']),
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: _selectedRow == rowIdx
-                          ? const Color(0xFF7C4DFF)
-                          : Colors.grey[500],
+    final bool multi = _rows.length > 1;
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(_rows.length, (rowIdx) {
+            final len = _rows[rowIdx];
+            final isSelRow = _selectedRow == rowIdx;
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (multi)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 12),
+                      child: Text(
+                        'R${rowIdx + 1}',
+                        style: TextStyle(
+                          fontFamily: _mono,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                          color: isSelRow
+                              ? _Pal.gold
+                              : _Pal.cream.withOpacity(0.45),
+                        ),
+                      ),
                     ),
-                  ),
-                const SizedBox(height: 4),
-                GestureDetector(
-                  onTap: _rows.length > 1 && _currentTurn == TurnOwner.player
-                      ? () => setState(() {
-                            _selectedRow = rowIdx;
-                            _selectedCount = 1;
-                          })
-                      : null,
-                  child: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: _selectedRow == rowIdx
-                          ? const Color(0xFF7C4DFF).withOpacity(0.08)
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(12),
-                      border: _selectedRow == rowIdx
-                          ? Border.all(
-                              color: const Color(0xFF7C4DFF).withOpacity(0.3),
-                              width: 2)
-                          : null,
-                    ),
+                  Flexible(
                     child: Wrap(
-                      spacing: 6,
-                      runSpacing: 6,
-                      children: List.generate(_rows[rowIdx], (i) {
-                        bool isSelected = rowIdx == _selectedRow &&
-                            i >= _rows[rowIdx] - _selectedCount;
-                        return AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          width: 32,
-                          height: 32,
-                          decoration: BoxDecoration(
-                            color: isSelected
-                                ? const Color(0xFFFF6B9D)
-                                : const Color(0xFF78909C),
-                            shape: BoxShape.circle,
-                            boxShadow: isSelected
-                                ? [
-                                    BoxShadow(
-                                      color: const Color(0xFFFF6B9D)
-                                          .withOpacity(0.4),
-                                      blurRadius: 6,
-                                    )
-                                  ]
-                                : null,
-                          ),
-                          child: isSelected
-                              ? const Icon(Icons.close,
-                                  color: Colors.white, size: 16)
-                              : null,
+                      spacing: 10,
+                      runSpacing: 10,
+                      alignment: WrapAlignment.center,
+                      children: List.generate(len, (i) {
+                        final bool selected =
+                            isSelRow && i >= len - _selectedCount;
+                        return _Stone(
+                          selected: selected,
+                          leaving: _leaving && selected,
+                          onTap: () => _selectStone(rowIdx, i),
                         );
                       }),
                     ),
                   ),
-                ),
-              ],
-            ),
-          );
-        }),
+                ],
+              ),
+            );
+          }),
+        ),
       ),
     );
   }
 
   Widget _buildPeperoBoard() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
             s.get('peperoBundles'),
             style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF8D6E63),
+              fontFamily: _mono,
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
+              color: _Pal.cream,
+              letterSpacing: 1,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
           Wrap(
             spacing: 12,
             runSpacing: 12,
@@ -1092,36 +1322,27 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                         })
                     : null,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   decoration: BoxDecoration(
-                    color: selected
-                        ? const Color(0xFF8D6E63).withOpacity(0.15)
-                        : Colors.white,
-                    borderRadius: BorderRadius.circular(12),
+                    color: selected ? _Pal.gold.withOpacity(0.15) : _Pal.paper,
+                    borderRadius: BorderRadius.circular(6),
                     border: Border.all(
-                      color: selected
-                          ? const Color(0xFF8D6E63)
-                          : Colors.grey[300]!,
-                      width: selected ? 2 : 1,
+                      color: selected ? _Pal.gold : _Pal.frame,
+                      width: selected ? 2.5 : 1.5,
                     ),
                   ),
                   child: Column(
                     children: [
-                      Text(
-                        '🍫',
-                        style: TextStyle(fontSize: selectable ? 28 : 20),
-                      ),
+                      Text('🍫',
+                          style: TextStyle(fontSize: selectable ? 26 : 18)),
                       Text(
                         s.get('nPieces', ['${_rows[i]}']),
                         style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: selectable
-                              ? const Color(0xFF2C3E50)
-                              : Colors.grey,
+                          fontFamily: _mono,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                          color: selectable ? _Pal.ink : _Pal.inkSoft,
                         ),
                       ),
                     ],
@@ -1137,17 +1358,10 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
 
   Widget _buildActionArea() {
     return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, -2),
-          ),
-        ],
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      decoration: const BoxDecoration(
+        color: _Pal.frame,
+        border: Border(top: BorderSide(color: _Pal.frameHi, width: 2)),
       ),
       child: _config.mode == GameMode.pepero
           ? _buildPeperoAction()
@@ -1160,11 +1374,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     if (_config.mode == GameMode.singleRow) {
       maxCanTake = maxCanTake.clamp(1, _config.maxTake);
     }
-    // (id=1143) 슬라이더 대신 버튼 그룹으로 "가져갈 개수" 선택.
-    // 현재 선택값이 maxCanTake를 넘으면 클램프 (rows가 줄어든 경우 대비).
-    if (_selectedCount > maxCanTake) {
-      _selectedCount = maxCanTake;
-    }
+    if (_selectedCount > maxCanTake) _selectedCount = maxCanTake;
     if (_selectedCount < 1) _selectedCount = 1;
 
     return Column(
@@ -1178,91 +1388,30 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                   ? s.get('takeFromRow', ['${_selectedRow + 1}'])
                   : s.get('takeCount'),
               style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF2C3E50),
+                fontFamily: _mono,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: _Pal.cream,
               ),
             ),
             Text(
               s.get('nPieces', ['$_selectedCount']),
               style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFFFF6B9D),
+                fontFamily: _mono,
+                fontSize: 20,
+                fontWeight: FontWeight.w900,
+                color: _Pal.gold,
               ),
             ),
           ],
         ),
         const SizedBox(height: 10),
-        // 가져갈 수 선택 버튼 그룹 (1 ~ maxCanTake)
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          alignment: WrapAlignment.center,
-          children: List.generate(maxCanTake, (i) {
-            final n = i + 1;
-            final selected = n == _selectedCount;
-            return SizedBox(
-              width: 52,
-              height: 44,
-              child: Material(
-                color: selected
-                    ? const Color(0xFFFF6B9D)
-                    : Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                elevation: selected ? 3 : 1,
-                shadowColor: const Color(0xFFFF6B9D).withOpacity(0.3),
-                child: InkWell(
-                  onTap: () => setState(() => _selectedCount = n),
-                  borderRadius: BorderRadius.circular(12),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: selected
-                            ? const Color(0xFFFF6B9D)
-                            : Colors.grey.shade300,
-                        width: selected ? 2 : 1,
-                      ),
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      '$n',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                        color: selected
-                            ? Colors.white
-                            : const Color(0xFF2C3E50),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            );
-          }),
-        ),
-        const SizedBox(height: 12),
         SizedBox(
           width: double.infinity,
-          child: ElevatedButton(
-            onPressed: _playerMove,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFFF6B9D),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-              ),
-              elevation: 4,
-            ),
-            child: Text(
-              s.get('takeNStones', ['$_selectedCount']),
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
+          child: _StampButton(
+            label: s.get('takeNStones', ['$_selectedCount']),
+            color: _Pal.alarm,
+            onTap: _confirmTake,
           ),
         ),
       ],
@@ -1275,8 +1424,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         child: Text(
           s.get('selectSplittable'),
           style: const TextStyle(
-            fontSize: 14,
-            color: Color(0xFF8D6E63),
+            fontFamily: _mono,
+            fontSize: 13,
+            color: _Pal.cream,
           ),
         ),
       );
@@ -1294,44 +1444,54 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
             Text(
               s.get('split'),
               style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF2C3E50),
+                fontFamily: _mono,
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: _Pal.cream,
               ),
             ),
             Text(
               '$_splitA + ${pile - _splitA}',
               style: const TextStyle(
+                fontFamily: _mono,
                 fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF8D6E63),
+                fontWeight: FontWeight.w900,
+                color: _Pal.gold,
               ),
             ),
           ],
         ),
-        const SizedBox(height: 8),
-        Slider(
-          value: _splitA.toDouble(),
-          min: 1,
-          max: maxSplitA.toDouble(),
-          divisions: maxSplitA > 1 ? maxSplitA - 1 : 1,
-          activeColor: const Color(0xFF8D6E63),
-          onChanged: (val) {
-            int a = val.round();
-            int b = pile - a;
-            if (a != b) {
-              setState(() => _splitA = a);
-            }
-          },
+        SliderTheme(
+          data: SliderTheme.of(context).copyWith(
+            activeTrackColor: _Pal.gold,
+            inactiveTrackColor: _Pal.deskBottom,
+            thumbColor: _Pal.gold,
+          ),
+          child: Slider(
+            value: _splitA.toDouble(),
+            min: 1,
+            max: maxSplitA.toDouble(),
+            divisions: maxSplitA > 1 ? maxSplitA - 1 : 1,
+            onChanged: (val) {
+              int a = val.round();
+              int b = pile - a;
+              if (a != b) {
+                setState(() => _splitA = a);
+              }
+            },
+          ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 4),
         SizedBox(
           width: double.infinity,
-          child: ElevatedButton(
-            onPressed: () {
+          child: _StampButton(
+            label: s.get('splitAction', ['$_splitA', '${pile - _splitA}']),
+            color: _Pal.alarm,
+            onTap: () {
               int a = _splitA;
               int b = pile - a;
               if (a != b && a > 0 && b > 0) {
+                _addLog('YOU  split $a+$b');
                 setState(() {
                   _rows.removeAt(_selectedPile);
                   _rows.add(a);
@@ -1343,7 +1503,6 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                   _splitA = 1;
                 });
                 if (!_checkGameOver()) {
-                  // AI턴 진입: 표정 neutral 고정
                   setState(() {
                     _midnightFace = MidnightFace.neutral;
                   });
@@ -1352,25 +1511,198 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                 }
               }
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF8D6E63),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-              ),
-              elevation: 4,
-            ),
-            child: Text(
-              s.get('splitAction', ['$_splitA', '${pile - _splitA}']),
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
           ),
         ),
       ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// 재사용 위젯 / 페인터
+// ─────────────────────────────────────────────────────────────
+
+/// 책상 위 돌 = 부감(탑뷰) 칩 토큰.
+/// selected → 내 쪽(아래)으로 살짝 내려오며 강조. leaving → 아래로 슈르륵 빠지며 사라짐.
+class _Stone extends StatelessWidget {
+  final bool selected;
+  final bool leaving;
+  final VoidCallback? onTap;
+  const _Stone({required this.selected, required this.leaving, this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    const double d = 34;
+    final token = AnimatedContainer(
+      duration: const Duration(milliseconds: 160),
+      width: d,
+      height: d,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: RadialGradient(
+          center: const Alignment(-0.4, -0.5),
+          radius: 0.95,
+          colors: selected
+              ? const [Color(0xFFF0D49A), Color(0xFFC9A24B)]
+              : const [Color(0xFFD9C7A0), Color(0xFF8C7A55)],
+        ),
+        border: Border.all(
+          color: selected ? const Color(0xFF8A6A20) : const Color(0xFF5C4E33),
+          width: selected ? 2 : 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(selected ? 0.5 : 0.4),
+            blurRadius: selected ? 6 : 3,
+            offset: Offset(1, selected ? 4 : 2),
+          ),
+        ],
+      ),
+    );
+
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedSlide(
+        offset: leaving
+            ? const Offset(0, 2.6)
+            : (selected ? const Offset(0, 0.42) : Offset.zero),
+        duration: Duration(milliseconds: leaving ? 340 : 170),
+        curve: leaving ? Curves.easeIn : Curves.easeOutBack,
+        child: AnimatedOpacity(
+          opacity: leaving ? 0 : 1,
+          duration: const Duration(milliseconds: 320),
+          child: token,
+        ),
+      ),
+    );
+  }
+}
+
+/// 탑뷰 책상 표면: 어두운 나무 + 미세 그리드 + 등록(+) 마크.
+class _DeskPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final bg = Paint()..color = const Color(0xFF2B251D);
+    canvas.drawRect(Offset.zero & size, bg);
+
+    // 미세 그리드
+    final grid = Paint()
+      ..color = _Pal.grid
+      ..strokeWidth = 1;
+    const step = 38.0;
+    for (double x = step; x < size.width; x += step) {
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), grid);
+    }
+    for (double y = step; y < size.height; y += step) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), grid);
+    }
+
+    // 등록(+) 마크 — 모서리 안쪽
+    final mark = Paint()
+      ..color = const Color(0x33E8DCC0)
+      ..strokeWidth = 1.5;
+    const m = 22.0;
+    const pad = 18.0;
+    void plus(double cx, double cy) {
+      canvas.drawLine(Offset(cx - m / 2, cy), Offset(cx + m / 2, cy), mark);
+      canvas.drawLine(Offset(cx, cy - m / 2), Offset(cx, cy + m / 2), mark);
+    }
+
+    plus(pad + 8, pad + 8);
+    plus(size.width - pad - 8, pad + 8);
+    plus(pad + 8, size.height - pad - 8);
+    plus(size.width - pad - 8, size.height - pad - 8);
+    plus(size.width / 2, size.height / 2);
+
+    // 가장자리 비네팅
+    final vignette = Paint()
+      ..shader = RadialGradient(
+        colors: [Colors.transparent, Colors.black.withOpacity(0.45)],
+        stops: const [0.6, 1.0],
+      ).createShader(Offset.zero & size);
+    canvas.drawRect(Offset.zero & size, vignette);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+/// 말풍선 꼬리(아래 방향) — 종이색 + 프레임 테두리 느낌.
+class _BubbleTailDown extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final fill = Paint()..color = _Pal.paper;
+    final border = Paint()
+      ..color = _Pal.frame
+      ..strokeWidth = 2
+      ..style = PaintingStyle.stroke;
+    final path = Path()
+      ..moveTo(0, 0)
+      ..lineTo(size.width / 2, size.height)
+      ..lineTo(size.width, 0);
+    canvas.drawPath(path, fill);
+    canvas.drawPath(path, border);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+/// 공통 "도장" 버튼 — 모노 타이포 + 베벨 테두리.
+class _StampButton extends StatelessWidget {
+  final String label;
+  final Color color;
+  final IconData? icon;
+  final VoidCallback onTap;
+
+  const _StampButton({
+    required this.label,
+    required this.color,
+    required this.onTap,
+    this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: color,
+      borderRadius: BorderRadius.circular(6),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(6),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(color: Colors.black.withOpacity(0.35), width: 2),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (icon != null) ...[
+                Icon(icon, color: _Pal.cream, size: 18),
+                const SizedBox(width: 8),
+              ],
+              Flexible(
+                child: Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontFamily: _mono,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.5,
+                    color: _Pal.cream,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
