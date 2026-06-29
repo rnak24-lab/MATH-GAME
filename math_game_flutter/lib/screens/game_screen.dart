@@ -786,11 +786,29 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   /// 발밑에 옅은 타원 그림자만 깔아 떠 보이지 않게 안착.
   Widget _catFigure({double size = 110}) {
     return SizedBox(
-      width: size,
-      height: size + 8,
+      width: size * 1.25,
+      height: size + 10,
       child: Stack(
         alignment: Alignment.bottomCenter,
         children: [
+          // 스포트라이트: 어두운 책상에서 검은 도트 고양이가 묻히지 않게 (심문 조명 톤)
+          Center(
+            child: Container(
+              width: size * 1.2,
+              height: size * 1.2,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    const Color(0xFFEADFC6).withOpacity(0.30),
+                    const Color(0xFFC9A24B).withOpacity(0.12),
+                    Colors.transparent,
+                  ],
+                  stops: const [0.0, 0.45, 0.78],
+                ),
+              ),
+            ),
+          ),
           // 바닥 그림자 (안정감)
           Positioned(
             bottom: 2,
@@ -798,12 +816,12 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
               width: size * 0.5,
               height: 9,
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.28),
+                color: Colors.black.withOpacity(0.3),
                 borderRadius: BorderRadius.circular(20),
               ),
             ),
           ),
-          // 고양이 (정적, 투명)
+          // 고양이 (정적, 투명 도트 에셋)
           MidnightCharacter(face: _midnightFace, size: size, animate: false),
         ],
       ),
