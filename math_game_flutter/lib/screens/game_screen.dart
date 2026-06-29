@@ -60,7 +60,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
 
   // Selection state
   int _selectedRow = 0;
-  int _selectedCount = 1;
+  int _selectedCount = 0; // 0 = 아무 돌도 안 집은 상태 (턴 시작 시 미리선택 없음)
   int _selectedPile = 0;
   int _splitA = 1;
 
@@ -249,6 +249,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       _currentTurn = first;
       _phase = GamePhase.playing;
       _consecutiveLossTurns = 0;
+      _selectedCount = 0;
       _firstMover = first;
       _moveLog.clear();
       _addLog(first == TurnOwner.player ? 'START · YOU first' : 'START · MIDNIGHT first');
@@ -456,7 +457,8 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     if (_phase != GamePhase.playing ||
         _currentTurn != TurnOwner.player ||
         _isAiAnimating ||
-        _leaving) return;
+        _leaving ||
+        _selectedCount < 1) return;
     setState(() => _leaving = true);
     Future.delayed(const Duration(milliseconds: 360), () {
       if (!mounted) return;
@@ -493,7 +495,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       }
       _turnCount++;
       _currentTurn = TurnOwner.midnight;
-      _selectedCount = 1;
+      _selectedCount = 0;
     });
 
     if (!_checkGameOver()) {
@@ -589,6 +591,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       _turnCount++;
       _currentTurn = TurnOwner.player;
       _isAiAnimating = false;
+      _selectedCount = 0; // 내 턴 시작: 미리선택 없음
     });
 
     if (!_checkGameOver()) {
@@ -1235,16 +1238,27 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     return _buildStonesBoard();
   }
 
-  /// 돌을 탭해 가져갈 만큼 선택 → 선택된 돌은 내 쪽(아래)으로 슥 내려온다.
+  /// 돌을 탭해 가져갈 만큼 선택 (쥐었다 내려놓기).
+  /// - 선택 안 된 돌을 탭: 그 돌 ~ 끝까지 집어 내려옴 (count = len - i)
+  /// - 현재 "경계 돌"(가장 왼쪽으로 집힌 돌)을 다시 탭: 그 한 개를 내려놓음 (count - 1)
+  ///   → 1개일 때 2개 만드는 돌과 2개일 때 1개 만드는 돌이 동일.
   void _selectStone(int rowIdx, int tappedIndex) {
     if (_currentTurn != TurnOwner.player || _isAiAnimating || _leaving) return;
     final len = _rows[rowIdx];
-    int count = len - tappedIndex; // 탭한 돌 ~ 끝까지 선택
-    if (_config.mode == GameMode.singleRow) {
-      count = count.clamp(1, _config.maxTake);
+    int count;
+    final bool tappedBoundary = rowIdx == _selectedRow &&
+        _selectedCount > 0 &&
+        tappedIndex == len - _selectedCount;
+    if (tappedBoundary) {
+      count = _selectedCount - 1; // 내려놓기 (0까지 가능 = 전부 내려놓음)
     } else {
-      count = count.clamp(1, len);
+      count = len - tappedIndex; // 집기
     }
+    if (_config.mode == GameMode.singleRow && count > _config.maxTake) {
+      count = _config.maxTake;
+    }
+    if (count < 0) count = 0;
+    if (count > len) count = len;
     setState(() {
       _selectedRow = rowIdx;
       _selectedCount = count;
@@ -1393,7 +1407,8 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       maxCanTake = maxCanTake.clamp(1, _config.maxTake);
     }
     if (_selectedCount > maxCanTake) _selectedCount = maxCanTake;
-    if (_selectedCount < 1) _selectedCount = 1;
+    if (_selectedCount < 0) _selectedCount = 0;
+    final bool hasSel = _selectedCount > 0;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -1402,23 +1417,25 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              _rows.length > 1
-                  ? s.get('takeFromRow', ['${_selectedRow + 1}'])
-                  : s.get('takeCount'),
-              style: const TextStyle(
+              hasSel
+                  ? (_rows.length > 1
+                      ? s.get('takeFromRow', ['${_selectedRow + 1}'])
+                      : s.get('takeCount'))
+                  : s.get('tapToSelect'),
+              style: TextStyle(
                 fontFamily: _mono,
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
-                color: _Pal.cream,
+                color: hasSel ? _Pal.cream : _Pal.cream.withOpacity(0.55),
               ),
             ),
             Text(
-              s.get('nPieces', ['$_selectedCount']),
-              style: const TextStyle(
+              hasSel ? s.get('nPieces', ['$_selectedCount']) : '—',
+              style: TextStyle(
                 fontFamily: _mono,
                 fontSize: 20,
                 fontWeight: FontWeight.w900,
-                color: _Pal.gold,
+                color: hasSel ? _Pal.gold : _Pal.inkSoft,
               ),
             ),
           ],
@@ -1427,8 +1444,10 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         SizedBox(
           width: double.infinity,
           child: _StampButton(
-            label: s.get('takeNStones', ['$_selectedCount']),
-            color: _Pal.alarm,
+            label: hasSel
+                ? s.get('takeNStones', ['$_selectedCount'])
+                : s.get('takeCount'),
+            color: hasSel ? _Pal.alarm : _Pal.frameHi,
             onTap: _confirmTake,
           ),
         ),

@@ -1,3 +1,4 @@
+import 'dart:math';
 import '../models/game_state.dart';
 
 class NimMove {
@@ -26,6 +27,7 @@ class NimMove {
 class NimEngine {
   // Grundy 캐시 (빼빼로용)
   final Map<String, int> _grundyCache = {};
+  final Random _rng = Random();
 
   /// 한 줄 님게임 AI
   NimMove singleRowAI(int stones, int maxTake) {
@@ -35,8 +37,9 @@ class NimEngine {
     // (n-1) % (maxTake+1) == 0 이면 지는 포지션
     int target = (stones - 1) % (maxTake + 1);
     if (target == 0) {
-      // 지는 포지션 -> 랜덤하게 1개 가져감
-      return NimMove(count: 1);
+      // 지는 포지션 -> 랜덤한 개수(1 ~ min(maxTake, stones))로 가져가 변수를 줌
+      int maxC = maxTake < stones ? maxTake : stones;
+      return NimMove(count: 1 + _rng.nextInt(maxC));
     }
     return NimMove(count: target);
   }
@@ -90,11 +93,15 @@ class NimEngine {
       }
     }
 
-    // 지는 포지션 -> 첫 번째 비어있지 않은 줄에서 1개 가져감
-    for (int i = 0; i < rows.length; i++) {
-      if (rows[i] > 0) {
-        return NimMove(rowIndex: i, count: 1);
-      }
+    // 지는 포지션 -> 랜덤한 줄에서 랜덤한 개수로 가져가 변수를 줌
+    final nonEmpty = <int>[
+      for (int i = 0; i < rows.length; i++)
+        if (rows[i] > 0) i
+    ];
+    if (nonEmpty.isNotEmpty) {
+      int ri = nonEmpty[_rng.nextInt(nonEmpty.length)];
+      int take = 1 + _rng.nextInt(rows[ri]);
+      return NimMove(rowIndex: ri, count: take);
     }
 
     return NimMove(count: 1);
@@ -136,16 +143,25 @@ class NimEngine {
       }
     }
 
-    // 지는 포지션 -> 아무 분할이나
-    for (int i = 0; i < piles.length; i++) {
-      if (piles[i] >= 3) {
-        return NimMove(
-          rowIndex: i,
-          splitA: 1,
-          splitB: piles[i] - 1,
-          isPepero: true,
-        );
+    // 지는 포지션 -> 랜덤한 더미를 랜덤하게 분할해 변수를 줌
+    final splittable = <int>[
+      for (int i = 0; i < piles.length; i++)
+        if (piles[i] >= 3) i
+    ];
+    if (splittable.isNotEmpty) {
+      int pi = splittable[_rng.nextInt(splittable.length)];
+      int n = piles[pi];
+      int a;
+      do {
+        a = 1 + _rng.nextInt(n - 1); // 1 ~ n-1
+      } while (a == n - a); // 균등 분할 금지
+      int b = n - a;
+      if (a > b) {
+        final t = a;
+        a = b;
+        b = t;
       }
+      return NimMove(rowIndex: pi, splitA: a, splitB: b, isPepero: true);
     }
 
     return NimMove(isPepero: true, splitA: 1, splitB: 1);

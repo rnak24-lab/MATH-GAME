@@ -207,6 +207,10 @@ class AppStrings {
       'en': 'Number to take',
       'ko': '가져갈 개수',
     },
+    'tapToSelect': {
+      'en': 'Tap stones to pick',
+      'ko': '돌을 탭해 선택',
+    },
     'takeNStones': {
       'en': 'Take {0}!',
       'ko': '{0}개 가져가기!',
