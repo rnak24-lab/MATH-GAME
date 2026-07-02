@@ -1299,8 +1299,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                     ),
                   Flexible(
                     child: Wrap(
-                      spacing: 10,
-                      runSpacing: 10,
+                      // 44dp 히트박스(시각 34 + 여백 5×2)가 자체 간격을 만들므로 0
+                      spacing: 0,
+                      runSpacing: 0,
                       alignment: WrapAlignment.center,
                       children: List.generate(len, (i) {
                         final bool selected =
@@ -1597,19 +1598,26 @@ class _Stone extends StatelessWidget {
       ),
     );
 
+    // (귀여움 규칙 T1) 터치 타깃 ≥ 44dp: 시각 크기(34)는 유지하고 히트 영역만 확대.
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
-      child: AnimatedSlide(
-        offset: leaving
-            ? const Offset(0, 2.6)
-            : (selected ? const Offset(0, 0.42) : Offset.zero),
-        duration: Duration(milliseconds: leaving ? 340 : 170),
-        curve: leaving ? Curves.easeIn : Curves.easeOutBack,
-        child: AnimatedOpacity(
-          opacity: leaving ? 0 : 1,
-          duration: const Duration(milliseconds: 320),
-          child: token,
+      child: SizedBox(
+        width: 44,
+        height: 44,
+        child: Center(
+          child: AnimatedSlide(
+            offset: leaving
+                ? const Offset(0, 2.6)
+                : (selected ? const Offset(0, 0.42) : Offset.zero),
+            duration: Duration(milliseconds: leaving ? 340 : 170),
+            curve: leaving ? Curves.easeIn : Curves.easeOutBack,
+            child: AnimatedOpacity(
+              opacity: leaving ? 0 : 1,
+              duration: const Duration(milliseconds: 320),
+              child: token,
+            ),
+          ),
         ),
       ),
     );

@@ -193,9 +193,10 @@ class AppStrings {
       'en': '🎉 Victory!',
       'ko': '🎉 승리!',
     },
+    // (귀여움 규칙 L2·M3) 패배는 침울 금지 — 재도전 프레임, 조용하게.
     'defeat': {
-      'en': '😢 Defeat...',
-      'ko': '😢 패배...',
+      'en': 'Almost!',
+      'ko': '아깝다!',
     },
 
     // ── Game Screen: Actions ──
