@@ -209,7 +209,11 @@ class NimEngine {
     return nimSum == 0;
   }
 
-  /// 스테이지 설정 생성
+  /// 스테이지 설정 생성.
+  ///
+  /// 월드 순서 (2026-07-02 대표님 확정 — 개념 난이도 사다리 재배치):
+  /// 한줄 → 두줄(거울 전략) → 세줄 → 네줄 → **빼빼로(Grundy, 최종 보스 월드)**.
+  /// 빼빼로가 가장 어려운 개념이므로 마지막 월드로 이동.
   StageConfig generateStage(int stageNumber) {
     GameMode mode;
     if (stageNumber <= 20) {
@@ -217,13 +221,12 @@ class NimEngine {
     } else if (stageNumber <= 40) {
       mode = GameMode.doubleRow;
     } else if (stageNumber <= 60) {
-      mode = GameMode.pepero;
-    } else if (stageNumber <= 80) {
       mode = GameMode.tripleRow;
-    } else {
-      // 81-100: 월드5 = 네 줄 님게임 (quadRow) 최종 도전
-      // (id=1201) 대표님 확정: 기존 "섞어서" 구조 폐기, quadRow 전용으로 교체.
+    } else if (stageNumber <= 80) {
       mode = GameMode.quadRow;
+    } else {
+      // 81-100: 월드5 = 빼빼로(분할, Sprague-Grundy) 최종 도전
+      mode = GameMode.pepero;
     }
 
     List<int> rows;
@@ -244,25 +247,26 @@ class NimEngine {
         int base = 3 + (stageNumber - 21);
         rows = [base, base + 2];
         break;
-      case GameMode.pepero:
-        int size = 6 + (stageNumber - 41);
-        if (size > 20) size = 20;
-        rows = [size];
-        break;
       case GameMode.tripleRow:
-        int base = 2 + (stageNumber - 61) ~/ 3;
+        // 41-60 (재배치: 기존 61-80 공식을 새 구간으로 이동)
+        int base = 2 + (stageNumber - 41) ~/ 3;
         rows = [base, base + 1, base + 3];
         break;
       case GameMode.quadRow:
-        // (id=1201) 월드5 quadRow: 점진 증가
-        // stage 81: [3, 4, 5, 6] → stage 100: [12, 14, 16, 18]
+        // 61-80 (재배치): stage 61: [3,4,5,6] → stage 80: [12,14,16,18]
         // 각 행별 증가분 (9, 10, 11, 12) / 19스테이지 선형 보간.
-        int step = stageNumber - 81; // 0 ~ 19
+        int step = stageNumber - 61; // 0 ~ 19
         int r0 = 3 + (step * 9) ~/ 19;
         int r1 = 4 + (step * 10) ~/ 19;
         int r2 = 5 + (step * 11) ~/ 19;
         int r3 = 6 + (step * 12) ~/ 19;
         rows = [r0, r1, r2, r3];
+        break;
+      case GameMode.pepero:
+        // 81-100 (재배치): 최종 월드. 6개 → 20개(상한)까지 확대.
+        int size = 6 + (stageNumber - 81);
+        if (size > 20) size = 20;
+        rows = [size];
         break;
     }
 

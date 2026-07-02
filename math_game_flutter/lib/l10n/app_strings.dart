@@ -114,10 +114,10 @@ class AppStrings {
       'en': 'Clear the previous world',
       'ko': '이전 월드를 클리어하세요',
     },
-    // (id=1140) 해금 조건 안내: 이전 월드 마지막 3스테이지 클리어
+    // (2026-07-02) 해금 조건: 이전 월드에서 3판 클리어 (빠른 패스)
     'unlockHint3Stages': {
-      'en': 'Clear the last 3 stages of the previous world to unlock',
-      'ko': '앞 월드 마지막 3스테이지를 깨면 해금돼요',
+      'en': 'Clear any 3 stages of the previous world to unlock',
+      'ko': '앞 월드에서 3판만 깨면 열려요',
     },
 
     // ── Game Screen: Mode Titles ──
@@ -437,6 +437,10 @@ class AppStrings {
       'ko': '마지막 돌을 가져가면... 지는 거야! 조심해!',
     },
     'tutW1_5': {
+      'en': "One more thing — I can't hide my feelings. When I smirk, YOU are in trouble. Strike when my face turns worried!",
+      'ko': '하나 더 — 난 표정을 못 숨겨. 내가 히죽거리면 네가 불리하다는 뜻! 내 표정이 굳는 순간을 노려!',
+    },
+    'tutW1_6': {
       'en': "It's your turn! How many will you take?",
       'ko': '네 차례야! 몇 개를 가져갈래?',
     },
@@ -457,52 +461,52 @@ class AppStrings {
       'en': "Try tapping the top row first!",
       'ko': '위쪽 줄을 한번 눌러볼래?',
     },
-    // W3: 제한 NIM
+    // W3: 세 줄 NIM (2026-07-02 월드 재배치)
     'tutW3_1': {
-      'en': "This round has a limit!",
-      'ko': '이번 규칙에는 제한이 있어!',
+      'en': "Three rows now! Each has a different count.",
+      'ko': '이제 세 줄이야! 줄마다 개수가 달라.',
     },
     'tutW3_2': {
-      'en': "You can only take UP TO 2 stones per row.",
-      'ko': '한 줄에서 가져갈 수 있는 건 최대 2개야.',
+      'en': "Same as before — one row per turn, as many as you want.",
+      'ko': '규칙은 그대로 — 한 번에 한 줄에서만, 원하는 만큼!',
     },
     'tutW3_3': {
-      'en': "No more than that! Choose wisely.",
-      'ko': '3개 이상은 못 가져가! 잘 생각해서 골라봐.',
+      'en': "Watch all three rows. The balance between them is the key.",
+      'ko': '세 줄 전체를 봐. 줄 사이의 균형이 핵심이야.',
     },
     'tutW3_4': {
       'en': "Your turn! Which row and how many?",
       'ko': '이제 네 차례! 어떤 줄에서 몇 개?',
     },
-    // W4: 복합 NIM
+    // W4: 네 줄 NIM (2026-07-02 월드 재배치)
     'tutW4_1': {
-      'en': "Now for real NIM! Three rows, each different!",
-      'ko': '드디어 진짜 NIM이야! 세 줄, 각각 다른 개수!',
+      'en': "Four rows! Now it's getting serious.",
+      'ko': '네 줄이야! 슬슬 진지해지는걸.',
     },
     'tutW4_2': {
-      'en': "Same rules: one row per turn, up to 3 stones.",
-      'ko': '규칙은 같아: 한 줄에서만, 최대 3개까지!',
+      'en': "Rules unchanged — one row per turn.",
+      'ko': '규칙은 똑같아 — 한 번에 한 줄!',
     },
     'tutW4_3': {
-      'en': "Tip: watch the count of each row!",
-      'ko': '팁: 줄마다 남은 개수를 잘 봐!',
+      'en': "Tip: two rows with EQUAL counts cancel out. Find the odd ones!",
+      'ko': '팁: 개수가 같은 두 줄은 서로 상쇄돼. 어긋난 줄을 찾아봐!',
     },
     'tutW4_4': {
       'en': "Where will you start?",
-      'ko': '어떤 줄에서 시작할래?',
+      'ko': '어디서 시작할래?',
     },
-    // W5: 최종 도전
+    // W5: 빼빼로(분할) — 최종 월드 (2026-07-02 월드 재배치)
     'tutW5_1': {
-      'en': "This is the last world. I'm playing for real now!",
-      'ko': '마지막 월드야. 여기부터는 내가 진심이야!',
+      'en': "Final world! The rule changes completely here.",
+      'ko': '마지막 월드야! 여기선 규칙이 완전히 달라.',
     },
     'tutW5_2': {
-      'en': "You know the rules. You can review them in Settings.",
-      'ko': '규칙은 다 알지? 복습은 설정에서 할 수 있어.',
+      'en': "Don't take stones — SPLIT one bundle into two UNEQUAL parts.",
+      'ko': '돌을 가져가는 게 아니야 — 한 묶음을 서로 \'다른\' 크기 둘로 쪼개!',
     },
     'tutW5_3': {
-      'en': "I won't go easy on you this time!",
-      'ko': '이번엔 쉽게 져주지 않을 거야!',
+      'en': "If you can't split anything on your turn... you lose. I'm playing for real now!",
+      'ko': '네 차례에 쪼갤 게 없으면… 지는 거야. 이번엔 나도 진심이야!',
     },
     // 2회 연속 패배 힌트
     'tutHintW1': {
@@ -514,16 +518,16 @@ class AppStrings {
       'ko': '힌트: 줄의 개수가 같게 남기도록 해봐.',
     },
     'tutHintW3': {
-      'en': "Hint: Leave fewer stones than your opponent can handle.",
-      'ko': '힌트: 상대보다 적게 남기는 게 핵심이야.',
+      'en': "Hint: two rows with equal counts cancel out — like mirrors.",
+      'ko': '힌트: 개수가 같은 두 줄은 거울처럼 서로 지워져.',
     },
     'tutHintW4': {
-      'en': "Hint: Think one row at a time.",
-      'ko': '힌트: 한 줄씩 나눠서 생각해봐.',
+      'en': "Hint: pair up equal rows first, then fix what's left.",
+      'ko': '힌트: 같은 줄끼리 먼저 짝짓고, 남는 줄을 맞춰봐.',
     },
     'tutHintW5': {
-      'en': "Hint: Combine everything you learned.",
-      'ko': '힌트: 지금까지 배운 걸 다 떠올려봐.',
+      'en': "Hint: bundles of 1 or 2 can never be split.",
+      'ko': '힌트: 1개나 2개짜리 묶음은 절대 못 쪼개.',
     },
     'tutHintGeneric': {
       'en': "Hint: Think about what you want to leave for your opponent.",

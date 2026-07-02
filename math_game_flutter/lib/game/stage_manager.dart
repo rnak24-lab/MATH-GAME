@@ -2,46 +2,65 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class StageManager {
   static const String _maxStageKey = 'max_stage';
+  static const String _clearedKey = 'cleared_stages';
   static const String _worldUnlockedKey = 'world_unlocked';
   static const String _tutorialDoneKey = 'tutorial_done';
 
+  /// 클리어한 최고 스테이지 (홈 화면 "이어하기" 표시용).
   int maxStage = 0;
   int worldUnlocked = 0;
   bool tutorialDone = false;
+
+  /// 스테이지별 클리어 기록.
+  /// 월드 조기 오픈(빠른 패스)으로 순차 진행이 깨질 수 있어 셋으로 관리.
+  final Set<int> _cleared = <int>{};
 
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
     maxStage = prefs.getInt(_maxStageKey) ?? 0;
     worldUnlocked = prefs.getInt(_worldUnlockedKey) ?? 0;
     tutorialDone = prefs.getBool(_tutorialDoneKey) ?? false;
-  }
 
-  Future<void> clearStage(int stage) async {
-    if (stage > maxStage) {
-      maxStage = stage;
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setInt(_maxStageKey, maxStage);
+    _cleared.clear();
+    final saved = prefs.getStringList(_clearedKey);
+    if (saved != null) {
+      _cleared.addAll(saved.map(int.parse));
+    } else if (maxStage > 0) {
+      // 구버전 세이브 마이그레이션: 순차 진행 전제 → 1..maxStage 전부 클리어 처리
+      for (int i = 1; i <= maxStage; i++) {
+        _cleared.add(i);
+      }
+      await prefs.setStringList(
+          _clearedKey, _cleared.map((e) => '$e').toList());
     }
-    // 월드 언락 체크는 clearStage 조건과 독립적으로 매번 재계산
-    // (id=1140) 규칙: 이전 월드 "마지막 3스테이지(18/19/20번 = 글로벌 stage-2/-1/0)" 모두 클리어 시 다음 월드 해금.
+    // 언락 규칙이 바뀌었을 수 있으므로 로드 시 1회 재계산
     await _recalculateWorldUnlocked();
   }
 
-  /// (id=1140) 해금 규칙 재계산.
-  /// 월드 0(첫 월드)은 항상 해금. 월드 W(1~4)는 이전 월드 W-1의 마지막 3스테이지가 모두 클리어되면 해금.
-  /// 이전 월드 W-1의 마지막 3스테이지 = 글로벌 stage (W*20 - 2), (W*20 - 1), (W*20).
+  Future<void> clearStage(int stage) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (_cleared.add(stage)) {
+      await prefs.setStringList(
+          _clearedKey, _cleared.map((e) => '$e').toList());
+    }
+    if (stage > maxStage) {
+      maxStage = stage;
+      await prefs.setInt(_maxStageKey, maxStage);
+    }
+    await _recalculateWorldUnlocked();
+  }
+
+  /// 월드 해금 규칙 (빠른 패스):
+  /// 월드 0은 항상 해금. 월드 W(1~4)는 이전 월드 W-1에서 **3판만 클리어하면** 해금.
+  /// 공식을 이미 아는 플레이어는 지루한 구간을 빠르게 넘어갈 수 있고,
+  /// 20판 전부 깨는 완주는 별개의 목표로 남는다.
+  static const int _unlockClearsNeeded = 3;
+
   Future<void> _recalculateWorldUnlocked() async {
-    int unlocked = 0; // 월드 0은 기본 해금
+    int unlocked = 0;
     for (int w = 1; w <= 4; w++) {
-      int lastStageOfPrevWorld = w * 20;
-      int first = lastStageOfPrevWorld - 2;
-      // 마지막 3스테이지(연속) 모두 클리어 여부 = maxStage >= lastStageOfPrevWorld
-      // (stage-by-stage 순차 클리어 전제에서는 동치)
-      if (maxStage >= lastStageOfPrevWorld) {
+      if (getWorldProgress(w - 1) >= _unlockClearsNeeded) {
         unlocked = w;
-      } else if (maxStage >= first) {
-        // 부분 클리어 중: 아직 3개 전부 못깬 상태 → 해금 안 됨
-        break;
       } else {
         break;
       }
@@ -59,12 +78,18 @@ class StageManager {
     await prefs.setBool(_tutorialDoneKey, true);
   }
 
+  /// 플레이 가능 조건:
+  /// - 해당 월드가 해금되어 있고,
+  /// - 월드의 첫 스테이지이거나 직전 스테이지를 클리어했을 때 (월드 내 순차 진행).
   bool isStagePlayable(int stage) {
-    return stage <= maxStage + 1;
+    int world = (stage - 1) ~/ 20;
+    if (!isWorldUnlocked(world)) return false;
+    int worldStart = world * 20 + 1;
+    return stage == worldStart || _cleared.contains(stage - 1);
   }
 
   bool isStageCleared(int stage) {
-    return stage <= maxStage;
+    return _cleared.contains(stage);
   }
 
   bool isWorldUnlocked(int worldId) {
@@ -73,10 +98,9 @@ class StageManager {
 
   int getWorldProgress(int worldId) {
     int worldStart = worldId * 20 + 1;
-    int worldEnd = worldStart + 19;
     int cleared = 0;
-    for (int i = worldStart; i <= worldEnd; i++) {
-      if (i <= maxStage) cleared++;
+    for (int i = worldStart; i < worldStart + 20; i++) {
+      if (_cleared.contains(i)) cleared++;
     }
     return cleared;
   }

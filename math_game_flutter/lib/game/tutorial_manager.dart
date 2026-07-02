@@ -44,7 +44,9 @@ class TutorialManager {
           TutorialStep(text: s.get('tutW1_2')),
           TutorialStep(text: s.get('tutW1_3'), highlightTarget: 'take_buttons'),
           TutorialStep(text: s.get('tutW1_4'), highlightTarget: 'last_stone'),
-          TutorialStep(text: s.get('tutW1_5'), highlightTarget: 'take_buttons'),
+          // (P1-2) 표정 = 공식 메커닉: 미드나잇의 표정이 포지션을 알려준다는 걸 명시적으로 교육
+          TutorialStep(text: s.get('tutW1_5'), highlightTarget: 'cat'),
+          TutorialStep(text: s.get('tutW1_6'), highlightTarget: 'take_buttons'),
         ];
       case 2:
         return [

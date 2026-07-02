@@ -50,12 +50,13 @@ const List<WorldInfo> worlds = [
     subtitleKey: 'worldSubtitleDoubleRow',
     bgGradient: [Color(0xFF1A3A5C), Color(0xFF42A5F5), Color(0xFFE3F2FD)],
   ),
+  // (2026-07-02) 월드 순서 재배치: 세줄 → 네줄 → 빼빼로(최종).
   WorldInfo(
     id: 2,
     nameKey: 'worldSmokeDen',
     emoji: '💨',
     color: Color(0xFF8D6E63),
-    subtitleKey: 'worldSubtitlePepero',
+    subtitleKey: 'worldSubtitleTripleRow',
     bgGradient: [Color(0xFF3E2723), Color(0xFF8D6E63), Color(0xFFEFEBE9)],
   ),
   WorldInfo(
@@ -63,7 +64,7 @@ const List<WorldInfo> worlds = [
     nameKey: 'worldShadowMarket',
     emoji: '🕶️',
     color: Color(0xFFAB47BC),
-    subtitleKey: 'worldSubtitleTripleRow',
+    subtitleKey: 'worldSubtitleQuadRow',
     bgGradient: [Color(0xFF4A148C), Color(0xFFAB47BC), Color(0xFFF3E5F5)],
   ),
   WorldInfo(
@@ -71,8 +72,8 @@ const List<WorldInfo> worlds = [
     nameKey: 'worldTheLastBet',
     emoji: '🎲',
     color: Color(0xFFEF5350),
-    // (id=1201) 월드5 quadRow 전용. 기존 "섞어서" 컨셉 폐기.
-    subtitleKey: 'worldSubtitleQuadRow',
+    // 최종 월드 = 빼빼로(분할, Grundy) — 가장 어려운 개념을 마지막에.
+    subtitleKey: 'worldSubtitlePepero',
     bgGradient: [Color(0xFF5D1A1A), Color(0xFFEF5350), Color(0xFFFFEBEE)],
   ),
 ];
