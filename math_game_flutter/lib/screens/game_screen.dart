@@ -510,20 +510,18 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   Future<void> _midnightPlay() async {
     if (_phase != GamePhase.playing) return;
 
-    // 난이도 곡선: 스테이지별 실수율 적용 (힌트 계산은 항상 최적수라 여기만 적용)
-    final double blunder = _config.blunderChance;
     NimMove move;
     switch (_config.mode) {
       case GameMode.singleRow:
-        move = _engine.singleRowAI(_rows[0], _config.maxTake, blunder: blunder);
+        move = _engine.singleRowAI(_rows[0], _config.maxTake);
         break;
       case GameMode.doubleRow:
       case GameMode.tripleRow:
       case GameMode.quadRow:
-        move = _engine.multiRowAI(_rows, blunder: blunder);
+        move = _engine.multiRowAI(_rows);
         break;
       case GameMode.pepero:
-        move = _engine.peperoAI(_rows, blunder: blunder);
+        move = _engine.peperoAI(_rows);
         break;
     }
 
