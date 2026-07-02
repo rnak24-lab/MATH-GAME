@@ -70,6 +70,7 @@ class _StageSelectScreenState extends State<StageSelectScreen> {
                   builder: (_) => SettingsScreen(
                     localeProvider: localeProvider,
                     onChanged: () => setState(() {}),
+                    stageManager: stageManager,
                   ),
                 ),
               );

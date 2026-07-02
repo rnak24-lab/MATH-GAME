@@ -212,6 +212,94 @@ class AppStrings {
       'en': 'Tap stones to pick',
       'ko': '돌을 탭해 선택',
     },
+
+    // ── Game Screen: HUD 라벨 (한국어 완역, 2026-07-02) ──
+    'stageLabel': {
+      'en': 'STAGE {0}',
+      'ko': '스테이지 {0}',
+    },
+    'logLabel': {
+      'en': 'LOG',
+      'ko': '기록',
+    },
+    'logFirst': {
+      'en': 'FIRST · {0}',
+      'ko': '선공 · {0}',
+    },
+    'movesCount': {
+      'en': '{0} moves',
+      'ko': '{0}수',
+    },
+    'nameYou': {
+      'en': 'YOU',
+      'ko': '나',
+    },
+    'nameMidnight': {
+      'en': 'MIDNIGHT',
+      'ko': '미드나잇',
+    },
+    'logStart': {
+      'en': 'START · {0} first',
+      'ko': '시작 · {0} 선공',
+    },
+    'caseLabel': {
+      'en': 'CASE #{0}',
+      'ko': '사건 #{0}',
+    },
+    'modeLabel': {
+      'en': 'MODE',
+      'ko': '모드',
+    },
+    'initLabel': {
+      'en': 'INIT',
+      'ko': '시작 배치',
+    },
+
+    // ── Settings: 게임플레이/초기화/규칙 (2026-07-02) ──
+    'settingsGameplay': {
+      'en': 'Gameplay',
+      'ko': '게임',
+    },
+    'hapticsTitle': {
+      'en': 'Vibration',
+      'ko': '진동 효과',
+    },
+    'hapticsDesc': {
+      'en': 'Gentle vibration when picking stones',
+      'ko': '돌을 집을 때 살짝 진동',
+    },
+    'howToPlay': {
+      'en': 'How to Play',
+      'ko': '게임 규칙',
+    },
+    'resetProgress': {
+      'en': 'Reset Progress',
+      'ko': '진행도 초기화',
+    },
+    'resetConfirmTitle': {
+      'en': 'Reset all progress?',
+      'ko': '모든 진행도를 초기화할까요?',
+    },
+    'resetConfirmBody': {
+      'en': "All cleared stages will be locked again. This can't be undone.",
+      'ko': '클리어 기록이 모두 사라져요. 되돌릴 수 없어요.',
+    },
+    'cancel': {
+      'en': 'Cancel',
+      'ko': '취소',
+    },
+    'resetDo': {
+      'en': 'Reset',
+      'ko': '초기화',
+    },
+    'resetDone': {
+      'en': 'Progress has been reset.',
+      'ko': '초기화 완료!',
+    },
+    'versionLabel': {
+      'en': 'Version',
+      'ko': '버전',
+    },
     'takeNStones': {
       'en': 'Take {0}!',
       'ko': '{0}개 가져가기!',

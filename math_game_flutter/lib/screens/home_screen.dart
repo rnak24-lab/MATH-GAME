@@ -81,6 +81,7 @@ class _HomeScreenState extends State<HomeScreen>
                           builder: (_) => SettingsScreen(
                             localeProvider: widget.localeProvider,
                             onChanged: () => setState(() {}),
+                            stageManager: widget.stageManager,
                           ),
                         ),
                       );

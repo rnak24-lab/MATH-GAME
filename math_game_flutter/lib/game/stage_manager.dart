@@ -72,6 +72,17 @@ class StageManager {
     }
   }
 
+  /// 진행도 전체 초기화 (설정 화면 — 확인 다이얼로그 후 호출).
+  Future<void> resetProgress() async {
+    _cleared.clear();
+    maxStage = 0;
+    worldUnlocked = 0;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_clearedKey);
+    await prefs.remove(_maxStageKey);
+    await prefs.remove(_worldUnlockedKey);
+  }
+
   Future<void> setTutorialDone() async {
     tutorialDone = true;
     final prefs = await SharedPreferences.getInstance();

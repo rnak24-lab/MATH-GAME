@@ -136,6 +136,7 @@ class _WorldSelectScreenState extends State<WorldSelectScreen> {
                   builder: (_) => SettingsScreen(
                     localeProvider: localeProvider,
                     onChanged: () => setState(() {}),
+                    stageManager: stageManager,
                   ),
                 ),
               );

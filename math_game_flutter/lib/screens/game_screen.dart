@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'dart:async';
+import '../services/app_settings.dart';
 import '../game/stage_manager.dart';
 import '../game/nim_engine.dart';
 import '../models/game_state.dart';
@@ -70,13 +72,22 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   bool _isAiAnimating = false;
   bool _leaving = false; // Take 시 선택된 돌이 슈르륵 빠지는 중
 
-  // 진행 로그 / 선공자
+  // 진행 로그 / 선공자 — 로그는 (주체, 텍스트) 구조로 저장해 언어 무관하게 색상 결정
   TurnOwner? _firstMover;
-  final List<String> _moveLog = [];
+  final List<_LogEntry> _moveLog = [];
   bool _logOpen = false;
 
-  void _addLog(String line) {
-    _moveLog.add(line);
+  void _addLog(TurnOwner? owner, String text) {
+    _moveLog.add(_LogEntry(owner, text));
+  }
+
+  String _nameOf(TurnOwner owner) =>
+      owner == TurnOwner.player ? s.get('nameYou') : s.get('nameMidnight');
+
+  /// (귀여움 규칙) 진동 효과 — 설정에서 끌 수 있음.
+  void _haptic([bool strong = false]) {
+    if (!AppSettings.instance.haptics) return;
+    strong ? HapticFeedback.mediumImpact() : HapticFeedback.selectionClick();
   }
 
   // 플레이어 턴 시작 시 NIM 패배 상태 연속 카운트 (happy → confident 전환용)
@@ -252,7 +263,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       _selectedCount = 0;
       _firstMover = first;
       _moveLog.clear();
-      _addLog(first == TurnOwner.player ? 'START · YOU first' : 'START · MIDNIGHT first');
+      _addLog(null, s.get('logStart', [_nameOf(first)]));
       if (first == TurnOwner.player) {
         // 첫 턴: NIM 판정 기반 표정 (player가 지는 상태면 happy, 아니면 neutral)
         bool midnightWins = _calculateMidnightWinsState();
@@ -294,6 +305,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   }
 
   void _endGame(bool playerWins) {
+    _haptic(playerWins); // 승리 = 강하게, 패배 = 가볍게 (M3: 패배는 조용히)
     setState(() {
       _phase = GamePhase.gameOver;
       _playerWon = playerWins;
@@ -459,6 +471,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         _isAiAnimating ||
         _leaving ||
         _selectedCount < 1) return;
+    _haptic(true); // 확정 순간 진동
     setState(() => _leaving = true);
     Future.delayed(const Duration(milliseconds: 360), () {
       if (!mounted) return;
@@ -475,9 +488,11 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     final int tookCount = _selectedCount;
     final int tookRow = _selectedRow;
     final bool multi = _rows.length > 1;
-    _addLog(multi
-        ? 'YOU  −$tookCount · R${tookRow + 1}'
-        : 'YOU  −$tookCount');
+    _addLog(
+        TurnOwner.player,
+        multi
+            ? '${_nameOf(TurnOwner.player)}  −$tookCount · R${tookRow + 1}'
+            : '${_nameOf(TurnOwner.player)}  −$tookCount');
 
     setState(() {
       if (_config.mode == GameMode.pepero) {
@@ -581,11 +596,14 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     await Future.delayed(const Duration(milliseconds: 300));
     if (!mounted || _phase != GamePhase.playing) return;
 
-    _addLog(move.isPepero
-        ? 'MIDNIGHT  split ${move.splitA}+${move.splitB}'
-        : (_rows.length > 1
-            ? 'MIDNIGHT  −${move.count} · R${move.rowIndex + 1}'
-            : 'MIDNIGHT  −${move.count}'));
+    final mnName = _nameOf(TurnOwner.midnight);
+    _addLog(
+        TurnOwner.midnight,
+        move.isPepero
+            ? '$mnName  ${move.splitA}+${move.splitB}'
+            : (_rows.length > 1
+                ? '$mnName  −${move.count} · R${move.rowIndex + 1}'
+                : '$mnName  −${move.count}'));
 
     setState(() {
       _turnCount++;
@@ -709,7 +727,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
           Container(width: 10, height: 10, color: accent),
           const SizedBox(width: 8),
           Text(
-            'STAGE ${widget.stageNumber}',
+            s.get('stageLabel', ['${widget.stageNumber}']),
             style: const TextStyle(
               fontFamily: _mono,
               color: _Pal.cream,
@@ -772,7 +790,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       alignment: Alignment.centerLeft,
       padding: const EdgeInsets.symmetric(horizontal: 12),
       child: Text(
-        '▸ CASE #${widget.stageNumber.toString().padLeft(3, '0')}   ·   $status   ·   ${_getModeRule()}',
+        '▸ ${s.get('caseLabel', [widget.stageNumber.toString().padLeft(3, '0')])}   ·   $status   ·   ${_getModeRule()}',
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         style: const TextStyle(
@@ -965,7 +983,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
               children: [
                 _dossierRow(s.get('whoGoesFirst').toUpperCase(), accent: true),
                 const Divider(color: _Pal.paperEdge, height: 18),
-                _dossierRow('MODE  —  ${_getModeTitle()}'),
+                _dossierRow('${s.get('modeLabel')}  —  ${_getModeTitle()}'),
                 const SizedBox(height: 6),
                 Text(
                   _getModeRule(),
@@ -979,7 +997,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                 ),
                 const SizedBox(height: 8),
                 _dossierRow(
-                    'INIT  —  [ ${_rows.join('  ·  ')} ]'),
+                    '${s.get('initLabel')}  —  [ ${_rows.join('  ·  ')} ]'),
               ],
             ),
           ),
@@ -1140,9 +1158,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
 
   /// 진행 로그 + 선공자 패널 (접었다 펴기). 세로폰 공간 절약 위해 기본 접힘.
   Widget _logPanel() {
-    final String first = _firstMover == null
-        ? '—'
-        : (_firstMover == TurnOwner.player ? 'YOU' : 'MIDNIGHT');
+    final String first = _firstMover == null ? '—' : _nameOf(_firstMover!);
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
@@ -1159,9 +1175,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               child: Row(
                 children: [
-                  const Text(
-                    '▸ LOG',
-                    style: TextStyle(
+                  Text(
+                    '▸ ${s.get('logLabel')}',
+                    style: const TextStyle(
                       fontFamily: _mono,
                       fontSize: 11,
                       fontWeight: FontWeight.w900,
@@ -1171,7 +1187,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                   ),
                   const SizedBox(width: 12),
                   Text(
-                    'FIRST · $first',
+                    s.get('logFirst', [first]),
                     style: const TextStyle(
                       fontFamily: _mono,
                       fontSize: 11,
@@ -1181,7 +1197,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                   ),
                   const Spacer(),
                   Text(
-                    '${(_moveLog.length - 1).clamp(0, 999)} moves',
+                    s.get('movesCount', [
+                      '${_moveLog.where((e) => e.owner != null).length}'
+                    ]),
                     style: const TextStyle(
                       fontFamily: _mono,
                       fontSize: 10,
@@ -1207,14 +1225,16 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
               child: ListView(
                 reverse: true,
                 shrinkWrap: true,
-                children: _moveLog.reversed.map((l) {
-                  final Color c = l.startsWith('MIDNIGHT')
+                children: _moveLog.reversed.map((e) {
+                  final Color c = e.owner == TurnOwner.midnight
                       ? const Color(0xFFD98A6E)
-                      : (l.startsWith('YOU') ? _Pal.gold : _Pal.inkSoft);
+                      : (e.owner == TurnOwner.player
+                          ? _Pal.gold
+                          : _Pal.inkSoft);
                   return Padding(
                     padding: const EdgeInsets.symmetric(vertical: 1.5),
                     child: Text(
-                      l,
+                      e.text,
                       style: TextStyle(
                         fontFamily: _mono,
                         fontSize: 11.5,
@@ -1259,6 +1279,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     }
     if (count < 0) count = 0;
     if (count > len) count = len;
+    _haptic(); // 돌 집기/내려놓기 순간 가벼운 진동
     setState(() {
       _selectedRow = rowIdx;
       _selectedCount = count;
@@ -1529,7 +1550,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
               int a = _splitA;
               int b = pile - a;
               if (a != b && a > 0 && b > 0) {
-                _addLog('YOU  split $a+$b');
+                _addLog(TurnOwner.player, '${_nameOf(TurnOwner.player)}  $a+$b');
                 setState(() {
                   _rows.removeAt(_selectedPile);
                   _rows.add(a);
@@ -1554,6 +1575,13 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       ],
     );
   }
+}
+
+/// 진행 로그 한 줄 — owner로 색상 결정 (언어 독립적).
+class _LogEntry {
+  final TurnOwner? owner; // null = 시스템(시작 등)
+  final String text;
+  const _LogEntry(this.owner, this.text);
 }
 
 // ─────────────────────────────────────────────────────────────

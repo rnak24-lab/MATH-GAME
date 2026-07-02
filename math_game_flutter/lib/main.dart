@@ -4,6 +4,7 @@ import 'game/stage_manager.dart';
 import 'providers/locale_provider.dart';
 import 'screens/home_screen.dart';
 import 'services/ad_service.dart';
+import 'services/app_settings.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -90,6 +91,7 @@ class _SplashScreenState extends State<SplashScreen>
     await Future.wait([
       stageManager.load(),
       widget.localeProvider.load(),
+      AppSettings.instance.load(),
     ]);
 
     await Future.delayed(const Duration(milliseconds: 2200));
