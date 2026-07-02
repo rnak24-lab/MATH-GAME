@@ -16,10 +16,16 @@ class StageConfig {
   final List<int> rows;
   final int maxTake;
 
+  /// AI가 "이기는 포지션"에서도 실수(비최적 수)를 둘 확률 (0.0~1.0).
+  /// 난이도 곡선의 핵심: 월드 초반은 높고 월드 내에서 점감,
+  /// 매 10번째 스테이지(보스)는 0 = 완벽한 Midnight.
+  final double blunderChance;
+
   const StageConfig({
     required this.stageNumber,
     required this.mode,
     required this.rows,
     required this.maxTake,
+    this.blunderChance = 0.0,
   });
 }

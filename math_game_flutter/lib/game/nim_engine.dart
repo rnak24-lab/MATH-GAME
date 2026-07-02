@@ -29,26 +29,62 @@ class NimEngine {
   final Map<String, int> _grundyCache = {};
   final Random _rng = Random();
 
-  /// 한 줄 님게임 AI
-  NimMove singleRowAI(int stones, int maxTake) {
+  /// 랜덤 한 줄 수: 가능하면 "마지막 돌 가져가기(즉시 패배)"는 피한다.
+  int _randomSingleTake(int stones, int maxTake) {
+    int maxC = maxTake < stones ? maxTake : stones;
+    // 마지막 돌을 집으면 즉시 패배(미제르) → 다른 선택지가 있으면 회피
+    if (maxC >= stones && stones > 1) maxC = stones - 1;
+    if (maxC < 1) maxC = 1;
+    return 1 + _rng.nextInt(maxC);
+  }
+
+  /// 한 줄 님게임 AI.
+  /// [blunder]: 이기는 포지션에서도 이 확률로 비최적 수(실수)를 둔다 — 난이도 곡선용.
+  NimMove singleRowAI(int stones, int maxTake, {double blunder = 0}) {
     // EC-01 가드: 게임 종료 상태 (돌이 0 이하)
     if (stones <= 0) return NimMove(count: 0);
 
     // (n-1) % (maxTake+1) == 0 이면 지는 포지션
     int target = (stones - 1) % (maxTake + 1);
     if (target == 0) {
-      // 지는 포지션 -> 랜덤한 개수(1 ~ min(maxTake, stones))로 가져가 변수를 줌
-      int maxC = maxTake < stones ? maxTake : stones;
-      return NimMove(count: 1 + _rng.nextInt(maxC));
+      // 지는 포지션 -> 랜덤한 개수로 가져가 변수를 줌 (자살수는 회피)
+      return NimMove(count: _randomSingleTake(stones, maxTake));
+    }
+    // 이기는 포지션이지만 실수 확률 체크 (역전 기회 창출)
+    if (blunder > 0 && _rng.nextDouble() < blunder) {
+      int c = _randomSingleTake(stones, maxTake);
+      if (c != target) return NimMove(count: c);
+      // 우연히 최적수와 같으면 그대로 (자연스러움)
     }
     return NimMove(count: target);
   }
 
-  /// 다중 줄 님게임 AI (XOR 전략)
-  NimMove multiRowAI(List<int> rows) {
+  /// 랜덤 다중 줄 수: 가능하면 "전체 마지막 돌 가져가기(즉시 패배)"는 피한다.
+  NimMove _randomMultiMove(List<int> rows) {
+    final nonEmpty = <int>[
+      for (int i = 0; i < rows.length; i++)
+        if (rows[i] > 0) i
+    ];
+    if (nonEmpty.isEmpty) return NimMove(count: 1);
+    int total = rows.fold(0, (a, b) => a + b);
+    int ri = nonEmpty[_rng.nextInt(nonEmpty.length)];
+    int take = 1 + _rng.nextInt(rows[ri]);
+    // 이 수로 전체가 0이 되면(마지막 돌 = 즉시 패배) 한 개 덜 가져가기
+    if (take == total && take > 1) take -= 1;
+    return NimMove(rowIndex: ri, count: take);
+  }
+
+  /// 다중 줄 님게임 AI (XOR 전략).
+  /// [blunder]: 이기는 포지션에서도 이 확률로 비최적 수(실수)를 둔다.
+  NimMove multiRowAI(List<int> rows, {double blunder = 0}) {
     // EC-02 가드: 모든 줄이 0이면 게임 종료 상태
     if (rows.isEmpty || rows.every((r) => r == 0)) {
       return NimMove(count: 0);
+    }
+
+    // 실수 확률 체크 (역전 기회 창출) — 어차피 지는 포지션이면 아래 랜덤 분기와 동일
+    if (blunder > 0 && _rng.nextDouble() < blunder) {
+      return _randomMultiMove(rows);
     }
 
     int nimSum = 0;
@@ -93,25 +129,45 @@ class NimEngine {
       }
     }
 
-    // 지는 포지션 -> 랜덤한 줄에서 랜덤한 개수로 가져가 변수를 줌
-    final nonEmpty = <int>[
-      for (int i = 0; i < rows.length; i++)
-        if (rows[i] > 0) i
-    ];
-    if (nonEmpty.isNotEmpty) {
-      int ri = nonEmpty[_rng.nextInt(nonEmpty.length)];
-      int take = 1 + _rng.nextInt(rows[ri]);
-      return NimMove(rowIndex: ri, count: take);
-    }
-
-    return NimMove(count: 1);
+    // 지는 포지션 -> 랜덤한 줄/개수로 가져가 변수를 줌 (자살수 회피)
+    return _randomMultiMove(rows);
   }
 
-  /// 빼빼로 게임 AI
-  NimMove peperoAI(List<int> piles) {
+  /// 랜덤 분할 수 (빼빼로).
+  NimMove _randomSplitMove(List<int> piles) {
+    final splittable = <int>[
+      for (int i = 0; i < piles.length; i++)
+        if (piles[i] >= 3) i
+    ];
+    if (splittable.isEmpty) {
+      return NimMove(isPepero: true, splitA: 1, splitB: 1);
+    }
+    int pi = splittable[_rng.nextInt(splittable.length)];
+    int n = piles[pi];
+    int a;
+    do {
+      a = 1 + _rng.nextInt(n - 1); // 1 ~ n-1
+    } while (a == n - a); // 균등 분할 금지
+    int b = n - a;
+    if (a > b) {
+      final t = a;
+      a = b;
+      b = t;
+    }
+    return NimMove(rowIndex: pi, splitA: a, splitB: b, isPepero: true);
+  }
+
+  /// 빼빼로 게임 AI.
+  /// [blunder]: 이기는 포지션에서도 이 확률로 비최적 분할(실수)을 한다.
+  NimMove peperoAI(List<int> piles, {double blunder = 0}) {
     // EC-03/04 가드: 빈 배열이거나 모든 파일이 분할 불가(3 미만)
     if (piles.isEmpty || piles.every((p) => p < 3)) {
       return NimMove(isPepero: true, splitA: 0, splitB: 0);
+    }
+
+    // 실수 확률 체크 (역전 기회 창출)
+    if (blunder > 0 && _rng.nextDouble() < blunder) {
+      return _randomSplitMove(piles);
     }
 
     // Grundy 값 계산
@@ -144,27 +200,7 @@ class NimEngine {
     }
 
     // 지는 포지션 -> 랜덤한 더미를 랜덤하게 분할해 변수를 줌
-    final splittable = <int>[
-      for (int i = 0; i < piles.length; i++)
-        if (piles[i] >= 3) i
-    ];
-    if (splittable.isNotEmpty) {
-      int pi = splittable[_rng.nextInt(splittable.length)];
-      int n = piles[pi];
-      int a;
-      do {
-        a = 1 + _rng.nextInt(n - 1); // 1 ~ n-1
-      } while (a == n - a); // 균등 분할 금지
-      int b = n - a;
-      if (a > b) {
-        final t = a;
-        a = b;
-        b = t;
-      }
-      return NimMove(rowIndex: pi, splitA: a, splitB: b, isPepero: true);
-    }
-
-    return NimMove(isPepero: true, splitA: 1, splitB: 1);
+    return _randomSplitMove(piles);
   }
 
   int _grundy(int n) {
@@ -207,6 +243,24 @@ class NimEngine {
       nimSum ^= r;
     }
     return nimSum == 0;
+  }
+
+  /// 스테이지별 AI 실수율 — 난이도 곡선의 핵심.
+  ///
+  /// 설계 원칙 (한붓그리기류 캐주얼 퍼즐 벤치마크):
+  /// 1. "모든 스테이지는 이길 수 있어야 한다" — AI가 완벽하면 선공 선택을
+  ///    틀린 순간 필패 = 퍼즐이 아니라 시험. 실수율이 역전 창을 만든다.
+  /// 2. 월드 내 점감(45%→0%) = 완만한 상승 곡선.
+  /// 3. 매 10번째 스테이지(보스)는 실수율 0 = 완벽한 Midnight —
+  ///    배운 필승 전략을 "증명"하는 관문. 주기적 스파이크.
+  /// 4. 뒷 월드일수록 베이스 실수율이 낮아짐 (전체 게임 곡선).
+  double blunderChanceFor(int stageNumber) {
+    int world = ((stageNumber - 1) ~/ 20).clamp(0, 4); // 0..4
+    int inWorld = (stageNumber - 1) % 20 + 1; // 1..20
+    if (inWorld % 10 == 0) return 0.0; // 보스 스테이지(10·20번째): 완벽 AI
+    const bases = [0.45, 0.35, 0.30, 0.22, 0.15];
+    double t = (inWorld - 1) / 19.0; // 0.0 → 1.0
+    return bases[world] * (1.0 - t);
   }
 
   /// 스테이지 설정 생성
@@ -271,6 +325,7 @@ class NimEngine {
       mode: mode,
       rows: rows,
       maxTake: maxTake,
+      blunderChance: blunderChanceFor(stageNumber),
     );
   }
 }
