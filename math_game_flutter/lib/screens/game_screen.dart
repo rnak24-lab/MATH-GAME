@@ -148,7 +148,14 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   void didChangeDependencies() {
     super.didChangeDependencies();
     // 표정 6종 프리로드 — 표정 전환 시 깜빡임/로드 지연 방지
-    for (final f in ['default', 'happy', 'sleepy', 'angry', 'smug', 'surprised']) {
+    for (final f in [
+      'default',
+      'happy',
+      'sleepy',
+      'angry',
+      'smug',
+      'surprised'
+    ]) {
       precacheImage(AssetImage('assets/midnight/$f.png'), context);
     }
   }
@@ -381,7 +388,8 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
               borderRadius: BorderRadius.circular(8),
               border: Border.all(color: _Pal.frame, width: 3),
               boxShadow: const [
-                BoxShadow(color: Colors.black54, blurRadius: 24, spreadRadius: 2),
+                BoxShadow(
+                    color: Colors.black54, blurRadius: 24, spreadRadius: 2),
               ],
             ),
             child: Column(
@@ -609,8 +617,8 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         if (_config.mode == GameMode.singleRow) {
           _midnightMessage = s.get('midnightTookTotal', ['${move.count}']);
         } else {
-          _midnightMessage = s.get(
-              'midnightTookFromRowTotal', ['${move.count}', '${move.rowIndex + 1}']);
+          _midnightMessage = s.get('midnightTookFromRowTotal',
+              ['${move.count}', '${move.rowIndex + 1}']);
         }
       });
     }
@@ -687,8 +695,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
             style: const TextStyle(fontFamily: _mono, fontSize: 14)),
         backgroundColor: canWin ? _Pal.frame : _Pal.alarm,
         behavior: SnackBarBehavior.floating,
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
         duration: Duration(seconds: canWin ? 3 : 5),
       ),
     );
@@ -779,8 +786,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
               child: TextButton.icon(
                 onPressed: _hintsLeft > 0 ? _showHint : null,
                 icon: Icon(Icons.lightbulb_outline,
-                    size: 18,
-                    color: _hintsLeft > 0 ? _Pal.gold : _Pal.inkSoft),
+                    size: 18, color: _hintsLeft > 0 ? _Pal.gold : _Pal.inkSoft),
                 label: Text('$_hintsLeft',
                     style: TextStyle(
                         fontFamily: _mono,
@@ -801,8 +807,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     } else if (_phase == GamePhase.turnChoice) {
       status = s.get('whoGoesFirst');
     } else {
-      status =
-          _currentTurn == TurnOwner.player ? s.get('myTurn') : s.get('midnightTurn');
+      status = _currentTurn == TurnOwner.player
+          ? s.get('myTurn')
+          : s.get('midnightTurn');
     }
     return Container(
       height: 26,
@@ -813,7 +820,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       alignment: Alignment.centerLeft,
       padding: const EdgeInsets.symmetric(horizontal: 12),
       child: Text(
-        '▸ ${s.get('caseLabel', [widget.stageNumber.toString().padLeft(3, '0')])}   ·   $status',
+        '▸ ${s.get('caseLabel', [
+              widget.stageNumber.toString().padLeft(3, '0')
+            ])}   ·   $status',
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         style: const TextStyle(
@@ -883,8 +892,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
             duration: const Duration(milliseconds: 200),
             child: Container(
               key: ValueKey(message),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
               decoration: BoxDecoration(
                 color: _Pal.paper,
                 borderRadius: BorderRadius.circular(6),
@@ -924,9 +932,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
               mainAxisSize: MainAxisSize.min,
               children: [
                 MidnightWithBubble(
-                  face: isLast
-                      ? MidnightFace.confident
-                      : MidnightFace.happy1,
+                  face: isLast ? MidnightFace.confident : MidnightFace.happy1,
                   message: step.text,
                   size: 140,
                 ),
@@ -975,7 +981,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     return Column(
       children: [
         _deskScene(
-          overlay: Column(
+          overlay: Row(
             children: [
               // "누가 먼저 할까?" 골드 도장
               Container(
@@ -996,7 +1002,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                   ),
                 ),
               ),
-              const SizedBox(height: 6),
+              const SizedBox(width: 8),
               _infoChips(dark: true),
             ],
           ),
@@ -1048,8 +1054,8 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
           decoration: BoxDecoration(
             color: dark ? _Pal.deskBottom : Colors.transparent,
             borderRadius: BorderRadius.circular(4),
-            border: Border.all(
-                color: dark ? _Pal.frameHi : _Pal.frame, width: 1.5),
+            border:
+                Border.all(color: dark ? _Pal.frameHi : _Pal.frame, width: 1.5),
           ),
           child: Text(
             t,
@@ -1080,89 +1086,92 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          // 한밤이 — 상단 중앙 (아래쪽은 뒤에 그려질 책상이 가림 = 상반신)
+          // 1) 도장/칩 — 맨 위
           Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: Center(child: _catFigure(size: 150)),
-          ),
-          // 말풍선 — 고양이 옆 (꼬리가 고양이 쪽)
-          Positioned(
-            top: 8,
-            right: 8,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 148),
-              child: _tauntBubble(_midnightMessage),
-            ),
-          ),
-          // 원근 책상 — 고양이 허리쯤부터 시작 (바둑판 맞은편 구도)
-          Positioned.fill(
-            top: 94,
-            child: Transform(
-              alignment: Alignment.bottomCenter,
-              transform: Matrix4.identity()
-                ..setEntry(3, 2, 0.0014)
-                ..rotateX(-0.34),
-              child: Container(
-                margin: const EdgeInsets.fromLTRB(12, 0, 12, 4),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: _Pal.frame, width: 3),
-                  boxShadow: const [
-                    BoxShadow(
-                        color: Colors.black54,
-                        blurRadius: 12,
-                        offset: Offset(0, 4)),
-                  ],
-                ),
-                clipBehavior: Clip.antiAlias,
-                child: Stack(
-                  children: [
-                    Positioned.fill(
-                        child: CustomPaint(painter: _DeskPainter())),
-                    Positioned.fill(child: _buildBoardArea()),
-                    // 한밤이가 가져간 돌 — 하나씩 슉! 맞은편 고양이 쪽으로
-                    for (final id in _flights)
-                      Positioned.fill(
-                        key: ValueKey('fly$id'),
-                        child: IgnorePointer(child: _FlyingStone(seed: id)),
-                      ),
-                    // 내 손 — 돌을 집으면 아래에서 쓱 (스케치의 '손')
-                    Positioned(
-                      right: 34,
-                      bottom: -6,
-                      child: IgnorePointer(
-                        child: AnimatedSlide(
-                          offset: (_selectedCount > 0 || _leaving)
-                              ? Offset.zero
-                              : const Offset(0, 1.3),
-                          duration: const Duration(milliseconds: 260),
-                          curve: Curves.easeOutBack,
-                          child: CustomPaint(
-                            size: const Size(64, 74),
-                            painter: _PlayerHandPainter(),
-                          ),
-                        ),
-                      ),
-                    ),
-                    // (제안 #8) 승리 시 별 파티클 — 패배는 조용하게
-                    if (_phase == GamePhase.gameOver && _playerWon)
-                      const Positioned.fill(
-                        child: IgnorePointer(child: _WinBurst()),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          // 도장/칩 오버레이 — 고양이 아래, 책상 먼쪽 가장자리 위
-          Positioned(
-            top: 158,
+            top: 2,
             left: 8,
             right: 8,
             child: Center(
               child: FittedBox(fit: BoxFit.scaleDown, child: overlay),
+            ),
+          ),
+          // 2) 한밤이 — 도장 아래, 테이블 뒤 (하반신은 테이블에 가려 상반신만)
+          Positioned(
+            top: 38,
+            left: 0,
+            right: 0,
+            child: Center(child: _catFigure(size: 140)),
+          ),
+          // 말풍선 — 고양이 옆 (꼬리가 고양이 쪽)
+          Positioned(
+            top: 48,
+            right: 8,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 140),
+              child: _tauntBubble(_midnightMessage),
+            ),
+          ),
+          // 3) 테이블 — 평평(원근 X), 좌우 여백 + 세로 80%로 축소 (판 크기 다이어트)
+          Positioned(
+            top: 130,
+            bottom: 0,
+            left: 28,
+            right: 28,
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: FractionallySizedBox(
+                heightFactor: 0.8,
+                widthFactor: 1.0,
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: _Pal.frame, width: 3),
+                    boxShadow: const [
+                      BoxShadow(
+                          color: Colors.black54,
+                          blurRadius: 12,
+                          offset: Offset(0, 4)),
+                    ],
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: Stack(
+                    children: [
+                      Positioned.fill(
+                          child: CustomPaint(painter: _DeskPainter())),
+                      Positioned.fill(child: _buildBoardArea()),
+                      // 한밤이가 가져간 돌 — 하나씩 슉! 맞은편 고양이 쪽으로
+                      for (final id in _flights)
+                        Positioned.fill(
+                          key: ValueKey('fly$id'),
+                          child: IgnorePointer(child: _FlyingStone(seed: id)),
+                        ),
+                      // 내 손 — 돌을 집으면 아래에서 쓱 (스케치의 '손')
+                      Positioned(
+                        right: 30,
+                        bottom: -6,
+                        child: IgnorePointer(
+                          child: AnimatedSlide(
+                            offset: (_selectedCount > 0 || _leaving)
+                                ? Offset.zero
+                                : const Offset(0, 1.3),
+                            duration: const Duration(milliseconds: 260),
+                            curve: Curves.easeOutBack,
+                            child: CustomPaint(
+                              size: const Size(64, 74),
+                              painter: _PlayerHandPainter(),
+                            ),
+                          ),
+                        ),
+                      ),
+                      // (제안 #8) 승리 시 별 파티클 — 패배는 조용하게
+                      if (_phase == GamePhase.gameOver && _playerWon)
+                        const Positioned.fill(
+                          child: IgnorePointer(child: _WinBurst()),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
             ),
           ),
         ],
@@ -1223,8 +1232,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
               ],
             ),
           ),
-        if (_phase == GamePhase.gameOver)
-          const Center(child: BannerAdWidget()),
+        if (_phase == GamePhase.gameOver) const Center(child: BannerAdWidget()),
       ],
     );
   }
@@ -1313,9 +1321,8 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                   ),
                   const Spacer(),
                   Text(
-                    s.get('movesCount', [
-                      '${_moveLog.where((e) => e.owner != null).length}'
-                    ]),
+                    s.get('movesCount',
+                        ['${_moveLog.where((e) => e.owner != null).length}']),
                     style: const TextStyle(
                       fontFamily: _mono,
                       fontSize: 10,
@@ -1410,8 +1417,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     return Center(
       child: LayoutBuilder(builder: (context, cons) {
         // (폰 스케일) 돌이 절대 줄바꿈되지 않도록 — 가장 긴 줄 기준으로 셀 크기 적응.
-        final int maxLen =
-            _rows.fold(1, (m, r) => r > m ? r : m).clamp(1, 40);
+        final int maxLen = _rows.fold(1, (m, r) => r > m ? r : m).clamp(1, 40);
         final double avail =
             cons.maxWidth - 32 - (multi ? 34 : 0); // 패딩 + R라벨 여유
         final double cell = (avail / maxLen).clamp(24.0, 44.0);
@@ -1682,7 +1688,8 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
               int a = _splitA;
               int b = pile - a;
               if (a != b && a > 0 && b > 0) {
-                _addLog(TurnOwner.player, '${_nameOf(TurnOwner.player)}  $a+$b');
+                _addLog(
+                    TurnOwner.player, '${_nameOf(TurnOwner.player)}  $a+$b');
                 setState(() {
                   _rows.removeAt(_selectedPile);
                   _rows.add(a);
