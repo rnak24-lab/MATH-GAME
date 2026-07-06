@@ -249,7 +249,7 @@ class _WorldCard extends StatelessWidget {
                     Text(
                       isUnlocked
                           ? world.subtitle(strings)
-                          : strings.get('unlockHint3Stages'),
+                          : strings.get('unlockHint3Stages', ['${world.id}']),
                       style: TextStyle(
                         fontSize: 13,
                         color: isUnlocked ? Colors.grey[500] : Colors.orange[700],

@@ -39,14 +39,13 @@ class TutorialManager {
     if (!isTutorialStage(stageNumber)) return const [];
     switch (worldOf(stageNumber)) {
       case 1:
+        // (2026-07-02 대표님) 짧고 액션 지시형 4스텝 — 표정 설명 삭제(플레이하며 발견),
+        // 지시대로 따라 하면(2개 집기) 스테이지 1은 무조건 승리.
         return [
           TutorialStep(text: s.get('tutW1_1')),
-          TutorialStep(text: s.get('tutW1_2')),
-          TutorialStep(text: s.get('tutW1_3'), highlightTarget: 'take_buttons'),
-          TutorialStep(text: s.get('tutW1_4'), highlightTarget: 'last_stone'),
-          // (P1-2) 표정 = 공식 메커닉: 미드나잇의 표정이 포지션을 알려준다는 걸 명시적으로 교육
-          TutorialStep(text: s.get('tutW1_5'), highlightTarget: 'cat'),
-          TutorialStep(text: s.get('tutW1_6'), highlightTarget: 'take_buttons'),
+          TutorialStep(text: s.get('tutW1_2'), highlightTarget: 'stones'),
+          TutorialStep(text: s.get('tutW1_3'), highlightTarget: 'last_stone'),
+          TutorialStep(text: s.get('tutW1_4'), highlightTarget: 'take_buttons'),
         ];
       case 2:
         return [

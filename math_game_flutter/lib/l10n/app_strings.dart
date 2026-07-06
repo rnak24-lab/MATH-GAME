@@ -12,7 +12,7 @@ class AppStrings {
     },
     'appSubtitle': {
       'en': 'Math NIM Strategy Game with Midnight',
-      'ko': 'Midnight와 함께하는 수학 님 게임',
+      'ko': '한밤이와 함께하는 수학 님 게임',
     },
 
     // ── Home Screen ──
@@ -22,7 +22,7 @@ class AppStrings {
     },
     'midnightGreeting': {
       'en': "Hi! I'm Midnight!",
-      'ko': '안녕! 나는 Midnight야 🎀',
+      'ko': '안녕! 나는 한밤이야 🎀',
     },
     'continueGame': {
       'en': 'Continue',
@@ -64,23 +64,23 @@ class AppStrings {
     },
     'worldAlleyCorner': {
       'en': 'Alley Corner',
-      'ko': 'Alley Corner',
+      'ko': '뒷골목 입구',
     },
     'worldNeonTavern': {
       'en': 'Neon Tavern',
-      'ko': 'Neon Tavern',
+      'ko': '네온 술집',
     },
     'worldSmokeDen': {
       'en': 'Smoke Den',
-      'ko': 'Smoke Den',
+      'ko': '연기 아지트',
     },
     'worldShadowMarket': {
       'en': 'Shadow Market',
-      'ko': 'Shadow Market',
+      'ko': '그림자 시장',
     },
     'worldTheLastBet': {
       'en': 'The Last Bet',
-      'ko': 'The Last Bet',
+      'ko': '마지막 배팅',
     },
     'worldSubtitleSingleRow': {
       'en': 'Single Row NIM',
@@ -114,10 +114,10 @@ class AppStrings {
       'en': 'Clear the previous world',
       'ko': '이전 월드를 클리어하세요',
     },
-    // (2026-07-02) 해금 조건: 이전 월드에서 3판 클리어 (빠른 패스)
+    // (2026-07-02) 해금 조건 — 게임식 표기: "1-3 클리어 시 해금!" ({0}=이전 월드 번호)
     'unlockHint3Stages': {
-      'en': 'Clear any 3 stages of the previous world to unlock',
-      'ko': '앞 월드에서 3판만 깨면 열려요',
+      'en': 'Clear {0}-3 to unlock!',
+      'ko': '{0}-3 클리어 시 해금!',
     },
 
     // ── Game Screen: Mode Titles ──
@@ -179,7 +179,7 @@ class AppStrings {
     },
     'midnightFirst': {
       'en': 'Midnight first!',
-      'ko': 'Midnight 먼저!',
+      'ko': '한밤이 먼저!',
     },
     'myTurn': {
       'en': '🎯 My Turn',
@@ -187,7 +187,7 @@ class AppStrings {
     },
     'midnightTurn': {
       'en': "💭 Midnight's Turn...",
-      'ko': '💭 Midnight 턴...',
+      'ko': '💭 한밤이 턴...',
     },
     'victory': {
       'en': '🎉 Victory!',
@@ -236,7 +236,7 @@ class AppStrings {
     },
     'nameMidnight': {
       'en': 'MIDNIGHT',
-      'ko': '미드나잇',
+      'ko': '한밤이',
     },
     'logStart': {
       'en': 'START · {0} first',
@@ -253,6 +253,23 @@ class AppStrings {
     'initLabel': {
       'en': 'INIT',
       'ko': '시작 배치',
+    },
+    // 인게임 정보 칩 — 항상 보이는 숫자 정보 (줄글 규칙 대체)
+    'stonesLeft': {
+      'en': 'Stones {0}',
+      'ko': '남은 돌 {0}',
+    },
+    'takeRange': {
+      'en': 'Take 1~{0}',
+      'ko': '한 번에 1~{0}개',
+    },
+    'takeAny': {
+      'en': 'Take any amount',
+      'ko': '원하는 만큼',
+    },
+    'peperoChip': {
+      'en': 'Split in two',
+      'ko': '둘로 쪼개기',
     },
 
     // ── Settings: 게임플레이/초기화/규칙 (2026-07-02) ──
@@ -504,7 +521,7 @@ class AppStrings {
     // (id=1201) nimSum=0 (이미 져버린 상태)에서 누르는 힌트: 다음 판 선공/후공 추천
     'hintLosingNextChoice': {
       'en': "😿 This round is mine already! Next time, pick '{0}' to win!",
-      'ko': "😿 이번 판은 Midnight이 이기는 상태야. 다시 도전할 때 '{0}'를 선택하면 이길 수 있어!",
+      'ko': "😿 이번 판은 한밤이이 이기는 상태야. 다시 도전할 때 '{0}'를 선택하면 이길 수 있어!",
     },
 
     // ── Tutorial (예린 시나리오 W1~W5) ──
@@ -516,30 +533,22 @@ class AppStrings {
       'en': 'Let\'s Start!',
       'ko': '시작하기!',
     },
-    // W1: 기초 NIM
+    // W1: 기초 NIM — 짧고 액션 지시형 (줄글 설명 금지, 따라 하면 무조건 승리)
     'tutW1_1': {
-      'en': "Hi! I'm Midnight. Let me show you this game!",
-      'ko': '안녕! 나는 미드나잇. 이 게임을 알려줄게!',
+      'en': "Hi! I'm Midnight. Let's just play!",
+      'ko': '안녕! 나는 한밤이! 바로 해보자냥',
     },
     'tutW1_2': {
-      'en': "There are stones here. We take turns grabbing them.",
-      'ko': '여기 돌이 있어. 우리가 번갈아 가져가는 거야.',
+      'en': 'Tap a stone to grab it. Tap again to put it back.',
+      'ko': '돌을 누르면 집고, 다시 누르면 내려놔.',
     },
     'tutW1_3': {
-      'en': "You can take 1 or 2 stones at a time.",
-      'ko': '한 번에 1개 또는 2개를 가져갈 수 있어.',
+      'en': 'Grab the LAST stone and you lose!',
+      'ko': '마지막 돌을 가져가면 지는 거야!',
     },
     'tutW1_4': {
-      'en': "If you grab the LAST stone... you lose! Be careful!",
-      'ko': '마지막 돌을 가져가면... 지는 거야! 조심해!',
-    },
-    'tutW1_5': {
-      'en': "One more thing — I can't hide my feelings. When I smirk, YOU are in trouble. Strike when my face turns worried!",
-      'ko': '하나 더 — 난 표정을 못 숨겨. 내가 히죽거리면 네가 불리하다는 뜻! 내 표정이 굳는 순간을 노려!',
-    },
-    'tutW1_6': {
-      'en': "It's your turn! How many will you take?",
-      'ko': '네 차례야! 몇 개를 가져갈래?',
+      'en': 'Now grab 2 stones and hit Take!',
+      'ko': '자! 돌 2개를 집고, 가져가기를 눌러봐!',
     },
     // W2: 2행 NIM
     'tutW2_1': {
@@ -607,8 +616,8 @@ class AppStrings {
     },
     // 2회 연속 패배 힌트
     'tutHintW1': {
-      'en': "Hint: Don't be forced to take the last stone.",
-      'ko': '힌트: 마지막 돌을 가져가지 않도록 해봐.',
+      'en': 'Hint: grab 2 stones and you win!',
+      'ko': '힌트: 2개를 집으면 이겨!',
     },
     'tutHintW2': {
       'en': "Hint: Try to leave rows with equal counts.",

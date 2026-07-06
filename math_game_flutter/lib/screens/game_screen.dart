@@ -116,6 +116,16 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       _tutorialSteps = TutorialManager.entrySteps(widget.stageNumber, s);
       _tutorialActive = _tutorialSteps.isNotEmpty;
     }
+
+    // (2026-07-02) 스테이지 1 = 튜토리얼 전용: 선공 선택 화면 없이 바로 플레이어 선공.
+    // 돌 3개 + "2개 집어봐" 지시 → 따라 하면 무조건 승리.
+    if (widget.stageNumber == 1) {
+      _phase = GamePhase.playing;
+      _currentTurn = TurnOwner.player;
+      _firstMover = TurnOwner.player;
+      _moveLog.add(_LogEntry(null, s.get('logStart', [s.get('nameYou')])));
+      _midnightMessage = s.get('turnPlayerFirst');
+    }
   }
 
   void _advanceTutorial() {
@@ -153,21 +163,6 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         return s.get('modeTripleRow');
       case GameMode.quadRow:
         return s.get('modeQuadRow');
-    }
-  }
-
-  String _getModeRule() {
-    switch (_config.mode) {
-      case GameMode.singleRow:
-        return s.get('ruleSingleRow', ['${_config.maxTake}']);
-      case GameMode.doubleRow:
-        return s.get('ruleDoubleRow');
-      case GameMode.pepero:
-        return s.get('rulePepero');
-      case GameMode.tripleRow:
-        return s.get('ruleTripleRow');
-      case GameMode.quadRow:
-        return s.get('ruleQuadRow');
     }
   }
 
@@ -317,8 +312,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         _midnightFace = MidnightFace.happy2;
         _midnightMessage = s.get('midnightWon');
         _consecutiveDefeats++;
-        // 2회 연속 패배: 예린 정책 → 자동 힌트 메시지 append
-        if (_consecutiveDefeats >= 2 &&
+        // 자동 힌트: 스테이지 1은 첫 패배 즉시, 그 외 튜토리얼 스테이지는 2연패 시
+        final int hintAfter = widget.stageNumber == 1 ? 1 : 2;
+        if (_consecutiveDefeats >= hintAfter &&
             TutorialManager.isTutorialStage(widget.stageNumber)) {
           _midnightMessage =
               '${s.get('midnightWon')}\n\n${TutorialManager.autoHintOnConsecutiveLoss(widget.stageNumber, s)}';
@@ -790,7 +786,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       alignment: Alignment.centerLeft,
       padding: const EdgeInsets.symmetric(horizontal: 12),
       child: Text(
-        '▸ ${s.get('caseLabel', [widget.stageNumber.toString().padLeft(3, '0')])}   ·   $status   ·   ${_getModeRule()}',
+        '▸ ${s.get('caseLabel', [widget.stageNumber.toString().padLeft(3, '0')])}   ·   $status',
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         style: const TextStyle(
@@ -983,21 +979,10 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
               children: [
                 _dossierRow(s.get('whoGoesFirst').toUpperCase(), accent: true),
                 const Divider(color: _Pal.paperEdge, height: 18),
-                _dossierRow('${s.get('modeLabel')}  —  ${_getModeTitle()}'),
-                const SizedBox(height: 6),
-                Text(
-                  _getModeRule(),
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontFamily: _mono,
-                    fontSize: 12.5,
-                    color: _Pal.inkSoft,
-                    height: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                _dossierRow(
-                    '${s.get('initLabel')}  —  [ ${_rows.join('  ·  ')} ]'),
+                // (2026-07-02) 줄글 규칙 대신 시각 정보: 실제 돌 미리보기 + 수량 칩
+                _boardPreview(),
+                const SizedBox(height: 12),
+                _infoChips(dark: false),
               ],
             ),
           ),
@@ -1032,6 +1017,99 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     );
   }
 
+  /// 시작 배치를 실제 돌 모양으로 미리보기 — 읽지 않아도 한눈에 (규칙 T3).
+  Widget _boardPreview() {
+    return Column(
+      children: List.generate(_rows.length, (ri) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Flexible(
+                child: Wrap(
+                  spacing: 4,
+                  runSpacing: 4,
+                  alignment: WrapAlignment.center,
+                  children: List.generate(
+                    _rows[ri],
+                    (_) => Container(
+                      width: 14,
+                      height: 14,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: const RadialGradient(
+                          center: Alignment(-0.4, -0.5),
+                          radius: 0.95,
+                          colors: [Color(0xFFD9C7A0), Color(0xFF8C7A55)],
+                        ),
+                        border: Border.all(
+                            color: const Color(0xFF5C4E33), width: 1),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                '× ${_rows[ri]}',
+                style: const TextStyle(
+                  fontFamily: _mono,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w900,
+                  color: _Pal.ink,
+                ),
+              ),
+            ],
+          ),
+        );
+      }),
+    );
+  }
+
+  /// 정보 칩 2개: [남은 돌 N] [한 번에 1~M개] — 게임 내내 숫자 정보 상시 노출.
+  Widget _infoChips({required bool dark}) {
+    final int total = _rows.fold(0, (a, b) => a + b);
+    String qty;
+    switch (_config.mode) {
+      case GameMode.singleRow:
+        qty = s.get('takeRange', ['${_config.maxTake}']);
+        break;
+      case GameMode.pepero:
+        qty = s.get('peperoChip');
+        break;
+      default:
+        qty = s.get('takeAny');
+    }
+    Widget chip(String t) => Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: dark ? _Pal.deskBottom : Colors.transparent,
+            borderRadius: BorderRadius.circular(4),
+            border: Border.all(
+                color: dark ? _Pal.frameHi : _Pal.frame, width: 1.5),
+          ),
+          child: Text(
+            t,
+            style: TextStyle(
+              fontFamily: _mono,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: dark ? _Pal.cream : _Pal.ink,
+            ),
+          ),
+        );
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        chip(s.get('stonesLeft', ['$total'])),
+        const SizedBox(width: 8),
+        chip(qty),
+      ],
+    );
+  }
+
   Widget _dossierRow(String text, {bool accent = false}) {
     return Align(
       alignment: Alignment.centerLeft,
@@ -1057,6 +1135,11 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           child: _turnStamp(),
+        ),
+        // 숫자 정보 상시 노출: 남은 돌 / 가져갈 수 있는 수량
+        Padding(
+          padding: const EdgeInsets.only(bottom: 6),
+          child: _infoChips(dark: true),
         ),
         // 진행 로그 / 선공 패널
         _logPanel(),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../widgets/midnight_character.dart';
+import '../widgets/language_select_dialog.dart';
 import '../game/stage_manager.dart';
 import '../providers/locale_provider.dart';
 import 'world_select_screen.dart';
@@ -35,6 +36,15 @@ class _HomeScreenState extends State<HomeScreen>
     Future.delayed(const Duration(milliseconds: 500), () {
       _fadeController.forward();
       setState(() => _showButtons = true);
+    });
+
+    // (2026-07-02) 첫 실행: 언어 선택부터 (선택 전엔 닫을 수 없음)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      LanguageSelectDialog.showIfNeeded(
+        context,
+        widget.localeProvider,
+        () => setState(() {}),
+      );
     });
   }
 

@@ -234,6 +234,14 @@ class NimEngine {
 
     switch (mode) {
       case GameMode.singleRow:
+        // (2026-07-02) 스테이지 1 = 튜토리얼 전용: 돌 3개, 1~2개 선택.
+        // "2개를 집어봐!" 지시대로 하면 한밤이가 마지막 돌을 강제로 가져가 무조건 승리
+        // → 첫 판에서 규칙(마지막 돌=패배)과 승리 감각을 동시에 학습.
+        if (stageNumber == 1) {
+          maxTake = 2;
+          rows = [3];
+          break;
+        }
         // 기본 최저 난이도 상승: 1~1 제한 폐지, 최소 1~2 선택.
         // NIM 필승 전략(nimber, (n-1) % (maxTake+1)) 보존.
         int n = 7 + (stageNumber - 1) * 2;
