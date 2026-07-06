@@ -146,6 +146,49 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
           ),
+          // 음량 슬라이더 (음악 ON일 때만) — 드래그 중 실시간 반영, 놓으면 저장
+          if (AppSettings.instance.music)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: _card(
+                child: Row(
+                  children: [
+                    const Icon(Icons.volume_down_rounded,
+                        color: Color(0xFF7C4DFF)),
+                    Expanded(
+                      child: Slider(
+                        value: AppSettings.instance.musicVolume,
+                        min: 0.0,
+                        max: 1.0,
+                        activeColor: const Color(0xFF7C4DFF),
+                        onChanged: (v) {
+                          AppSettings.instance.musicVolume = v;
+                          MusicService.instance.setVolume(v);
+                          setState(() {});
+                        },
+                        onChangeEnd: (v) =>
+                            AppSettings.instance.setMusicVolume(v),
+                      ),
+                    ),
+                    const Icon(Icons.volume_up_rounded,
+                        color: Color(0xFF7C4DFF)),
+                    const SizedBox(width: 8),
+                    SizedBox(
+                      width: 42,
+                      child: Text(
+                        '${(AppSettings.instance.musicVolume * 100).round()}%',
+                        textAlign: TextAlign.right,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           // 진동 효과 토글
           Padding(
             padding: const EdgeInsets.only(bottom: 8),
