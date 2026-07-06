@@ -30,19 +30,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final s = widget.localeProvider.strings;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFFF3E0),
+      backgroundColor: const Color(0xFFEFE6D0),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_rounded,
-              color: Color(0xFF2C3E50)),
+              color: Color(0xFF332817)),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
           s.get('settings'),
           style: const TextStyle(
-            color: Color(0xFF2C3E50),
+            color: Color(0xFF332817),
             fontWeight: FontWeight.w700,
           ),
         ),
@@ -77,14 +77,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           fontWeight:
                               isSelected ? FontWeight.w700 : FontWeight.w500,
                           color: isSelected
-                              ? const Color(0xFF7C4DFF)
-                              : const Color(0xFF2C3E50),
+                              ? const Color(0xFFC9A24B)
+                              : const Color(0xFF332817),
                         ),
                       ),
                     ),
                     if (isSelected)
                       const Icon(Icons.check_circle_rounded,
-                          color: Color(0xFF7C4DFF), size: 24),
+                          color: Color(0xFFC9A24B), size: 24),
                   ],
                 ),
               ),
@@ -108,7 +108,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               child: Row(
                 children: [
                   const Icon(Icons.music_note_rounded,
-                      color: Color(0xFF7C4DFF)),
+                      color: Color(0xFFC9A24B)),
                   const SizedBox(width: 16),
                   Expanded(
                     child: Column(
@@ -119,7 +119,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w500,
-                            color: Color(0xFF2C3E50),
+                            color: Color(0xFF332817),
                           ),
                         ),
                         const SizedBox(height: 2),
@@ -135,7 +135,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   Switch(
                     value: AppSettings.instance.music,
-                    activeColor: const Color(0xFF7C4DFF),
+                    activeColor: const Color(0xFFC9A24B),
                     onChanged: (v) async {
                       await AppSettings.instance.setMusic(v);
                       await MusicService.instance.setEnabled(v);
@@ -154,13 +154,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 child: Row(
                   children: [
                     const Icon(Icons.volume_down_rounded,
-                        color: Color(0xFF7C4DFF)),
+                        color: Color(0xFFC9A24B)),
                     Expanded(
                       child: Slider(
                         value: AppSettings.instance.musicVolume,
                         min: 0.0,
                         max: 1.0,
-                        activeColor: const Color(0xFF7C4DFF),
+                        activeColor: const Color(0xFFC9A24B),
                         onChanged: (v) {
                           AppSettings.instance.musicVolume = v;
                           MusicService.instance.setVolume(v);
@@ -171,7 +171,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                     ),
                     const Icon(Icons.volume_up_rounded,
-                        color: Color(0xFF7C4DFF)),
+                        color: Color(0xFFC9A24B)),
                     const SizedBox(width: 8),
                     SizedBox(
                       width: 42,
@@ -201,7 +201,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               child: Row(
                 children: [
                   const Icon(Icons.vibration_rounded,
-                      color: Color(0xFF7C4DFF)),
+                      color: Color(0xFFC9A24B)),
                   const SizedBox(width: 16),
                   Expanded(
                     child: Column(
@@ -212,7 +212,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w500,
-                            color: Color(0xFF2C3E50),
+                            color: Color(0xFF332817),
                           ),
                         ),
                         const SizedBox(height: 2),
@@ -228,7 +228,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   Switch(
                     value: AppSettings.instance.haptics,
-                    activeColor: const Color(0xFF7C4DFF),
+                    activeColor: const Color(0xFFC9A24B),
                     onChanged: (v) async {
                       await AppSettings.instance.setHaptics(v);
                       setState(() {});
@@ -301,7 +301,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Row(
               children: [
                 const Icon(Icons.info_outline_rounded,
-                    color: Color(0xFF7C4DFF)),
+                    color: Color(0xFFC9A24B)),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Text(
@@ -309,7 +309,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
-                      color: Color(0xFF2C3E50),
+                      color: Color(0xFF332817),
                     ),
                   ),
                 ),
@@ -349,7 +349,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           s.get('howToPlay'),
           style: const TextStyle(
             fontWeight: FontWeight.w800,
-            color: Color(0xFF2C3E50),
+            color: Color(0xFF332817),
           ),
         ),
         content: SizedBox(
@@ -366,7 +366,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   style: const TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF7C4DFF),
+                    color: Color(0xFFC9A24B),
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -405,7 +405,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           s.get('resetConfirmTitle'),
           style: const TextStyle(
             fontWeight: FontWeight.w800,
-            color: Color(0xFF2C3E50),
+            color: Color(0xFF332817),
           ),
         ),
         content: Text(
@@ -448,17 +448,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
       style: const TextStyle(
         fontSize: 18,
         fontWeight: FontWeight.w700,
-        color: Color(0xFF2C3E50),
+        color: Color(0xFF332817),
       ),
     );
   }
 
   Widget _card({required Widget child, VoidCallback? onTap, bool selected = false}) {
     return Material(
-      color: selected ? const Color(0xFF7C4DFF).withOpacity(0.1) : Colors.white,
+      color: selected ? const Color(0xFFC9A24B).withOpacity(0.1) : Colors.white,
       borderRadius: BorderRadius.circular(16),
       elevation: selected ? 2 : 1,
-      shadowColor: const Color(0xFF7C4DFF).withOpacity(0.2),
+      shadowColor: const Color(0xFFC9A24B).withOpacity(0.2),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
@@ -473,7 +473,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget _navRow(IconData icon, String label) {
     return Row(
       children: [
-        Icon(icon, color: const Color(0xFF7C4DFF)),
+        Icon(icon, color: const Color(0xFFC9A24B)),
         const SizedBox(width: 16),
         Expanded(
           child: Text(
@@ -481,11 +481,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
             style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w500,
-              color: Color(0xFF2C3E50),
+              color: Color(0xFF332817),
             ),
           ),
         ),
-        const Icon(Icons.chevron_right_rounded, color: Color(0xFF7C4DFF)),
+        const Icon(Icons.chevron_right_rounded, color: Color(0xFFC9A24B)),
       ],
     );
   }

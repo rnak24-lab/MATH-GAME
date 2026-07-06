@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:async';
+import 'dart:math' as math;
 import '../services/app_settings.dart';
 import '../game/stage_manager.dart';
 import '../game/nim_engine.dart';
@@ -30,7 +31,7 @@ class _Pal {
   static const win = Color(0xFF5E7D52); // 승리/성공
 }
 
-const String _mono = 'monospace';
+const String _mono = 'NeoDGM'; // 한글+영문 픽셀 폰트 (10번 제안)
 
 class GameScreen extends StatefulWidget {
   final StageManager stageManager;
@@ -845,52 +846,59 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     );
   }
 
-  /// 고양이 도발 말풍선 (꼬리가 아래=책상 쪽을 향함).
+  /// 고양이 도발 말풍선 — 꼬리가 왼쪽(고양이)을 향하는 가로 배치용.
   Widget _tauntBubble(String message) {
-    return Column(
+    return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        AnimatedSwitcher(
-          duration: const Duration(milliseconds: 200),
-          child: Container(
-            key: ValueKey(message),
-            constraints: const BoxConstraints(maxWidth: 240),
-            padding:
-                const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-            decoration: BoxDecoration(
-              color: _Pal.paper,
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: _Pal.frame, width: 2),
-            ),
-            child: Text(
-              message,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontFamily: _mono,
-                fontSize: 13,
-                height: 1.35,
-                fontWeight: FontWeight.w600,
-                color: _Pal.ink,
+        CustomPaint(size: const Size(9, 16), painter: _BubbleTailLeft()),
+        Flexible(
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 200),
+            child: Container(
+              key: ValueKey(message),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+              decoration: BoxDecoration(
+                color: _Pal.paper,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: _Pal.frame, width: 2),
+              ),
+              child: Text(
+                message,
+                style: const TextStyle(
+                  fontFamily: _mono,
+                  fontSize: 13,
+                  height: 1.35,
+                  color: _Pal.ink,
+                ),
               ),
             ),
           ),
         ),
-        CustomPaint(size: const Size(16, 9), painter: _BubbleTailDown()),
       ],
     );
   }
 
-  /// 고양이 헤더: 도발 말풍선(위) + 중앙 고양이(아래). 가로 중앙 정렬.
+  /// 고양이 헤더: 고양이(왼쪽) + 말풍선(오른쪽) 가로 배치 —
+  /// 대사 길이가 변해도 고양이가 움직이지 않고(레이아웃 점프 제거), 세로 공간 절약.
   Widget _catHeader({double catSize = 110}) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 6, 12, 2),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _tauntBubble(_midnightMessage),
-          const SizedBox(height: 2),
-          _catFigure(size: catSize),
-        ],
+      padding: const EdgeInsets.fromLTRB(12, 4, 12, 0),
+      child: SizedBox(
+        height: catSize + 8,
+        child: Row(
+          children: [
+            _catFigure(size: catSize),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: _tauntBubble(_midnightMessage),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1131,15 +1139,19 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     return Column(
       children: [
         _catHeader(catSize: 90),
-        // 턴/결과 도장 배지
+        // 턴 도장 + 숫자 정보 칩 — 한 줄 (세로 공간 절약, 제안 #5)
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          child: _turnStamp(),
-        ),
-        // 숫자 정보 상시 노출: 남은 돌 / 가져갈 수 있는 수량
-        Padding(
-          padding: const EdgeInsets.only(bottom: 6),
-          child: _infoChips(dark: true),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Row(
+              children: [
+                _turnStamp(),
+                const SizedBox(width: 8),
+                _infoChips(dark: true),
+              ],
+            ),
+          ),
         ),
         // 진행 로그 / 선공 패널
         _logPanel(),
@@ -1161,6 +1173,11 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
               children: [
                 Positioned.fill(child: CustomPaint(painter: _DeskPainter())),
                 Positioned.fill(child: _buildBoardArea()),
+                // (제안 #8) 승리 시 별 파티클 — 패배는 조용하게
+                if (_phase == GamePhase.gameOver && _playerWon)
+                  const Positioned.fill(
+                    child: IgnorePointer(child: _WinBurst()),
+                  ),
               ],
             ),
           ),
@@ -1219,7 +1236,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         : (_currentTurn == TurnOwner.player
             ? s.get('myTurn')
             : s.get('midnightTurn'));
-    return Container(
+    final stamp = Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
       decoration: BoxDecoration(
         border: Border.all(color: c, width: 2.5),
@@ -1231,12 +1248,25 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         style: TextStyle(
           fontFamily: _mono,
           fontSize: 14,
-          fontWeight: FontWeight.w900,
           letterSpacing: 2,
           color: c == _Pal.gold ? _Pal.gold : c,
         ),
       ),
     );
+    // (제안 #8) 승리 도장은 "쾅" 찍히며 등장 — 패배는 조용하게 (M3)
+    if (over && _playerWon) {
+      return TweenAnimationBuilder<double>(
+        tween: Tween(begin: 0, end: 1),
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeOutBack,
+        builder: (_, v, child) => Transform.scale(
+          scale: 2.2 - 1.2 * v.clamp(0.0, 1.0),
+          child: Opacity(opacity: v.clamp(0.0, 1.0), child: child),
+        ),
+        child: stamp,
+      );
+    }
+    return stamp;
   }
 
   /// 진행 로그 + 선공자 패널 (접었다 펴기). 세로폰 공간 절약 위해 기본 접힘.
@@ -1546,14 +1576,20 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
           ],
         ),
         const SizedBox(height: 10),
-        SizedBox(
-          width: double.infinity,
-          child: _StampButton(
-            label: hasSel
-                ? s.get('takeNStones', ['$_selectedCount'])
-                : s.get('takeCount'),
-            color: hasSel ? _Pal.alarm : _Pal.frameHi,
-            onTap: _confirmTake,
+        // (제안 #7) 비활성 시 행동 유도 문구, 선택 시 살짝 커지며 강조
+        AnimatedScale(
+          scale: hasSel ? 1.0 : 0.97,
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOutBack,
+          child: SizedBox(
+            width: double.infinity,
+            child: _StampButton(
+              label: hasSel
+                  ? s.get('takeNStones', ['$_selectedCount'])
+                  : s.get('tapToSelectCta'),
+              color: hasSel ? _Pal.alarm : _Pal.frameHi,
+              onTap: _confirmTake,
+            ),
           ),
         ),
       ],
@@ -1660,6 +1696,42 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   }
 }
 
+/// (제안 #8) 승리 별 파티클 — 중앙에서 8방향으로 퍼지는 골드 별.
+class _WinBurst extends StatelessWidget {
+  const _WinBurst();
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: const Duration(milliseconds: 900),
+      curve: Curves.easeOut,
+      builder: (_, t, __) {
+        return Stack(
+          alignment: Alignment.center,
+          children: List.generate(8, (i) {
+            final a = i * math.pi / 4 + 0.4;
+            final r = 30 + 90 * t;
+            return Transform.translate(
+              offset: Offset(math.cos(a) * r, math.sin(a) * r * 0.7),
+              child: Opacity(
+                opacity: (1 - t).clamp(0.0, 1.0),
+                child: Text(
+                  i.isEven ? '✦' : '⭐',
+                  style: TextStyle(
+                    fontSize: 16 + 8 * t,
+                    color: _Pal.gold,
+                  ),
+                ),
+              ),
+            );
+          }),
+        );
+      },
+    );
+  }
+}
+
 /// 진행 로그 한 줄 — owner로 색상 결정 (언어 독립적).
 class _LogEntry {
   final TurnOwner? owner; // null = 시스템(시작 등)
@@ -1726,7 +1798,13 @@ class _Stone extends StatelessWidget {
             child: AnimatedOpacity(
               opacity: leaving ? 0 : 1,
               duration: const Duration(milliseconds: 320),
-              child: token,
+              // (제안 #9) 집는 순간 통통 튀는 바운스 — 손맛
+              child: AnimatedScale(
+                scale: selected ? 1.15 : 1.0,
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeOutBack,
+                child: token,
+              ),
             ),
           ),
         ),
@@ -1784,8 +1862,8 @@ class _DeskPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-/// 말풍선 꼬리(아래 방향) — 종이색 + 프레임 테두리 느낌.
-class _BubbleTailDown extends CustomPainter {
+/// 말풍선 꼬리(왼쪽 방향 = 고양이 쪽) — 종이색 + 프레임 테두리.
+class _BubbleTailLeft extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final fill = Paint()..color = _Pal.paper;
@@ -1794,9 +1872,9 @@ class _BubbleTailDown extends CustomPainter {
       ..strokeWidth = 2
       ..style = PaintingStyle.stroke;
     final path = Path()
-      ..moveTo(0, 0)
-      ..lineTo(size.width / 2, size.height)
-      ..lineTo(size.width, 0);
+      ..moveTo(size.width, 0)
+      ..lineTo(0, size.height / 2)
+      ..lineTo(size.width, size.height);
     canvas.drawPath(path, fill);
     canvas.drawPath(path, border);
   }

@@ -212,6 +212,10 @@ class AppStrings {
       'en': 'Tap stones to pick',
       'ko': '돌을 탭해 선택',
     },
+    'tapToSelectCta': {
+      'en': 'Tap a stone to pick!',
+      'ko': '돌을 눌러 골라봐!',
+    },
 
     // ── Game Screen: HUD 라벨 (한국어 완역, 2026-07-02) ──
     'stageLabel': {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../game/stage_manager.dart';
 import '../providers/locale_provider.dart';
+import '../utils/nim_theme.dart';
 import 'world_select_screen.dart';
 import 'game_screen.dart';
 import 'settings_screen.dart';
@@ -32,27 +33,26 @@ class _StageSelectScreenState extends State<StageSelectScreen> {
     final s = localeProvider.strings;
 
     return Scaffold(
-      // (id=1141) 월드별 고유 배경 그라데이션
-      extendBodyBehindAppBar: false,
-      backgroundColor: Colors.transparent,
+      backgroundColor: NimTheme.deskBottom,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: NimTheme.frame,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_rounded,
-              color: Colors.white),
+              color: NimTheme.cream, size: 18),
           onPressed: () => Navigator.pop(context),
         ),
         title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(world.emoji, style: const TextStyle(fontSize: 22)),
+            Text(world.emoji, style: const TextStyle(fontSize: 20)),
             const SizedBox(width: 8),
             Text(
               world.name(s),
               style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w700,
+                fontFamily: NimTheme.font,
+                color: NimTheme.cream,
+                fontSize: 19,
               ),
             ),
           ],
@@ -61,7 +61,7 @@ class _StageSelectScreenState extends State<StageSelectScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.settings_rounded,
-                color: Colors.white, size: 26),
+                color: NimTheme.gold, size: 24),
             tooltip: s.get('settings'),
             onPressed: () {
               Navigator.push(
@@ -80,21 +80,14 @@ class _StageSelectScreenState extends State<StageSelectScreen> {
         ],
       ),
       body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: world.bgGradient,
-            stops: const [0.0, 0.35, 1.0],
-          ),
-        ),
+        decoration: const BoxDecoration(gradient: NimTheme.bg),
         child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(16),
         child: GridView.builder(
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 4,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
+            crossAxisCount: 5,
+            crossAxisSpacing: 10,
+            mainAxisSpacing: 10,
             childAspectRatio: 1,
           ),
           itemCount: 20,
@@ -153,43 +146,58 @@ class _StageCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isCurrent = isPlayable && !isCleared;
     return Material(
-      color: isCleared
-          ? worldColor.withOpacity(0.15)
-          : isPlayable
-              ? Colors.white
-              : Colors.grey[200],
-      borderRadius: BorderRadius.circular(16),
-      elevation: isPlayable ? 3 : 0,
-      shadowColor: worldColor.withOpacity(0.2),
+      color: NimTheme.deskBoard,
+      borderRadius: BorderRadius.circular(8),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(8),
         child: Container(
-          decoration: isPlayable && !isCleared
-              ? BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: worldColor, width: 2),
-                )
-              : null,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: isCurrent
+                  ? NimTheme.gold
+                  : (isCleared
+                      ? NimTheme.win.withOpacity(0.7)
+                      : NimTheme.frame),
+              width: isCurrent ? 2.5 : 1.5,
+            ),
+            // 현재 스테이지 = 골드 글로우
+            boxShadow: isCurrent
+                ? [
+                    BoxShadow(
+                      color: NimTheme.gold.withOpacity(0.45),
+                      blurRadius: 12,
+                      spreadRadius: 1,
+                    ),
+                  ]
+                : null,
+          ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               if (isCleared)
-                const Text('⭐', style: TextStyle(fontSize: 20))
+                const Icon(Icons.check_rounded,
+                    size: 18, color: NimTheme.win)
               else if (!isPlayable)
-                Icon(Icons.lock, size: 20, color: Colors.grey[400])
+                const Icon(Icons.lock_rounded,
+                    size: 15, color: NimTheme.inkSoft)
               else
-                Icon(Icons.play_arrow_rounded, size: 20, color: worldColor),
-              const SizedBox(height: 4),
+                const Icon(Icons.play_arrow_rounded,
+                    size: 18, color: NimTheme.gold),
+              const SizedBox(height: 2),
               Text(
                 '$displayNumber',
                 style: TextStyle(
+                  fontFamily: NimTheme.font,
                   fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: isPlayable
-                      ? const Color(0xFF2C3E50)
-                      : Colors.grey[400],
+                  color: isCurrent
+                      ? NimTheme.gold
+                      : (isCleared
+                          ? NimTheme.cream
+                          : NimTheme.inkSoft),
                 ),
               ),
             ],

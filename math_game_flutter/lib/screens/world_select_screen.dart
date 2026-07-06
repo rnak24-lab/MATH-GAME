@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../game/stage_manager.dart';
 import '../providers/locale_provider.dart';
 import '../l10n/app_strings.dart';
+import '../utils/nim_theme.dart';
 import 'stage_select_screen.dart';
 import 'settings_screen.dart';
 
@@ -107,27 +108,28 @@ class _WorldSelectScreenState extends State<WorldSelectScreen> {
     final s = localeProvider.strings;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFFF3E0),
+      backgroundColor: NimTheme.deskBottom,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: NimTheme.frame,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_rounded,
-              color: Color(0xFF2C3E50)),
+              color: NimTheme.cream, size: 18),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
           s.get('worldSelect'),
           style: const TextStyle(
-            color: Color(0xFF2C3E50),
-            fontWeight: FontWeight.w700,
+            fontFamily: NimTheme.font,
+            color: NimTheme.cream,
+            fontSize: 20,
           ),
         ),
         centerTitle: true,
         actions: [
           IconButton(
             icon: const Icon(Icons.settings_rounded,
-                color: Color(0xFF7C4DFF), size: 26),
+                color: NimTheme.gold, size: 24),
             tooltip: s.get('settings'),
             onPressed: () {
               Navigator.push(
@@ -145,8 +147,10 @@ class _WorldSelectScreenState extends State<WorldSelectScreen> {
           const SizedBox(width: 4),
         ],
       ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(20),
+      body: Container(
+        decoration: const BoxDecoration(gradient: NimTheme.bg),
+        child: ListView.builder(
+        padding: const EdgeInsets.all(16),
         itemCount: worlds.length,
         itemBuilder: (context, index) {
           final world = worlds[index];
@@ -154,7 +158,7 @@ class _WorldSelectScreenState extends State<WorldSelectScreen> {
           final progress = stageManager.getWorldProgress(world.id);
 
           return Padding(
-            padding: const EdgeInsets.only(bottom: 16),
+            padding: const EdgeInsets.only(bottom: 12),
             child: _WorldCard(
               world: world,
               strings: s,
@@ -179,6 +183,7 @@ class _WorldSelectScreenState extends State<WorldSelectScreen> {
             ),
           );
         },
+        ),
       ),
     );
   }
@@ -201,48 +206,62 @@ class _WorldCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final int pct = ((progress / 20) * 100).round();
     return Material(
-      color: isUnlocked ? Colors.white : Colors.grey[200],
-      borderRadius: BorderRadius.circular(20),
-      elevation: isUnlocked ? 4 : 1,
-      shadowColor: world.color.withOpacity(0.3),
+      color: NimTheme.deskBoard,
+      borderRadius: BorderRadius.circular(8),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: isUnlocked
+                  ? world.color.withOpacity(0.75)
+                  : NimTheme.frame,
+              width: 2,
+            ),
+          ),
+          padding: const EdgeInsets.all(16),
           child: Row(
             children: [
+              // 월드 아이콘 — 테마색 배경
               Container(
-                width: 60,
-                height: 60,
+                width: 56,
+                height: 56,
                 decoration: BoxDecoration(
                   color: isUnlocked
-                      ? world.color.withOpacity(0.15)
-                      : Colors.grey[300],
-                  borderRadius: BorderRadius.circular(16),
+                      ? world.color.withOpacity(0.22)
+                      : NimTheme.deskBottom,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: isUnlocked
+                        ? world.color.withOpacity(0.6)
+                        : NimTheme.frame,
+                    width: 1.5,
+                  ),
                 ),
                 child: Center(
                   child: Text(
                     isUnlocked ? world.emoji : '🔒',
-                    style: const TextStyle(fontSize: 28),
+                    style: const TextStyle(fontSize: 26),
                   ),
                 ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // (id=1140) 잠긴 월드도 제목은 항상 표시
                     Text(
                       world.name(strings),
                       style: TextStyle(
+                        fontFamily: NimTheme.font,
                         fontSize: 18,
-                        fontWeight: FontWeight.w700,
                         color: isUnlocked
-                            ? const Color(0xFF2C3E50)
-                            : Colors.grey[500],
+                            ? NimTheme.cream
+                            : NimTheme.inkSoft,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -251,46 +270,39 @@ class _WorldCard extends StatelessWidget {
                           ? world.subtitle(strings)
                           : strings.get('unlockHint3Stages', ['${world.id}']),
                       style: TextStyle(
+                        fontFamily: NimTheme.font,
                         fontSize: 13,
-                        color: isUnlocked ? Colors.grey[500] : Colors.orange[700],
-                        fontWeight: isUnlocked ? FontWeight.normal : FontWeight.w600,
+                        color: isUnlocked
+                            ? world.color.withOpacity(0.95)
+                            : NimTheme.gold,
                       ),
                     ),
                     if (isUnlocked) ...[
                       const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(4),
-                              child: LinearProgressIndicator(
-                                value: progress / 20,
-                                backgroundColor: Colors.grey[200],
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                    world.color),
-                                minHeight: 6,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            '$progress/20',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: world.color,
-                            ),
-                          ),
-                        ],
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(3),
+                        child: LinearProgressIndicator(
+                          value: progress / 20,
+                          backgroundColor: NimTheme.deskBottom,
+                          valueColor:
+                              const AlwaysStoppedAnimation<Color>(NimTheme.gold),
+                          minHeight: 7,
+                        ),
                       ),
                     ],
                   ],
                 ),
               ),
+              const SizedBox(width: 12),
+              // 진행도 % — 크게 (대표님 지정)
               if (isUnlocked)
-                Icon(
-                  Icons.chevron_right_rounded,
-                  color: Colors.grey[400],
+                Text(
+                  '$pct%',
+                  style: const TextStyle(
+                    fontFamily: NimTheme.font,
+                    fontSize: 24,
+                    color: NimTheme.gold,
+                  ),
                 ),
             ],
           ),

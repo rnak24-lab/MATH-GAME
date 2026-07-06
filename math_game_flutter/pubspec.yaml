@@ -75,6 +75,12 @@ flutter:
     - assets/app_icon.png
     - assets/app_icon_master.png
 
+  # 한글+영문 픽셀 폰트 (네오둥근모, 무료) — 도장/서류 감성을 한글에서도
+  fonts:
+    - family: NeoDGM
+      fonts:
+        - asset: assets/fonts/neodgm.ttf
+
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg
