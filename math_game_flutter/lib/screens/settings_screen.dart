@@ -189,6 +189,54 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ),
             ),
+          // 효과음 토글
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: _card(
+              onTap: () async {
+                await AppSettings.instance.setSfx(!AppSettings.instance.sfx);
+                setState(() {});
+              },
+              child: Row(
+                children: [
+                  const Icon(Icons.graphic_eq_rounded,
+                      color: Color(0xFFC9A24B)),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          s.get('sfxTitle'),
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xFF332817),
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          s.get('sfxDesc'),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Switch(
+                    value: AppSettings.instance.sfx,
+                    activeColor: const Color(0xFFC9A24B),
+                    onChanged: (v) async {
+                      await AppSettings.instance.setSfx(v);
+                      setState(() {});
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
           // 진동 효과 토글
           Padding(
             padding: const EdgeInsets.only(bottom: 8),

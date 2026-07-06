@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'dart:async';
 import 'dart:math' as math;
 import '../services/app_settings.dart';
+import '../services/sfx_service.dart';
 import '../game/stage_manager.dart';
 import '../game/nim_engine.dart';
 import '../models/game_state.dart';
@@ -72,6 +73,20 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   String _midnightMessage = '';
   bool _isAiAnimating = false;
   bool _leaving = false; // Take 시 선택된 돌이 슈르륵 빠지는 중
+
+  // 한밤이가 가져간 돌이 "슉!" 날아가는 연출용 (id 리스트)
+  final List<int> _flights = [];
+  int _flightSeq = 0;
+
+  /// 돌 하나가 고양이 쪽으로 슉 날아가는 연출 + 효과음.
+  void _spawnFlight() {
+    final id = _flightSeq++;
+    setState(() => _flights.add(id));
+    SfxService.instance.playTake();
+    Future.delayed(const Duration(milliseconds: 420), () {
+      if (mounted) setState(() => _flights.remove(id));
+    });
+  }
 
   // 진행 로그 / 선공자 — 로그는 (주체, 텍스트) 구조로 저장해 언어 무관하게 색상 결정
   TurnOwner? _firstMover;
@@ -469,6 +484,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         _leaving ||
         _selectedCount < 1) return;
     _haptic(true); // 확정 순간 진동
+    SfxService.instance.playTake(); // 내가 가져갈 때도 슉!
     setState(() => _leaving = true);
     Future.delayed(const Duration(milliseconds: 360), () {
       if (!mounted) return;
@@ -563,6 +579,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       // AI턴 중에는 개수와 무관하게 표정은 항상 neutral 고정
       for (int i = 0; i < move.count; i++) {
         if (!mounted || _phase != GamePhase.playing) return;
+        _spawnFlight(); // 슉! — 돌이 한밤이 쪽으로 날아가는 연출 + 효과음
         setState(() {
           _rows[move.rowIndex] -= 1;
           _midnightFace = MidnightFace.neutral;
@@ -1156,29 +1173,61 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         // 진행 로그 / 선공 패널
         _logPanel(),
         const SizedBox(height: 4),
-        // 탑뷰 책상
+        // 원근 책상 — 한밤이가 테이블 맞은편에 앉아 있는 1인칭 시점 (대표님 스케치)
         Expanded(
-          child: Container(
-            margin: const EdgeInsets.fromLTRB(12, 4, 12, 4),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: _Pal.frame, width: 3),
-              boxShadow: const [
-                BoxShadow(
-                    color: Colors.black54, blurRadius: 12, offset: Offset(0, 4)),
-              ],
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: Stack(
-              children: [
-                Positioned.fill(child: CustomPaint(painter: _DeskPainter())),
-                Positioned.fill(child: _buildBoardArea()),
-                // (제안 #8) 승리 시 별 파티클 — 패배는 조용하게
-                if (_phase == GamePhase.gameOver && _playerWon)
-                  const Positioned.fill(
-                    child: IgnorePointer(child: _WinBurst()),
+          child: Transform(
+            alignment: Alignment.bottomCenter,
+            transform: Matrix4.identity()
+              ..setEntry(3, 2, 0.0014)
+              ..rotateX(-0.34),
+            child: Container(
+              margin: const EdgeInsets.fromLTRB(12, 4, 12, 4),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: _Pal.frame, width: 3),
+                boxShadow: const [
+                  BoxShadow(
+                      color: Colors.black54,
+                      blurRadius: 12,
+                      offset: Offset(0, 4)),
+                ],
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: Stack(
+                children: [
+                  Positioned.fill(child: CustomPaint(painter: _DeskPainter())),
+                  Positioned.fill(child: _buildBoardArea()),
+                  // 한밤이가 가져간 돌 — 하나씩 슉! 하고 맞은편(위)으로 날아감
+                  for (final id in _flights)
+                    Positioned.fill(
+                      key: ValueKey('fly$id'),
+                      child: IgnorePointer(child: _FlyingStone(seed: id)),
+                    ),
+                  // 내 손 — 돌을 집으면 아래에서 쓱 올라옴 (스케치의 '손')
+                  Positioned(
+                    right: 34,
+                    bottom: -6,
+                    child: IgnorePointer(
+                      child: AnimatedSlide(
+                        offset: (_selectedCount > 0 || _leaving)
+                            ? Offset.zero
+                            : const Offset(0, 1.3),
+                        duration: const Duration(milliseconds: 260),
+                        curve: Curves.easeOutBack,
+                        child: CustomPaint(
+                          size: const Size(64, 74),
+                          painter: _PlayerHandPainter(),
+                        ),
+                      ),
+                    ),
                   ),
-              ],
+                  // (제안 #8) 승리 시 별 파티클 — 패배는 조용하게
+                  if (_phase == GamePhase.gameOver && _playerWon)
+                    const Positioned.fill(
+                      child: IgnorePointer(child: _WinBurst()),
+                    ),
+                ],
+              ),
             ),
           ),
         ),
@@ -1694,6 +1743,88 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       ],
     );
   }
+}
+
+/// 한밤이가 가져간 돌 — 보드 중앙에서 맞은편(위쪽) 고양이 방향으로 슉! 날아간다.
+class _FlyingStone extends StatelessWidget {
+  final int seed;
+  const _FlyingStone({required this.seed});
+
+  @override
+  Widget build(BuildContext context) {
+    // 시작 지점에 살짝 좌우 변화 (연속으로 날아갈 때 겹치지 않게)
+    final double jx = ((seed % 3) - 1) * 0.18;
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: const Duration(milliseconds: 380),
+      curve: Curves.easeInQuad,
+      builder: (_, t, __) {
+        final align = Alignment.lerp(
+          Alignment(jx, 0.1), // 보드 중앙(돌 근처)
+          const Alignment(-0.85, -1.35), // 맞은편 = 한밤이 쪽 (좌상단 밖)
+          t,
+        )!;
+        return Align(
+          alignment: align,
+          child: Opacity(
+            opacity: (1 - t * 0.7).clamp(0.0, 1.0),
+            child: Transform.scale(
+              scale: 1.0 - 0.55 * t,
+              child: Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: const RadialGradient(
+                    center: Alignment(-0.4, -0.5),
+                    radius: 0.95,
+                    colors: [Color(0xFFD9C7A0), Color(0xFF8C7A55)],
+                  ),
+                  border:
+                      Border.all(color: const Color(0xFF5C4E33), width: 1.5),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// 내 손 — 대표님 스케치처럼 삐죽삐죽한 손이 책상 아래에서 올라온다 (종이 실루엣 톤).
+class _PlayerHandPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final fill = Paint()..color = _Pal.paper;
+    final line = Paint()
+      ..color = _Pal.frame
+      ..strokeWidth = 2.5
+      ..style = PaintingStyle.stroke;
+
+    final w = size.width, h = size.height;
+    final path = Path()
+      ..moveTo(w * 0.34, h) // 손목 왼쪽
+      ..lineTo(w * 0.30, h * 0.52)
+      // 삐죽 손가락 5개 (스케치 감성)
+      ..lineTo(w * 0.06, h * 0.34)
+      ..lineTo(w * 0.30, h * 0.36)
+      ..lineTo(w * 0.22, h * 0.06)
+      ..lineTo(w * 0.42, h * 0.30)
+      ..lineTo(w * 0.50, h * 0.00)
+      ..lineTo(w * 0.60, h * 0.30)
+      ..lineTo(w * 0.78, h * 0.08)
+      ..lineTo(w * 0.72, h * 0.38)
+      ..lineTo(w * 0.96, h * 0.30)
+      ..lineTo(w * 0.72, h * 0.54)
+      ..lineTo(w * 0.68, h) // 손목 오른쪽
+      ..close();
+    canvas.drawPath(path, fill);
+    canvas.drawPath(path, line);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 /// (제안 #8) 승리 별 파티클 — 중앙에서 8방향으로 퍼지는 골드 별.

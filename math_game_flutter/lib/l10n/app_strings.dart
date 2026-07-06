@@ -289,6 +289,14 @@ class AppStrings {
       'en': 'Retro chiptune loop',
       'ko': '고전 게임풍 칩튠',
     },
+    'sfxTitle': {
+      'en': 'Sound Effects',
+      'ko': '효과음',
+    },
+    'sfxDesc': {
+      'en': 'Swoosh when stones are taken',
+      'ko': '돌 가져갈 때 슉!',
+    },
     'hapticsTitle': {
       'en': 'Vibration',
       'ko': '진동 효과',
