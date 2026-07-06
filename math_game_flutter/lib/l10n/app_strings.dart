@@ -260,6 +260,14 @@ class AppStrings {
       'en': 'Gameplay',
       'ko': '게임',
     },
+    'musicTitle': {
+      'en': 'Background Music',
+      'ko': '배경음악',
+    },
+    'musicDesc': {
+      'en': 'Retro chiptune loop',
+      'ko': '고전 게임풍 칩튠',
+    },
     'hapticsTitle': {
       'en': 'Vibration',
       'ko': '진동 효과',

@@ -5,6 +5,7 @@ import 'providers/locale_provider.dart';
 import 'screens/home_screen.dart';
 import 'services/ad_service.dart';
 import 'services/app_settings.dart';
+import 'services/music_service.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -93,6 +94,11 @@ class _SplashScreenState extends State<SplashScreen>
       widget.localeProvider.load(),
       AppSettings.instance.load(),
     ]);
+
+    // 배경음악 시작 (설정 ON일 때만, 실패해도 무해)
+    if (AppSettings.instance.music) {
+      MusicService.instance.start();
+    }
 
     await Future.delayed(const Duration(milliseconds: 2200));
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../providers/locale_provider.dart';
 import '../services/app_settings.dart';
+import '../services/music_service.dart';
 import '../game/stage_manager.dart';
 import 'privacy_policy_screen.dart';
 
@@ -94,6 +95,57 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 24),
           _sectionTitle(s.get('settingsGameplay')),
           const SizedBox(height: 12),
+          // 배경음악 토글
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: _card(
+              onTap: () async {
+                final on = !AppSettings.instance.music;
+                await AppSettings.instance.setMusic(on);
+                await MusicService.instance.setEnabled(on);
+                setState(() {});
+              },
+              child: Row(
+                children: [
+                  const Icon(Icons.music_note_rounded,
+                      color: Color(0xFF7C4DFF)),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          s.get('musicTitle'),
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xFF2C3E50),
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          s.get('musicDesc'),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Switch(
+                    value: AppSettings.instance.music,
+                    activeColor: const Color(0xFF7C4DFF),
+                    onChanged: (v) async {
+                      await AppSettings.instance.setMusic(v);
+                      await MusicService.instance.setEnabled(v);
+                      setState(() {});
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
           // 진동 효과 토글
           Padding(
             padding: const EdgeInsets.only(bottom: 8),
