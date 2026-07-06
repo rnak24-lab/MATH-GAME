@@ -906,29 +906,6 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     );
   }
 
-  /// 고양이 헤더: 고양이(왼쪽) + 말풍선(오른쪽) 가로 배치 —
-  /// 대사 길이가 변해도 고양이가 움직이지 않고(레이아웃 점프 제거), 세로 공간 절약.
-  Widget _catHeader({double catSize = 110}) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 4, 12, 0),
-      child: SizedBox(
-        height: catSize + 8,
-        child: Row(
-          children: [
-            _catFigure(size: catSize),
-            const SizedBox(width: 6),
-            Expanded(
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: _tauntBubble(_midnightMessage),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildTutorialOverlay() {
     if (_tutorialIndex >= _tutorialSteps.length) {
       return const SizedBox.shrink();
@@ -993,111 +970,62 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     }
   }
 
-  // ── 선공 선택 = "사건 브리핑" ───────────────────────────────
+  // ── 선공 선택 — 플레이와 똑같은 책상 씬 위에서 (대표님: "돌 선택할 때부터 이 모양") ──
   Widget _buildTurnChoice() {
-    return SingleChildScrollView(
-      child: Column(
-        children: [
-          _catHeader(catSize: 108),
-          const SizedBox(height: 4),
-          // 사건 파일(도시에) 패널
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 20),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: _Pal.paper,
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: _Pal.frame, width: 2),
-            ),
-            child: Column(
-              children: [
-                _dossierRow(s.get('whoGoesFirst').toUpperCase(), accent: true),
-                const Divider(color: _Pal.paperEdge, height: 18),
-                // (2026-07-02) 줄글 규칙 대신 시각 정보: 실제 돌 미리보기 + 수량 칩
-                _boardPreview(),
-                const SizedBox(height: 12),
-                _infoChips(dark: false),
-              ],
-            ),
-          ),
-          const SizedBox(height: 18),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Row(
-              children: [
-                Expanded(
-                  child: _StampButton(
-                    label: s.get('meFirst'),
-                    color: _Pal.frameHi,
-                    icon: Icons.person,
-                    onTap: () => _chooseTurn(TurnOwner.player),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _StampButton(
-                    label: s.get('midnightFirst'),
-                    color: _Pal.alarm,
-                    icon: Icons.pets,
-                    onTap: () => _chooseTurn(TurnOwner.midnight),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
-        ],
-      ),
-    );
-  }
-
-  /// 시작 배치를 실제 돌 모양으로 미리보기 — 읽지 않아도 한눈에 (규칙 T3).
-  Widget _boardPreview() {
     return Column(
-      children: List.generate(_rows.length, (ri) {
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        _deskScene(
+          overlay: Column(
             children: [
-              Flexible(
-                child: Wrap(
-                  spacing: 4,
-                  runSpacing: 4,
-                  alignment: WrapAlignment.center,
-                  children: List.generate(
-                    _rows[ri],
-                    (_) => Container(
-                      width: 14,
-                      height: 14,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: const RadialGradient(
-                          center: Alignment(-0.4, -0.5),
-                          radius: 0.95,
-                          colors: [Color(0xFFD9C7A0), Color(0xFF8C7A55)],
-                        ),
-                        border: Border.all(
-                            color: const Color(0xFF5C4E33), width: 1),
-                      ),
-                    ),
+              // "누가 먼저 할까?" 골드 도장
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+                decoration: BoxDecoration(
+                  border: Border.all(color: _Pal.gold, width: 2.5),
+                  borderRadius: BorderRadius.circular(4),
+                  color: _Pal.gold.withOpacity(0.12),
+                ),
+                child: Text(
+                  s.get('whoGoesFirst'),
+                  style: const TextStyle(
+                    fontFamily: _mono,
+                    fontSize: 14,
+                    letterSpacing: 2,
+                    color: _Pal.gold,
                   ),
                 ),
               ),
-              const SizedBox(width: 10),
-              Text(
-                '× ${_rows[ri]}',
-                style: const TextStyle(
-                  fontFamily: _mono,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w900,
-                  color: _Pal.ink,
+              const SizedBox(height: 6),
+              _infoChips(dark: true),
+            ],
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+          child: Row(
+            children: [
+              Expanded(
+                child: _StampButton(
+                  label: s.get('meFirst'),
+                  color: _Pal.frameHi,
+                  icon: Icons.person,
+                  onTap: () => _chooseTurn(TurnOwner.player),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _StampButton(
+                  label: s.get('midnightFirst'),
+                  color: _Pal.alarm,
+                  icon: Icons.pets,
+                  onTap: () => _chooseTurn(TurnOwner.midnight),
                 ),
               ),
             ],
           ),
-        );
-      }),
+        ),
+      ],
     );
   }
 
@@ -1144,102 +1072,119 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _dossierRow(String text, {bool accent = false}) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Text(
-        text,
-        style: TextStyle(
-          fontFamily: _mono,
-          fontSize: accent ? 15 : 13,
-          fontWeight: accent ? FontWeight.w900 : FontWeight.w700,
-          color: accent ? _Pal.alarm : _Pal.ink,
-          letterSpacing: accent ? 1 : 0.3,
-        ),
+  // ── 플레이 / 결과 = 책상 위 ─────────────────────────────────
+  /// 책상 씬 (대표님 스케치): 한밤이가 테이블 맞은편에 앉아 **상반신만** 보이고,
+  /// 하반신은 원근 책상의 먼 가장자리에 가려진다. overlay = 책상 위쪽 중앙 표시물.
+  Widget _deskScene({required Widget overlay}) {
+    return Expanded(
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          // 한밤이 — 상단 중앙 (아래쪽은 뒤에 그려질 책상이 가림 = 상반신)
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: Center(child: _catFigure(size: 150)),
+          ),
+          // 말풍선 — 고양이 옆 (꼬리가 고양이 쪽)
+          Positioned(
+            top: 8,
+            right: 8,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 148),
+              child: _tauntBubble(_midnightMessage),
+            ),
+          ),
+          // 원근 책상 — 고양이 허리쯤부터 시작 (바둑판 맞은편 구도)
+          Positioned.fill(
+            top: 94,
+            child: Transform(
+              alignment: Alignment.bottomCenter,
+              transform: Matrix4.identity()
+                ..setEntry(3, 2, 0.0014)
+                ..rotateX(-0.34),
+              child: Container(
+                margin: const EdgeInsets.fromLTRB(12, 0, 12, 4),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: _Pal.frame, width: 3),
+                  boxShadow: const [
+                    BoxShadow(
+                        color: Colors.black54,
+                        blurRadius: 12,
+                        offset: Offset(0, 4)),
+                  ],
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: Stack(
+                  children: [
+                    Positioned.fill(
+                        child: CustomPaint(painter: _DeskPainter())),
+                    Positioned.fill(child: _buildBoardArea()),
+                    // 한밤이가 가져간 돌 — 하나씩 슉! 맞은편 고양이 쪽으로
+                    for (final id in _flights)
+                      Positioned.fill(
+                        key: ValueKey('fly$id'),
+                        child: IgnorePointer(child: _FlyingStone(seed: id)),
+                      ),
+                    // 내 손 — 돌을 집으면 아래에서 쓱 (스케치의 '손')
+                    Positioned(
+                      right: 34,
+                      bottom: -6,
+                      child: IgnorePointer(
+                        child: AnimatedSlide(
+                          offset: (_selectedCount > 0 || _leaving)
+                              ? Offset.zero
+                              : const Offset(0, 1.3),
+                          duration: const Duration(milliseconds: 260),
+                          curve: Curves.easeOutBack,
+                          child: CustomPaint(
+                            size: const Size(64, 74),
+                            painter: _PlayerHandPainter(),
+                          ),
+                        ),
+                      ),
+                    ),
+                    // (제안 #8) 승리 시 별 파티클 — 패배는 조용하게
+                    if (_phase == GamePhase.gameOver && _playerWon)
+                      const Positioned.fill(
+                        child: IgnorePointer(child: _WinBurst()),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          // 도장/칩 오버레이 — 고양이 아래, 책상 먼쪽 가장자리 위
+          Positioned(
+            top: 158,
+            left: 8,
+            right: 8,
+            child: Center(
+              child: FittedBox(fit: BoxFit.scaleDown, child: overlay),
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  // ── 플레이 / 결과 = 책상 위 ─────────────────────────────────
   Widget _buildGameBoard() {
     return Column(
       children: [
-        _catHeader(catSize: 90),
-        // 턴 도장 + 숫자 정보 칩 — 한 줄 (세로 공간 절약, 제안 #5)
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Row(
-              children: [
-                _turnStamp(),
-                const SizedBox(width: 8),
-                _infoChips(dark: true),
-              ],
-            ),
+        _deskScene(
+          overlay: Row(
+            children: [
+              _turnStamp(),
+              const SizedBox(width: 8),
+              _infoChips(dark: true),
+            ],
           ),
         ),
-        // 진행 로그 / 선공 패널
+        // 진행 로그 / 선공 패널 — 액션 바 바로 위 (엄지 근처)
         _logPanel(),
         const SizedBox(height: 4),
-        // 원근 책상 — 한밤이가 테이블 맞은편에 앉아 있는 1인칭 시점 (대표님 스케치)
-        Expanded(
-          child: Transform(
-            alignment: Alignment.bottomCenter,
-            transform: Matrix4.identity()
-              ..setEntry(3, 2, 0.0014)
-              ..rotateX(-0.34),
-            child: Container(
-              margin: const EdgeInsets.fromLTRB(12, 4, 12, 4),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: _Pal.frame, width: 3),
-                boxShadow: const [
-                  BoxShadow(
-                      color: Colors.black54,
-                      blurRadius: 12,
-                      offset: Offset(0, 4)),
-                ],
-              ),
-              clipBehavior: Clip.antiAlias,
-              child: Stack(
-                children: [
-                  Positioned.fill(child: CustomPaint(painter: _DeskPainter())),
-                  Positioned.fill(child: _buildBoardArea()),
-                  // 한밤이가 가져간 돌 — 하나씩 슉! 하고 맞은편(위)으로 날아감
-                  for (final id in _flights)
-                    Positioned.fill(
-                      key: ValueKey('fly$id'),
-                      child: IgnorePointer(child: _FlyingStone(seed: id)),
-                    ),
-                  // 내 손 — 돌을 집으면 아래에서 쓱 올라옴 (스케치의 '손')
-                  Positioned(
-                    right: 34,
-                    bottom: -6,
-                    child: IgnorePointer(
-                      child: AnimatedSlide(
-                        offset: (_selectedCount > 0 || _leaving)
-                            ? Offset.zero
-                            : const Offset(0, 1.3),
-                        duration: const Duration(milliseconds: 260),
-                        curve: Curves.easeOutBack,
-                        child: CustomPaint(
-                          size: const Size(64, 74),
-                          painter: _PlayerHandPainter(),
-                        ),
-                      ),
-                    ),
-                  ),
-                  // (제안 #8) 승리 시 별 파티클 — 패배는 조용하게
-                  if (_phase == GamePhase.gameOver && _playerWon)
-                    const Positioned.fill(
-                      child: IgnorePointer(child: _WinBurst()),
-                    ),
-                ],
-              ),
-            ),
-          ),
-        ),
         if (_phase == GamePhase.playing && _currentTurn == TurnOwner.player)
           _buildActionArea(),
         if (_phase == GamePhase.gameOver && !_playerWon)
@@ -1434,7 +1379,10 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   /// - 현재 "경계 돌"(가장 왼쪽으로 집힌 돌)을 다시 탭: 그 한 개를 내려놓음 (count - 1)
   ///   → 1개일 때 2개 만드는 돌과 2개일 때 1개 만드는 돌이 동일.
   void _selectStone(int rowIdx, int tappedIndex) {
-    if (_currentTurn != TurnOwner.player || _isAiAnimating || _leaving) return;
+    if (_phase != GamePhase.playing ||
+        _currentTurn != TurnOwner.player ||
+        _isAiAnimating ||
+        _leaving) return;
     final len = _rows[rowIdx];
     int count;
     final bool tappedBoundary = rowIdx == _selectedRow &&
@@ -1545,7 +1493,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
               bool selectable = _rows[i] >= 3;
               bool selected = i == _selectedPile;
               return GestureDetector(
-                onTap: selectable && _currentTurn == TurnOwner.player
+                onTap: selectable &&
+                        _phase == GamePhase.playing &&
+                        _currentTurn == TurnOwner.player
                     ? () => setState(() {
                           _selectedPile = i;
                           _splitA = 1;
@@ -1775,7 +1725,7 @@ class _FlyingStone extends StatelessWidget {
       builder: (_, t, __) {
         final align = Alignment.lerp(
           Alignment(jx, 0.1), // 보드 중앙(돌 근처)
-          const Alignment(-0.85, -1.35), // 맞은편 = 한밤이 쪽 (좌상단 밖)
+          Alignment(jx * 0.3, -1.45), // 맞은편 상단 중앙 = 한밤이 쪽
           t,
         )!;
         return Align(
