@@ -144,6 +144,15 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     }
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // 표정 6종 프리로드 — 표정 전환 시 깜빡임/로드 지연 방지
+    for (final f in ['default', 'happy', 'sleepy', 'angry', 'smug', 'surprised']) {
+      precacheImage(AssetImage('assets/midnight/$f.png'), context);
+    }
+  }
+
   void _advanceTutorial() {
     setState(() {
       _tutorialIndex++;
@@ -1451,58 +1460,63 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   Widget _buildStonesBoard() {
     final bool multi = _rows.length > 1;
     return Center(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(_rows.length, (rowIdx) {
-            final len = _rows[rowIdx];
-            final isSelRow = _selectedRow == rowIdx;
-            return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 10),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  if (multi)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 12),
-                      child: Text(
-                        'R${rowIdx + 1}',
-                        style: TextStyle(
-                          fontFamily: _mono,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w800,
-                          color: isSelRow
-                              ? _Pal.gold
-                              : _Pal.cream.withOpacity(0.45),
+      child: LayoutBuilder(builder: (context, cons) {
+        // (폰 스케일) 돌이 절대 줄바꿈되지 않도록 — 가장 긴 줄 기준으로 셀 크기 적응.
+        final int maxLen =
+            _rows.fold(1, (m, r) => r > m ? r : m).clamp(1, 40);
+        final double avail =
+            cons.maxWidth - 32 - (multi ? 34 : 0); // 패딩 + R라벨 여유
+        final double cell = (avail / maxLen).clamp(24.0, 44.0);
+        final double stone = (cell - 8).clamp(16.0, 34.0);
+        return SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(_rows.length, (rowIdx) {
+              final len = _rows[rowIdx];
+              final isSelRow = _selectedRow == rowIdx;
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if (multi)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: Text(
+                          'R${rowIdx + 1}',
+                          style: TextStyle(
+                            fontFamily: _mono,
+                            fontSize: 13,
+                            color: isSelRow
+                                ? _Pal.gold
+                                : _Pal.cream.withOpacity(0.45),
+                          ),
                         ),
                       ),
-                    ),
-                  Flexible(
-                    child: Wrap(
-                      // 44dp 히트박스(시각 34 + 여백 5×2)가 자체 간격을 만들므로 0
-                      spacing: 0,
-                      runSpacing: 0,
-                      alignment: WrapAlignment.center,
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: List.generate(len, (i) {
                         final bool selected =
                             isSelRow && i >= len - _selectedCount;
                         return _Stone(
+                          cell: cell,
+                          size: stone,
                           selected: selected,
                           leaving: _leaving && selected,
                           onTap: () => _selectStone(rowIdx, i),
                         );
                       }),
                     ),
-                  ),
-                ],
-              ),
-            );
-          }),
-        ),
-      ),
+                  ],
+                ),
+              );
+            }),
+          ),
+        );
+      }),
     );
   }
 
@@ -1876,15 +1890,24 @@ class _LogEntry {
 
 /// 책상 위 돌 = 부감(탑뷰) 칩 토큰.
 /// selected → 내 쪽(아래)으로 살짝 내려오며 강조. leaving → 아래로 슈르륵 빠지며 사라짐.
+/// cell = 히트 영역(개수 많으면 축소), size = 시각 크기.
 class _Stone extends StatelessWidget {
+  final double cell;
+  final double size;
   final bool selected;
   final bool leaving;
   final VoidCallback? onTap;
-  const _Stone({required this.selected, required this.leaving, this.onTap});
+  const _Stone({
+    this.cell = 44,
+    this.size = 34,
+    required this.selected,
+    required this.leaving,
+    this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    const double d = 34;
+    final double d = size;
     final token = AnimatedContainer(
       duration: const Duration(milliseconds: 160),
       width: d,
@@ -1912,12 +1935,12 @@ class _Stone extends StatelessWidget {
       ),
     );
 
-    // (귀여움 규칙 T1) 터치 타깃 ≥ 44dp: 시각 크기(34)는 유지하고 히트 영역만 확대.
+    // (귀여움 규칙 T1) 히트 영역은 가능한 한 44dp — 돌이 많으면 화면에 맞게 축소.
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: SizedBox(
-        width: 44,
+        width: cell,
         height: 44,
         child: Center(
           child: AnimatedSlide(
