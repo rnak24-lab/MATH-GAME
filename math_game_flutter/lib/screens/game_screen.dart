@@ -1095,19 +1095,19 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
               child: FittedBox(fit: BoxFit.scaleDown, child: overlay),
             ),
           ),
-          // 2) 한밤이 — 도장 아래, 테이블 뒤 (하반신은 테이블에 가려 상반신만)
+          // 2) 한밤이 — 왼쪽으로 비켜 앉아서 말풍선 자리 확보 (하반신은 테이블에 가려 상반신만)
           Positioned(
             top: 38,
-            left: 0,
-            right: 0,
-            child: Center(child: _catFigure(size: 140)),
+            left: 18,
+            child: _catFigure(size: 140),
           ),
-          // 말풍선 — 고양이 옆 (꼬리가 고양이 쪽)
+          // 말풍선 — 고양이 오른쪽, 넓게 (꼬리가 고양이 쪽)
           Positioned(
             top: 48,
-            right: 8,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 140),
+            left: 162,
+            right: 10,
+            child: Align(
+              alignment: Alignment.topLeft,
               child: _tauntBubble(_midnightMessage),
             ),
           ),

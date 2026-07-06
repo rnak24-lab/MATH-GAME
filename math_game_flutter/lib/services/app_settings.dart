@@ -17,7 +17,7 @@ class AppSettings {
   bool music = true;
 
   /// 배경음악 음량 (0.0 ~ 1.0).
-  double musicVolume = 0.45;
+  double musicVolume = 0.3;
 
   /// 효과음 (돌 가져가기 슉! 등).
   bool sfx = true;
@@ -27,7 +27,7 @@ class AppSettings {
     final prefs = await SharedPreferences.getInstance();
     haptics = prefs.getBool(_hapticsKey) ?? true;
     music = prefs.getBool(_musicKey) ?? true;
-    musicVolume = prefs.getDouble(_musicVolumeKey) ?? 0.45;
+    musicVolume = prefs.getDouble(_musicVolumeKey) ?? 0.3;
     sfx = prefs.getBool(_sfxKey) ?? true;
   }
 
