@@ -1,3 +1,4 @@
+import 'dart:ui' show PlatformDispatcher;
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../l10n/app_strings.dart';
@@ -25,9 +26,18 @@ class LocaleProvider extends ChangeNotifier {
     _strings = AppStrings(_locale);
   }
 
+  /// 지원 언어 중 기기(시스템) 언어와 일치하는 코드. 미지원 언어면 영어.
+  static String deviceLocale() {
+    final String dev = PlatformDispatcher.instance.locale.languageCode;
+    final supported = supportedLocales.any((l) => l['code'] == dev);
+    return supported ? dev : defaultLocale;
+  }
+
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
-    _locale = prefs.getString(_prefKey) ?? defaultLocale;
+    // (2026-07-02) 첫 실행: 기기 언어 자동 추종 (한국어 폰 → 한국어).
+    // 사용자가 설정에서 직접 고르기 전까지는 저장하지 않고 시스템 언어를 따라간다.
+    _locale = prefs.getString(_prefKey) ?? deviceLocale();
     _hasSelectedLanguage = prefs.getBool(_firstLaunchKey) ?? false;
     _strings = AppStrings(_locale);
     notifyListeners();
