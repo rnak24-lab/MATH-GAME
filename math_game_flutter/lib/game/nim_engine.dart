@@ -211,9 +211,8 @@ class NimEngine {
 
   /// 스테이지 설정 생성.
   ///
-  /// 월드 순서 (2026-07-02 대표님 확정 — 개념 난이도 사다리 재배치):
-  /// 한줄 → 두줄(거울 전략) → 세줄 → 네줄 → **빼빼로(Grundy, 최종 보스 월드)**.
-  /// 빼빼로가 가장 어려운 개념이므로 마지막 월드로 이동.
+  /// 월드 순서 (2026-07-07 대표님 확정 — 네줄 삭제, 총 4월드 80스테이지):
+  /// 한줄 → 두줄(거울 전략) → 세줄 → **빼빼로(Grundy, 최종 보스 월드)**.
   StageConfig generateStage(int stageNumber) {
     GameMode mode;
     if (stageNumber <= 20) {
@@ -222,10 +221,8 @@ class NimEngine {
       mode = GameMode.doubleRow;
     } else if (stageNumber <= 60) {
       mode = GameMode.tripleRow;
-    } else if (stageNumber <= 80) {
-      mode = GameMode.quadRow;
     } else {
-      // 81-100: 월드5 = 빼빼로(분할, Sprague-Grundy) 최종 도전
+      // 61-80: 월드4 = 빼빼로(분할, Sprague-Grundy) 최종 도전
       mode = GameMode.pepero;
     }
 
@@ -261,18 +258,12 @@ class NimEngine {
         rows = [base, base + 1, base + 3];
         break;
       case GameMode.quadRow:
-        // 61-80 (재배치): stage 61: [3,4,5,6] → stage 80: [12,14,16,18]
-        // 각 행별 증가분 (9, 10, 11, 12) / 19스테이지 선형 보간.
-        int step = stageNumber - 61; // 0 ~ 19
-        int r0 = 3 + (step * 9) ~/ 19;
-        int r1 = 4 + (step * 10) ~/ 19;
-        int r2 = 5 + (step * 11) ~/ 19;
-        int r3 = 6 + (step * 12) ~/ 19;
-        rows = [r0, r1, r2, r3];
+        // (2026-07-07 삭제된 월드 — 도달 불가, enum 유지용 폴백)
+        rows = [3, 4, 5, 6];
         break;
       case GameMode.pepero:
-        // 81-100 (재배치): 최종 월드. 6개 → 20개(상한)까지 확대.
-        int size = 6 + (stageNumber - 81);
+        // 61-80: 최종 월드. 6개 → 20개(상한)까지 확대.
+        int size = 6 + (stageNumber - 61);
         if (size > 20) size = 20;
         rows = [size];
         break;

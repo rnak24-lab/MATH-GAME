@@ -377,14 +377,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  /// 게임 규칙 다이얼로그 — 월드 순서(한줄→두줄→세줄→네줄→빼빼로)대로 5개 모드 규칙.
+  /// 게임 규칙 다이얼로그 — 월드 순서(한줄→두줄→세줄→빼빼로)대로 4개 모드 규칙.
   void _showRules() {
     final s = widget.localeProvider.strings;
     final rules = <MapEntry<String, String>>[
       MapEntry(s.get('modeSingleRow'), s.get('ruleSingleRow', ['2~5'])),
       MapEntry(s.get('modeDoubleRow'), s.get('ruleDoubleRow')),
       MapEntry(s.get('modeTripleRow'), s.get('ruleTripleRow')),
-      MapEntry(s.get('modeQuadRow'), s.get('ruleQuadRow')),
       MapEntry(s.get('modePepero'), s.get('rulePepero')),
     ];
     showDialog(

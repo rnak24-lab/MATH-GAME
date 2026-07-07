@@ -60,9 +60,16 @@ class StageManager extends ChangeNotifier {
   /// 20판 전부 깨는 완주는 별개의 목표로 남는다.
   static const int _unlockClearsNeeded = 3;
 
+  /// 🧪 검수용 플래그: 빼빼로(최종) 월드 상시 해금.
+  /// ⚠️ 출시 전 반드시 false로! (대표님 검수 편의를 위한 임시 오픈)
+  static const bool kReviewUnlockPepero = true;
+
+  /// 마지막 월드(빼빼로) id — 네줄 삭제 후 총 4월드(0~3).
+  static const int _lastWorldId = 3;
+
   Future<void> _recalculateWorldUnlocked() async {
     int unlocked = 0;
-    for (int w = 1; w <= 4; w++) {
+    for (int w = 1; w <= _lastWorldId; w++) {
       if (getWorldProgress(w - 1) >= _unlockClearsNeeded) {
         unlocked = w;
       } else {
@@ -109,6 +116,7 @@ class StageManager extends ChangeNotifier {
   }
 
   bool isWorldUnlocked(int worldId) {
+    if (kReviewUnlockPepero && worldId == _lastWorldId) return true;
     return worldId <= worldUnlocked;
   }
 

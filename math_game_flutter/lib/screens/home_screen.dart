@@ -211,7 +211,7 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Widget _progressBadge(dynamic s) {
-    final int next = (widget.stageManager.maxStage + 1).clamp(1, 100);
+    final int next = (widget.stageManager.maxStage + 1).clamp(1, 80);
     final world = worldForStage(next);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),

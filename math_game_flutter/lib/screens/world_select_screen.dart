@@ -51,7 +51,7 @@ const List<WorldInfo> worlds = [
     subtitleKey: 'worldSubtitleDoubleRow',
     bgGradient: [Color(0xFF1A3A5C), Color(0xFF42A5F5), Color(0xFFE3F2FD)],
   ),
-  // (2026-07-02) 월드 순서 재배치: 세줄 → 네줄 → 빼빼로(최종).
+  // (2026-07-07) 네줄 월드 삭제 — 총 4월드: 한줄 → 두줄 → 세줄 → 빼빼로(최종).
   WorldInfo(
     id: 2,
     nameKey: 'worldSmokeDen',
@@ -62,14 +62,6 @@ const List<WorldInfo> worlds = [
   ),
   WorldInfo(
     id: 3,
-    nameKey: 'worldShadowMarket',
-    emoji: '🕶️',
-    color: Color(0xFFAB47BC),
-    subtitleKey: 'worldSubtitleQuadRow',
-    bgGradient: [Color(0xFF4A148C), Color(0xFFAB47BC), Color(0xFFF3E5F5)],
-  ),
-  WorldInfo(
-    id: 4,
     nameKey: 'worldTheLastBet',
     emoji: '🎲',
     color: Color(0xFFEF5350),

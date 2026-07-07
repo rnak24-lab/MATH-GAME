@@ -365,7 +365,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   }
 
   void _showNextStageDialog() {
-    bool hasNext = widget.stageNumber < 100;
+    bool hasNext = widget.stageNumber < 80;
 
     showGeneralDialog(
       context: context,

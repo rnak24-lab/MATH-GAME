@@ -41,8 +41,8 @@ class AppStrings {
       'ko': '처음부터 시작',
     },
     'clearProgress': {
-      'en': 'Clear: {0}/100 Stages',
-      'ko': 'Clear: {0}/100 Stages',
+      'en': 'Clear: {0}/80 Stages',
+      'ko': 'Clear: {0}/80 Stages',
     },
     'settings': {
       'en': 'Settings',

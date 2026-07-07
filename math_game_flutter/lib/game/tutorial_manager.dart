@@ -15,22 +15,20 @@ class TutorialStep {
 
 class TutorialManager {
   /// 특정 stageNumber가 월드별 튜토리얼 1라운드인가?
-  /// 월드 1=1, 월드 2=21, 월드 3=41, 월드 4=61, 월드 5=81
+  /// 월드 1=1, 월드 2=21, 월드 3=41, 월드 4(빼빼로)=61
   static bool isTutorialStage(int stageNumber) {
     return stageNumber == 1 ||
         stageNumber == 21 ||
         stageNumber == 41 ||
-        stageNumber == 61 ||
-        stageNumber == 81;
+        stageNumber == 61;
   }
 
-  /// stageNumber → 월드 번호 (1~5)
+  /// stageNumber → 월드 번호 (1~4, 4=빼빼로 최종)
   static int worldOf(int stageNumber) {
     if (stageNumber <= 20) return 1;
     if (stageNumber <= 40) return 2;
     if (stageNumber <= 60) return 3;
-    if (stageNumber <= 80) return 4;
-    return 5;
+    return 4;
   }
 
   /// 게임 시작 시 표시할 진입 튜토리얼 스텝 리스트.
@@ -62,13 +60,7 @@ class TutorialManager {
           TutorialStep(text: s.get('tutW3_4')),
         ];
       case 4:
-        return [
-          TutorialStep(text: s.get('tutW4_1'), highlightTarget: 'rows'),
-          TutorialStep(text: s.get('tutW4_2')),
-          TutorialStep(text: s.get('tutW4_3')),
-          TutorialStep(text: s.get('tutW4_4')),
-        ];
-      case 5:
+        // 월드4 = 빼빼로 (네줄 삭제 후 승격) — 빼빼로 튜토리얼 사용
         return [
           TutorialStep(text: s.get('tutW5_1')),
           TutorialStep(text: s.get('tutW5_2')),
@@ -89,9 +81,7 @@ class TutorialManager {
       case 3:
         return s.get('tutHintW3');
       case 4:
-        return s.get('tutHintW4');
-      case 5:
-        return s.get('tutHintW5');
+        return s.get('tutHintW5'); // 빼빼로 힌트
     }
     return s.get('tutHintGeneric');
   }
