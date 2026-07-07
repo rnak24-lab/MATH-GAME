@@ -11,15 +11,20 @@ class AdIds {
   static const String _testBannerId = 'ca-app-pub-3940256099942544/6300978111';
   static const String _testInterstitialId =
       'ca-app-pub-3940256099942544/1033173712';
+  static const String _testRewardedId =
+      'ca-app-pub-3940256099942544/5224354917';
 
   // TODO: 대표님 실제 AdMob ID 확정 시 여기만 교체
   static const String _realBannerId = 'ca-app-pub-3940256099942544/6300978111';
   static const String _realInterstitialId =
       'ca-app-pub-3940256099942544/1033173712';
+  static const String _realRewardedId =
+      'ca-app-pub-3940256099942544/5224354917';
 
   static String get banner => useTestIds ? _testBannerId : _realBannerId;
   static String get interstitial =>
       useTestIds ? _testInterstitialId : _realInterstitialId;
+  static String get rewarded => useTestIds ? _testRewardedId : _realRewardedId;
 }
 
 /// 전면 광고 빈도 제한 + 로딩/표시 추상화.
@@ -45,6 +50,7 @@ class AdService {
       await MobileAds.instance.initialize();
       _initialized = true;
       _loadInterstitial();
+      _loadRewarded();
     } catch (e) {
       debugPrint('[AdService] init 실패: $e');
     }
@@ -118,6 +124,55 @@ class AdService {
     }
     ad.show();
     _interstitialAd = null;
+    return true;
+  }
+
+  // ── 리워드 광고 (힌트 보기용) ──
+  RewardedAd? _rewardedAd;
+  bool _loadingRewarded = false;
+
+  void _loadRewarded() {
+    if (_loadingRewarded || _rewardedAd != null) return;
+    _loadingRewarded = true;
+    RewardedAd.load(
+      adUnitId: AdIds.rewarded,
+      request: const AdRequest(),
+      rewardedAdLoadCallback: RewardedAdLoadCallback(
+        onAdLoaded: (ad) {
+          _rewardedAd = ad;
+          _loadingRewarded = false;
+        },
+        onAdFailedToLoad: (err) {
+          debugPrint('[AdService] rewarded load fail: $err');
+          _loadingRewarded = false;
+        },
+      ),
+    );
+  }
+
+  /// 리워드 광고를 표시하고, 시청 완료 시 [onReward] 호출.
+  /// 광고가 준비 안 됐으면 false 반환 (호출자가 폴백 처리 — 예: 그냥 힌트 제공).
+  bool showRewardedAd({required VoidCallback onReward}) {
+    final ad = _rewardedAd;
+    if (!_initialized || ad == null) {
+      _loadRewarded();
+      return false;
+    }
+    ad.fullScreenContentCallback = FullScreenContentCallback(
+      onAdDismissedFullScreenContent: (a) {
+        a.dispose();
+        _rewardedAd = null;
+        _loadRewarded();
+      },
+      onAdFailedToShowFullScreenContent: (a, err) {
+        debugPrint('[AdService] rewarded show fail: $err');
+        a.dispose();
+        _rewardedAd = null;
+        _loadRewarded();
+      },
+    );
+    ad.show(onUserEarnedReward: (_, __) => onReward());
+    _rewardedAd = null;
     return true;
   }
 }

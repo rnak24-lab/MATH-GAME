@@ -381,6 +381,20 @@ class AppStrings {
       'en': 'Took {0} from both piles!',
       'ko': '양쪽에서 {0}개씩 가져갔어!',
     },
+    // ── 힌트 = 광고 보고 보기 ──
+    'hintDialogTitle': {
+      'en': 'See a hint!',
+      'ko': '힌트 보기!',
+    },
+    'hintDialogBody': {
+      'en':
+          "Watch an ad and Midnight will whisper a move~ 🐾\n(Hints left: {0})",
+      'ko': '광고를 보면 한밤이가 수를 살짝 알려줄게~ 🐾\n(남은 힌트: {0}개)',
+    },
+    'hintWatchAd': {
+      'en': 'Watch ad & see hint',
+      'ko': '광고 보고 힌트 보기',
+    },
 
     // ── Settings: 게임플레이/초기화/규칙 (2026-07-02) ──
     'settingsGameplay': {

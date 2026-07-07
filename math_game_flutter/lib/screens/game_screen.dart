@@ -771,8 +771,69 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     }
   }
 
+  /// 힌트 버튼 → "힌트 보기!" 확인 다이얼로그 → 광고 시청 후 힌트 공개.
+  /// (광고 미준비/웹에서는 폴백으로 바로 공개)
   void _showHint() {
     if (_hintsLeft <= 0 || _currentTurn != TurnOwner.player) return;
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: _Pal.cream,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        title: Text(
+          s.get('hintDialogTitle'),
+          style: const TextStyle(
+            fontFamily: _mono,
+            fontSize: 18,
+            fontWeight: FontWeight.w900,
+            color: _Pal.ink,
+          ),
+        ),
+        content: Text(
+          s.get('hintDialogBody', ['$_hintsLeft']),
+          style: const TextStyle(
+            fontFamily: _mono,
+            fontSize: 13.5,
+            color: _Pal.inkSoft,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              s.get('cancel'),
+              style: const TextStyle(fontFamily: _mono, color: _Pal.inkSoft),
+            ),
+          ),
+          FilledButton.icon(
+            style: FilledButton.styleFrom(
+              backgroundColor: _Pal.gold,
+              foregroundColor: _Pal.ink,
+            ),
+            icon: const Icon(Icons.ondemand_video_rounded, size: 18),
+            label: Text(
+              s.get('hintWatchAd'),
+              style: const TextStyle(
+                  fontFamily: _mono, fontWeight: FontWeight.w800),
+            ),
+            onPressed: () {
+              Navigator.pop(ctx);
+              // 광고 시청 완료 → 힌트 공개. 광고 미준비 시 폴백으로 바로 공개.
+              final bool shown =
+                  AdService.instance.showRewardedAd(onReward: _revealHint);
+              if (!shown) _revealHint();
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _revealHint() {
+    if (!mounted || _hintsLeft <= 0 || _currentTurn != TurnOwner.player) {
+      return;
+    }
 
     // (id=1201) 4번: 현재 턴 플레이어가 이미 진 상태(nimSum=0/Grundy=0)인지 먼저 판정.
     final bool canWin = !_calculateMidnightWinsState();
@@ -871,6 +932,8 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                 ),
               ),
               _statusTicker(),
+              // 하단 상시 배너 광고
+              const Center(child: BannerAdWidget()),
             ],
           ),
         ),
@@ -1391,7 +1454,6 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
               ],
             ),
           ),
-        if (_phase == GamePhase.gameOver) const Center(child: BannerAdWidget()),
       ],
     );
   }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../widgets/midnight_character.dart';
+import '../widgets/banner_ad_widget.dart';
 import '../game/stage_manager.dart';
 import '../providers/locale_provider.dart';
 import '../utils/nim_theme.dart';
@@ -62,6 +63,11 @@ class _HomeScreenState extends State<HomeScreen>
     final s = widget.localeProvider.strings;
 
     return Scaffold(
+      backgroundColor: NimTheme.deskBottom,
+      // 하단 상시 배너 광고
+      bottomNavigationBar: const SafeArea(
+        child: SizedBox(height: 50, child: Center(child: BannerAdWidget())),
+      ),
       body: Container(
         width: double.infinity,
         height: double.infinity,
