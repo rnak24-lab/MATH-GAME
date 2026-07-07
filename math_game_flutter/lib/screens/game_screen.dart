@@ -30,6 +30,8 @@ class _Pal {
   static const gold = Color(0xFFC9A24B); // 강조(현재 턴/선택)
   static const alarm = Color(0xFF9B3B2E); // 경고/패배/제거
   static const win = Color(0xFF5E7D52); // 승리/성공
+  static const sky = Color(0xFF79C6EA); // 빼빼로 선택(하늘색)
+  static const alarmHi = Color(0xFFE0574A); // 경고 밝은 버전(어두운 배경 위)
 }
 
 const String _mono = 'NeoDGM'; // 한글+영문 픽셀 폰트 (10번 제안)
@@ -65,7 +67,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   // Selection state
   int _selectedRow = 0;
   int _selectedCount = 0; // 0 = 아무 돌도 안 집은 상태 (턴 시작 시 미리선택 없음)
-  int _selectedPile = 0;
+  int _selectedPile = -1; // 빼빼로: 선택 없음 = -1 (미리 선택해주지 않기)
   int _splitA = 1;
 
   // Midnight state
@@ -1074,6 +1076,11 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         chip(s.get('stonesLeft', ['$total'])),
         const SizedBox(width: 8),
         chip(qty),
+        // 빼빼로 핵심 규칙은 칩으로 상시 노출 — "같은 개수 ❌"
+        if (_config.mode == GameMode.pepero) ...[
+          const SizedBox(width: 8),
+          chip(s.get('peperoNoEqualChip')),
+        ],
       ],
     );
   }
@@ -1478,70 +1485,204 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     );
   }
 
+  /// 빼빼로 보드 — 진짜 막대 비주얼.
+  /// 묶음을 탭해 고르고(하늘색), 막대를 탭해 쪼갤 위치를 정한다(흰 분할선).
+  /// 숫자는 부차적 정보로 작게만 표시.
   Widget _buildPeperoBoard() {
+    final bool myTurn = _phase == GamePhase.playing &&
+        _currentTurn == TurnOwner.player &&
+        !_isAiAnimating;
+    final bool hasSel = _selectedPile >= 0 &&
+        _selectedPile < _rows.length &&
+        _rows[_selectedPile] >= 3;
+
+    String guide = '';
+    bool guideAlarm = false;
+    if (myTurn) {
+      if (!hasSel) {
+        guide = s.get('peperoTapBundle');
+      } else {
+        final int pile = _rows[_selectedPile];
+        final int a = _splitA.clamp(1, pile - 1);
+        if (a * 2 == pile) {
+          guide = s.get('peperoNoEqual');
+          guideAlarm = true;
+        } else {
+          guide = s.get('peperoTapStick');
+        }
+      }
+    }
+
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(
-            s.get('peperoBundles'),
-            style: const TextStyle(
-              fontFamily: _mono,
-              fontSize: 14,
-              fontWeight: FontWeight.w800,
-              color: _Pal.cream,
-              letterSpacing: 1,
+          if (guide.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Text(
+                guide,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: _mono,
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w800,
+                  color:
+                      guideAlarm ? _Pal.alarmHi : _Pal.cream.withOpacity(0.9),
+                ),
+              ),
             ),
-          ),
-          const SizedBox(height: 14),
           Wrap(
-            spacing: 12,
+            spacing: 10,
             runSpacing: 12,
             alignment: WrapAlignment.center,
-            children: List.generate(_rows.length, (i) {
-              bool selectable = _rows[i] >= 3;
-              bool selected = i == _selectedPile;
-              return GestureDetector(
-                onTap: selectable &&
-                        _phase == GamePhase.playing &&
-                        _currentTurn == TurnOwner.player
-                    ? () => setState(() {
-                          _selectedPile = i;
-                          _splitA = 1;
-                        })
-                    : null,
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: selected ? _Pal.gold.withOpacity(0.15) : _Pal.paper,
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(
-                      color: selected ? _Pal.gold : _Pal.frame,
-                      width: selected ? 2.5 : 1.5,
-                    ),
-                  ),
-                  child: Column(
-                    children: [
-                      Text('🍫',
-                          style: TextStyle(fontSize: selectable ? 26 : 18)),
-                      Text(
-                        s.get('nPieces', ['${_rows[i]}']),
-                        style: TextStyle(
-                          fontFamily: _mono,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w800,
-                          color: selectable ? _Pal.ink : _Pal.inkSoft,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }),
+            crossAxisAlignment: WrapCrossAlignment.end,
+            children:
+                List.generate(_rows.length, (i) => _peperoBundle(i, myTurn)),
           ),
         ],
+      ),
+    );
+  }
+
+  /// 묶음 하나: 막대 Row + (선택 시) 흰 분할선 + 작은 개수 라벨.
+  Widget _peperoBundle(int i, bool myTurn) {
+    final int n = _rows[i];
+    final bool splittable = n >= 3;
+    final bool selected = i == _selectedPile && splittable;
+    final int a = _splitA.clamp(1, n > 1 ? n - 1 : 1);
+    final bool equal = selected && a * 2 == n;
+
+    // 막대 크기 적응 (묶음 최대 20개, 폰 폭 기준)
+    final double stickW = n <= 8 ? 13 : (n <= 14 ? 10 : 8);
+    final double stickH = selected ? 60 : 44;
+    final double gap = n <= 14 ? 1.5 : 1.0;
+
+    final children = <Widget>[];
+    for (int k = 0; k < n; k++) {
+      if (selected && k == a) children.add(_splitDivider(stickH, equal));
+      final stick = Padding(
+        padding: EdgeInsets.symmetric(horizontal: gap),
+        child: _peperoStick(stickW, stickH, dim: !splittable),
+      );
+      // 선택된 묶음에서는 막대를 직접 탭해 쪼갤 위치 지정
+      children.add(selected && myTurn
+          ? GestureDetector(
+              onTap: () {
+                _haptic();
+                setState(() => _splitA = (k + 1).clamp(1, n - 1));
+              },
+              behavior: HitTestBehavior.opaque,
+              child: stick,
+            )
+          : stick);
+    }
+
+    return GestureDetector(
+      onTap: myTurn && splittable && !selected
+          ? () {
+              _haptic();
+              setState(() {
+                _selectedPile = i;
+                _splitA = 1;
+              });
+            }
+          : null,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOut,
+        padding: const EdgeInsets.fromLTRB(9, 9, 9, 5),
+        decoration: BoxDecoration(
+          color: selected
+              ? _Pal.sky.withOpacity(0.10)
+              : _Pal.deskBottom.withOpacity(0.55),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color:
+                selected ? _Pal.sky : (splittable ? _Pal.frameHi : _Pal.frame),
+            width: selected ? 2.5 : 1.5,
+          ),
+          boxShadow: selected
+              ? [
+                  BoxShadow(
+                    color: _Pal.sky.withOpacity(0.35),
+                    blurRadius: 10,
+                    spreadRadius: 1,
+                  ),
+                ]
+              : null,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: children,
+            ),
+            const SizedBox(height: 4),
+            // 숫자는 부차적 — 작게
+            Text(
+              selected ? '$a + ${n - a}' : '$n',
+              style: TextStyle(
+                fontFamily: _mono,
+                fontSize: 11.5,
+                fontWeight: FontWeight.w800,
+                color: selected
+                    ? (equal ? _Pal.alarmHi : Colors.white)
+                    : (splittable ? _Pal.cream.withOpacity(0.7) : _Pal.inkSoft),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 쪼갤 위치 표시 — 흰 분할선 (같은 개수면 빨강 = 금지).
+  Widget _splitDivider(double h, bool equal) {
+    final Color c = equal ? _Pal.alarmHi : Colors.white;
+    return Container(
+      width: 3.5,
+      height: h + 8,
+      margin: const EdgeInsets.symmetric(horizontal: 3.5),
+      decoration: BoxDecoration(
+        color: c,
+        borderRadius: BorderRadius.circular(2),
+        boxShadow: [
+          BoxShadow(color: c.withOpacity(0.55), blurRadius: 6, spreadRadius: 1),
+        ],
+      ),
+    );
+  }
+
+  /// 빼빼로 막대 하나: 초코 몸통 + 비스킷 손잡이.
+  Widget _peperoStick(double w, double h, {bool dim = false}) {
+    return Container(
+      width: w,
+      height: h,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(w / 2),
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: dim
+              ? const [
+                  Color(0xFF4A3B2C),
+                  Color(0xFF3A2E20),
+                  Color(0xFF8C7A55),
+                  Color(0xFF7A6A4A),
+                ]
+              : const [
+                  Color(0xFF6B4226),
+                  Color(0xFF3E2412),
+                  Color(0xFFEAD3A2),
+                  Color(0xFFD9B98A),
+                ],
+          stops: const [0.0, 0.60, 0.64, 1.0],
+        ),
+        border: Border.all(color: Colors.black.withOpacity(0.35), width: 1),
       ),
     );
   }
@@ -1620,7 +1761,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildPeperoAction() {
-    if (_selectedPile >= _rows.length || _rows[_selectedPile] < 3) {
+    if (_selectedPile < 0 ||
+        _selectedPile >= _rows.length ||
+        _rows[_selectedPile] < 3) {
       return Center(
         child: Text(
           s.get('selectSplittable'),
@@ -1633,8 +1776,14 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       );
     }
 
-    int pile = _rows[_selectedPile];
-    int maxSplitA = (pile - 1) ~/ 2;
+    final int pile = _rows[_selectedPile];
+    final int a = _splitA.clamp(1, pile - 1);
+    final int b = pile - a;
+    final bool equal = a == b;
+    final int maxSplitA = (pile - 1) ~/ 2;
+    // 슬라이더는 항상 "작은 쪽" 기준 (위 UI에서 4+1처럼 큰 쪽을 골라도 동기화)
+    final double sliderVal =
+        (a < b ? a : b).clamp(1, maxSplitA > 0 ? maxSplitA : 1).toDouble();
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -1652,32 +1801,31 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
               ),
             ),
             Text(
-              '$_splitA + ${pile - _splitA}',
-              style: const TextStyle(
+              '$a + $b',
+              style: TextStyle(
                 fontFamily: _mono,
                 fontSize: 18,
                 fontWeight: FontWeight.w900,
-                color: _Pal.gold,
+                color: equal ? _Pal.alarmHi : _Pal.gold,
               ),
             ),
           ],
         ),
         SliderTheme(
           data: SliderTheme.of(context).copyWith(
-            activeTrackColor: _Pal.gold,
+            activeTrackColor: equal ? _Pal.alarmHi : _Pal.gold,
             inactiveTrackColor: _Pal.deskBottom,
-            thumbColor: _Pal.gold,
+            thumbColor: equal ? _Pal.alarmHi : _Pal.gold,
           ),
           child: Slider(
-            value: _splitA.toDouble(),
+            value: sliderVal,
             min: 1,
-            max: maxSplitA.toDouble(),
+            max: maxSplitA > 0 ? maxSplitA.toDouble() : 1,
             divisions: maxSplitA > 1 ? maxSplitA - 1 : 1,
             onChanged: (val) {
-              int a = val.round();
-              int b = pile - a;
-              if (a != b) {
-                setState(() => _splitA = a);
+              int na = val.round();
+              if (na != pile - na) {
+                setState(() => _splitA = na);
               }
             },
           ),
@@ -1685,35 +1833,54 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         const SizedBox(height: 4),
         SizedBox(
           width: double.infinity,
-          child: _StampButton(
-            label: s.get('splitAction', ['$_splitA', '${pile - _splitA}']),
-            color: _Pal.alarm,
-            onTap: () {
-              int a = _splitA;
-              int b = pile - a;
-              if (a != b && a > 0 && b > 0) {
-                _addLog(
-                    TurnOwner.player, '${_nameOf(TurnOwner.player)}  $a+$b');
-                setState(() {
-                  _rows.removeAt(_selectedPile);
-                  _rows.add(a);
-                  _rows.add(b);
-                  _rows.sort((x, y) => y.compareTo(x));
-                  _turnCount++;
-                  _currentTurn = TurnOwner.midnight;
-                  _selectedPile = 0;
-                  _splitA = 1;
-                });
-                if (!_checkGameOver()) {
-                  setState(() {
-                    _midnightFace = MidnightFace.neutral;
-                  });
-                  Future.delayed(
-                      const Duration(milliseconds: 1000), _midnightPlay);
-                }
-              }
-            },
-          ),
+          child: equal
+              // 같은 개수 = 금지 — 버튼 대신 경고 (규칙을 그 자리에서 학습)
+              ? Container(
+                  padding: const EdgeInsets.symmetric(vertical: 13),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: _Pal.alarmHi, width: 2),
+                  ),
+                  child: Text(
+                    s.get('peperoNoEqual'),
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontFamily: _mono,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                      color: _Pal.alarmHi,
+                    ),
+                  ),
+                )
+              : _StampButton(
+                  label: s.get('splitAction', ['$a', '$b']),
+                  color: _Pal.alarm,
+                  onTap: () {
+                    if (a > 0 && b > 0 && a != b) {
+                      _addLog(TurnOwner.player,
+                          '${_nameOf(TurnOwner.player)}  $a+$b');
+                      SfxService.instance.playTake();
+                      _haptic(true);
+                      setState(() {
+                        _rows.removeAt(_selectedPile);
+                        _rows.add(a);
+                        _rows.add(b);
+                        _rows.sort((x, y) => y.compareTo(x));
+                        _turnCount++;
+                        _currentTurn = TurnOwner.midnight;
+                        _selectedPile = -1;
+                        _splitA = 1;
+                      });
+                      if (!_checkGameOver()) {
+                        setState(() {
+                          _midnightFace = MidnightFace.neutral;
+                        });
+                        Future.delayed(
+                            const Duration(milliseconds: 1000), _midnightPlay);
+                      }
+                    }
+                  },
+                ),
         ),
       ],
     );

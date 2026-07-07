@@ -53,7 +53,8 @@ class AppStrings {
       'ko': '언어 선택',
     },
     'selectLanguageDesc': {
-      'en': 'Please choose your language.\nYou can change it later in Settings.',
+      'en':
+          'Please choose your language.\nYou can change it later in Settings.',
       'ko': '사용할 언어를 선택해주세요.\n나중에 설정에서 변경할 수 있습니다.',
     },
 
@@ -144,23 +145,28 @@ class AppStrings {
 
     // ── Game Screen: Rules ──
     'ruleSingleRow': {
-      'en': 'You can take 1~{0} stones.\nThe one who takes the last stone loses!',
+      'en':
+          'You can take 1~{0} stones.\nThe one who takes the last stone loses!',
       'ko': '돌을 1~{0}개 가져갈 수 있어요.\n마지막 돌을 가져가는 사람이 져요!',
     },
     'ruleDoubleRow': {
-      'en': 'You can only take stones from one row.\nThe one who takes the last stone loses!',
+      'en':
+          'You can only take stones from one row.\nThe one who takes the last stone loses!',
       'ko': '한 줄에서만 돌을 가져갈 수 있어요.\n마지막 돌을 가져가는 사람이 져요!',
     },
     'rulePepero': {
-      'en': "Split a pepero bundle into two.\nYou can't split into equal halves!\nThe one who can't split loses!",
+      'en':
+          "Split a pepero bundle into two.\nYou can't split into equal halves!\nThe one who can't split loses!",
       'ko': '빼빼로 묶음을 두 개로 나눠요.\n같은 수로는 나눌 수 없어요!\n더 나눌 수 없는 사람이 져요!',
     },
     'ruleTripleRow': {
-      'en': 'You can only take stones from one row.\nThe one who takes the last stone loses!',
+      'en':
+          'You can only take stones from one row.\nThe one who takes the last stone loses!',
       'ko': '한 줄에서만 돌을 가져갈 수 있어요.\n마지막 돌을 가져가는 사람이 져요!',
     },
     'ruleQuadRow': {
-      'en': 'Four rows of stones!\nYou can only take stones from one row.\nThe one who takes the last stone loses!',
+      'en':
+          'Four rows of stones!\nYou can only take stones from one row.\nThe one who takes the last stone loses!',
       'ko': '네 줄의 돌이 있어요!\n한 줄에서만 돌을 가져갈 수 있어요.\n마지막 돌을 가져가는 사람이 져요!',
     },
     'initialState': {
@@ -274,6 +280,22 @@ class AppStrings {
     'peperoChip': {
       'en': 'Split in two',
       'ko': '둘로 쪼개기',
+    },
+    'peperoNoEqualChip': {
+      'en': 'No equal halves',
+      'ko': '같은 개수 ❌',
+    },
+    'peperoTapBundle': {
+      'en': 'Tap a bundle to pick it up!',
+      'ko': '쪼갤 묶음을 눌러 골라봐!',
+    },
+    'peperoTapStick': {
+      'en': 'Tap a stick to move the break line!',
+      'ko': '막대를 누르면 쪼갤 위치가 바뀌어!',
+    },
+    'peperoNoEqual': {
+      'en': "Equal halves not allowed! Make one side bigger.",
+      'ko': '같은 개수로는 못 쪼개! 한쪽을 더 크게~',
     },
 
     // ── Settings: 게임플레이/초기화/규칙 (2026-07-02) ──
@@ -623,7 +645,8 @@ class AppStrings {
       'ko': '돌을 가져가는 게 아니야 — 한 묶음을 서로 \'다른\' 크기 둘로 쪼개!',
     },
     'tutW5_3': {
-      'en': "If you can't split anything on your turn... you lose. I'm playing for real now!",
+      'en':
+          "If you can't split anything on your turn... you lose. I'm playing for real now!",
       'ko': '네 차례에 쪼갤 게 없으면… 지는 거야. 이번엔 나도 진심이야!',
     },
     // 2회 연속 패배 힌트
