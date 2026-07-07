@@ -1455,11 +1455,15 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                       children: List.generate(len, (i) {
                         final bool selected =
                             isSelRow && i >= len - _selectedCount;
+                        // (스테이지1 튜토리얼) 마지막에 남는 돌 = 가져가면 지는 돌.
+                        // 빨간 돌로 표시해 "저건 상대에게 남겨야 한다"를 눈으로 배우게.
+                        final bool danger = widget.stageNumber == 1 && i == 0;
                         return _Stone(
                           cell: cell,
                           size: stone,
                           selected: selected,
                           leaving: _leaving && selected,
+                          danger: danger,
                           onTap: () => _selectStone(rowIdx, i),
                         );
                       }),
@@ -1853,12 +1857,14 @@ class _Stone extends StatelessWidget {
   final double size;
   final bool selected;
   final bool leaving;
+  final bool danger; // 가져가면 지는 돌 (스테이지1 학습용) — 빨간 돌
   final VoidCallback? onTap;
   const _Stone({
     this.cell = 44,
     this.size = 34,
     required this.selected,
     required this.leaving,
+    this.danger = false,
     this.onTap,
   });
 
@@ -1876,10 +1882,16 @@ class _Stone extends StatelessWidget {
           radius: 0.95,
           colors: selected
               ? const [Color(0xFFF0D49A), Color(0xFFC9A24B)]
-              : const [Color(0xFFD9C7A0), Color(0xFF8C7A55)],
+              : danger
+                  ? const [Color(0xFFCC7261), Color(0xFF9B3B2E)]
+                  : const [Color(0xFFD9C7A0), Color(0xFF8C7A55)],
         ),
         border: Border.all(
-          color: selected ? const Color(0xFF8A6A20) : const Color(0xFF5C4E33),
+          color: selected
+              ? const Color(0xFF8A6A20)
+              : danger
+                  ? const Color(0xFF5E1F15)
+                  : const Color(0xFF5C4E33),
           width: selected ? 2 : 1.5,
         ),
         boxShadow: [
