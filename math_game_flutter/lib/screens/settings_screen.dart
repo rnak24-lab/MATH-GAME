@@ -248,8 +248,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               },
               child: Row(
                 children: [
-                  const Icon(Icons.vibration_rounded,
-                      color: Color(0xFFC9A24B)),
+                  const Icon(Icons.vibration_rounded, color: Color(0xFFC9A24B)),
                   const SizedBox(width: 16),
                   Expanded(
                     child: Column(
@@ -291,8 +290,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             padding: const EdgeInsets.only(bottom: 8),
             child: _card(
               onTap: _showRules,
-              child: _navRow(
-                  Icons.menu_book_rounded, s.get('howToPlay')),
+              child: _navRow(Icons.menu_book_rounded, s.get('howToPlay')),
             ),
           ),
           // 진행도 초기화
@@ -340,8 +338,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                 );
               },
-              child: _navRow(
-                  Icons.privacy_tip_outlined, s.get('privacyPolicy')),
+              child:
+                  _navRow(Icons.privacy_tip_outlined, s.get('privacyPolicy')),
             ),
           ),
           // 버전
@@ -385,13 +383,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
       MapEntry(s.get('modeDoubleRow'), s.get('ruleDoubleRow')),
       MapEntry(s.get('modeTripleRow'), s.get('ruleTripleRow')),
       MapEntry(s.get('modePepero'), s.get('rulePepero')),
+      // 🧪 테스트 모드 3종
+      MapEntry(s.get('modeKayles'), s.get('ruleKayles')),
+      MapEntry(s.get('modeWythoff'), s.get('ruleWythoff')),
+      MapEntry(s.get('modeFibonacci'), s.get('ruleFibonacci')),
     ];
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: Colors.white,
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
           s.get('howToPlay'),
           style: const TextStyle(
@@ -446,8 +447,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: Colors.white,
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
           s.get('resetConfirmTitle'),
           style: const TextStyle(
@@ -500,7 +500,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _card({required Widget child, VoidCallback? onTap, bool selected = false}) {
+  Widget _card(
+      {required Widget child, VoidCallback? onTap, bool selected = false}) {
     return Material(
       color: selected ? const Color(0xFFC9A24B).withOpacity(0.1) : Colors.white,
       borderRadius: BorderRadius.circular(16),

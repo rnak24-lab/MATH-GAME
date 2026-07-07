@@ -83,6 +83,31 @@ class AppStrings {
       'en': 'The Last Bet',
       'ko': '마지막 배팅',
     },
+    // ── 🧪 테스트 월드 3종 ──
+    'worldAlleyLanes': {
+      'en': 'Alley Lanes',
+      'ko': '골목 볼링장',
+    },
+    'worldGoldenScale': {
+      'en': 'Golden Scale',
+      'ko': '황금 저울',
+    },
+    'worldRabbitHole': {
+      'en': 'Rabbit Hole',
+      'ko': '토끼 굴',
+    },
+    'worldSubtitleKayles': {
+      'en': 'Kayles · TEST',
+      'ko': '카일즈 · 테스트',
+    },
+    'worldSubtitleWythoff': {
+      'en': 'Wythoff · TEST',
+      'ko': '위토프 · 테스트',
+    },
+    'worldSubtitleFibonacci': {
+      'en': 'Fibonacci NIM · TEST',
+      'ko': '피보나치 님 · 테스트',
+    },
     'worldSubtitleSingleRow': {
       'en': 'Single Row NIM',
       'ko': '한 줄 님게임',
@@ -142,6 +167,18 @@ class AppStrings {
       'en': 'Quad Row NIM',
       'ko': '네 줄 님게임',
     },
+    'modeKayles': {
+      'en': 'Kayles',
+      'ko': '카일즈',
+    },
+    'modeWythoff': {
+      'en': 'Wythoff',
+      'ko': '위토프',
+    },
+    'modeFibonacci': {
+      'en': 'Fibonacci NIM',
+      'ko': '피보나치 님',
+    },
 
     // ── Game Screen: Rules ──
     'ruleSingleRow': {
@@ -168,6 +205,24 @@ class AppStrings {
       'en':
           'Four rows of stones!\nYou can only take stones from one row.\nThe one who takes the last stone loses!',
       'ko': '네 줄의 돌이 있어요!\n한 줄에서만 돌을 가져갈 수 있어요.\n마지막 돌을 가져가는 사람이 져요!',
+    },
+    'ruleKayles': {
+      'en':
+          'Take 1 or 2 ADJACENT stones from anywhere.\nTaking from the middle splits the row in two!\nThe one who takes the LAST stone WINS!',
+      'ko':
+          '아무 위치에서나 붙어있는 돌을 1~2개 가져가요.\n가운데를 빼면 줄이 두 동강 나요!\n마지막 돌을 가져가는 사람이 이겨요!',
+    },
+    'ruleWythoff': {
+      'en':
+          'Two piles. Take any amount from ONE pile,\nor the SAME amount from BOTH.\nThe one who takes the LAST stone WINS!',
+      'ko':
+          '무더기가 두 개! 한쪽에서 원하는 만큼 가져가거나,\n양쪽에서 똑같은 개수를 가져가요.\n마지막 돌을 가져가는 사람이 이겨요!',
+    },
+    'ruleFibonacci': {
+      'en':
+          "First move: you can't take everything.\nAfter that: up to DOUBLE what your opponent just took.\nThe one who takes the LAST stone WINS!",
+      'ko':
+          '첫 수엔 전부 가져가기 금지!\n그 다음부턴 상대가 방금 가져간 개수의 2배까지.\n마지막 돌을 가져가는 사람이 이겨요!',
     },
     'initialState': {
       'en': 'Initial: {0}',
@@ -296,6 +351,35 @@ class AppStrings {
     'peperoNoEqual': {
       'en': "Equal halves not allowed! Make one side bigger.",
       'ko': '같은 개수로는 못 쪼개! 한쪽을 더 크게~',
+    },
+    'peperoDeadTray': {
+      'en': 'Too small to split',
+      'ko': '더 못 쪼개는 조각',
+    },
+    // ── 🧪 테스트 모드 칩/안내 ──
+    'lastStoneWinChip': {
+      'en': 'Last stone WINS',
+      'ko': '마지막 돌 = 승리!',
+    },
+    'kaylesChip': {
+      'en': 'Adjacent 1~2',
+      'ko': '붙어있는 1~2개',
+    },
+    'wythoffChip': {
+      'en': 'One pile · or both equally',
+      'ko': '한 줄 맘껏 · 양쪽 같이',
+    },
+    'kaylesTapCta': {
+      'en': 'Tap any stone — grab its neighbor too!',
+      'ko': '아무 돌이나 눌러봐! 옆 돌도 이어서 잡을 수 있어',
+    },
+    'wythoffInvalid': {
+      'en': 'One pile only — or BOTH equally!',
+      'ko': '한 줄에서만! 아니면 양쪽 똑같이!',
+    },
+    'midnightTookBoth': {
+      'en': 'Took {0} from both piles!',
+      'ko': '양쪽에서 {0}개씩 가져갔어!',
     },
 
     // ── Settings: 게임플레이/초기화/규칙 (2026-07-02) ──
@@ -648,6 +732,46 @@ class AppStrings {
       'en':
           "If you can't split anything on your turn... you lose. I'm playing for real now!",
       'ko': '네 차례에 쪼갤 게 없으면… 지는 거야. 이번엔 나도 진심이야!',
+    },
+    // 🧪 카일즈 튜토리얼
+    'tutW6_1': {
+      'en': 'Alley Lanes! Take 1 or 2 stones from ANYWHERE in a row.',
+      'ko': '골목 볼링장! 이번엔 아무 위치의 돌이나 가져갈 수 있어.',
+    },
+    'tutW6_2': {
+      'en':
+          'Two stones must be side by side. Take from the middle — the row SPLITS!',
+      'ko': '2개를 잡으려면 붙어있어야 해. 가운데를 빼면 줄이 두 동강!',
+    },
+    'tutW6_3': {
+      'en': 'And here... the one who takes the LAST stone WINS!',
+      'ko': '그리고 여기선… 마지막 돌을 가져가는 사람이 이겨!',
+    },
+    // 🧪 위토프 튜토리얼
+    'tutW7_1': {
+      'en': 'Golden Scale! Two piles. Take as many as you want from ONE.',
+      'ko': '황금 저울! 무더기 두 개. 한쪽에서 마음껏 가져가.',
+    },
+    'tutW7_2': {
+      'en': 'Or take the SAME amount from BOTH piles at once!',
+      'ko': '아니면 양쪽에서 똑같은 개수를 한번에!',
+    },
+    'tutW7_3': {
+      'en': 'The one who takes the LAST stone WINS. Balance carefully~',
+      'ko': '마지막 돌을 가져가면 승리야. 저울을 잘 맞춰봐~',
+    },
+    // 🧪 피보나치 튜토리얼
+    'tutW8_1': {
+      'en': "Rabbit Hole rule: first move, you CAN'T take them all!",
+      'ko': '토끼 굴 규칙: 첫 수엔 전부 가져가기 금지!',
+    },
+    'tutW8_2': {
+      'en': 'After that: up to DOUBLE what I just took. Watch the chip!',
+      'ko': '그 다음부턴 내가 방금 가져간 개수의 2배까지만. 칩을 잘 봐!',
+    },
+    'tutW8_3': {
+      'en': 'Take the LAST stone to WIN. Hop hop~',
+      'ko': '마지막 돌을 가져가면 승리! 깡총깡총~',
     },
     // 2회 연속 패배 힌트
     'tutHintW1': {

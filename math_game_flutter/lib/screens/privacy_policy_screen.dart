@@ -8,8 +8,7 @@ class PrivacyPolicyScreen extends StatefulWidget {
   final LocaleProvider localeProvider;
   const PrivacyPolicyScreen({super.key, required this.localeProvider});
 
-  static const String policyUrl =
-      'https://rnak24-lab.github.io/nim-privacy/';
+  static const String policyUrl = 'https://rnak24-lab.github.io/nim-privacy/';
 
   @override
   State<PrivacyPolicyScreen> createState() => _PrivacyPolicyScreenState();
@@ -64,8 +63,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
           if (_loading)
             const Center(
               child: CircularProgressIndicator(
-                valueColor:
-                    AlwaysStoppedAnimation<Color>(Color(0xFF7C4DFF)),
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF7C4DFF)),
               ),
             ),
         ],

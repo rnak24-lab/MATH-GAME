@@ -69,6 +69,31 @@ const List<WorldInfo> worlds = [
     subtitleKey: 'worldSubtitlePepero',
     bgGradient: [Color(0xFF5D1A1A), Color(0xFFEF5350), Color(0xFFFFEBEE)],
   ),
+  // ── 🧪 테스트 월드 3종 (2026-07-07 대표님 검수용 — 출시 구성은 검수 후 결정) ──
+  WorldInfo(
+    id: 4,
+    nameKey: 'worldAlleyLanes',
+    emoji: '🎳',
+    color: Color(0xFF26A69A),
+    subtitleKey: 'worldSubtitleKayles',
+    bgGradient: [Color(0xFF0F3D38), Color(0xFF26A69A), Color(0xFFE0F2F1)],
+  ),
+  WorldInfo(
+    id: 5,
+    nameKey: 'worldGoldenScale',
+    emoji: '⚖️',
+    color: Color(0xFFFFB300),
+    subtitleKey: 'worldSubtitleWythoff',
+    bgGradient: [Color(0xFF4A3500), Color(0xFFFFB300), Color(0xFFFFF8E1)],
+  ),
+  WorldInfo(
+    id: 6,
+    nameKey: 'worldRabbitHole',
+    emoji: '🐇',
+    color: Color(0xFF7E57C2),
+    subtitleKey: 'worldSubtitleFibonacci',
+    bgGradient: [Color(0xFF2A1A4A), Color(0xFF7E57C2), Color(0xFFEDE7F6)],
+  ),
 ];
 
 /// (id=1141) 글로벌 스테이지 번호로 월드 배경 가져오기 (GameScreen에서 사용).
@@ -159,39 +184,39 @@ class _WorldSelectScreenState extends State<WorldSelectScreen> {
       body: Container(
         decoration: const BoxDecoration(gradient: NimTheme.bg),
         child: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: worlds.length,
-        itemBuilder: (context, index) {
-          final world = worlds[index];
-          final isUnlocked = stageManager.isWorldUnlocked(world.id);
-          final progress = stageManager.getWorldProgress(world.id);
+          padding: const EdgeInsets.all(16),
+          itemCount: worlds.length,
+          itemBuilder: (context, index) {
+            final world = worlds[index];
+            final isUnlocked = stageManager.isWorldUnlocked(world.id);
+            final progress = stageManager.getWorldProgress(world.id);
 
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: _WorldCard(
-              world: world,
-              strings: s,
-              isUnlocked: isUnlocked,
-              progress: progress,
-              onTap: isUnlocked
-                  ? () async {
-                      // (id=1144) 스테이지 선택 화면에서 돌아올 때 진행도/해금 상태 재갱신
-                      await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => StageSelectScreen(
-                            stageManager: stageManager,
-                            world: world,
-                            localeProvider: localeProvider,
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _WorldCard(
+                world: world,
+                strings: s,
+                isUnlocked: isUnlocked,
+                progress: progress,
+                onTap: isUnlocked
+                    ? () async {
+                        // (id=1144) 스테이지 선택 화면에서 돌아올 때 진행도/해금 상태 재갱신
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => StageSelectScreen(
+                              stageManager: stageManager,
+                              world: world,
+                              localeProvider: localeProvider,
+                            ),
                           ),
-                        ),
-                      );
-                      if (mounted) setState(() {});
-                    }
-                  : null,
-            ),
-          );
-        },
+                        );
+                        if (mounted) setState(() {});
+                      }
+                    : null,
+              ),
+            );
+          },
         ),
       ),
     );
@@ -226,9 +251,8 @@ class _WorldCard extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
-              color: isUnlocked
-                  ? world.color.withOpacity(0.75)
-                  : NimTheme.frame,
+              color:
+                  isUnlocked ? world.color.withOpacity(0.75) : NimTheme.frame,
               width: 2,
             ),
           ),
@@ -268,9 +292,7 @@ class _WorldCard extends StatelessWidget {
                       style: TextStyle(
                         fontFamily: NimTheme.font,
                         fontSize: 18,
-                        color: isUnlocked
-                            ? NimTheme.cream
-                            : NimTheme.inkSoft,
+                        color: isUnlocked ? NimTheme.cream : NimTheme.inkSoft,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -293,8 +315,8 @@ class _WorldCard extends StatelessWidget {
                         child: LinearProgressIndicator(
                           value: progress / 20,
                           backgroundColor: NimTheme.deskBottom,
-                          valueColor:
-                              const AlwaysStoppedAnimation<Color>(NimTheme.gold),
+                          valueColor: const AlwaysStoppedAnimation<Color>(
+                              NimTheme.gold),
                           minHeight: 7,
                         ),
                       ),

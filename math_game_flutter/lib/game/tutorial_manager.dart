@@ -15,20 +15,26 @@ class TutorialStep {
 
 class TutorialManager {
   /// 특정 stageNumber가 월드별 튜토리얼 1라운드인가?
-  /// 월드 1=1, 월드 2=21, 월드 3=41, 월드 4(빼빼로)=61
+  /// 월드 1=1, 2=21, 3=41, 4(빼빼로)=61, 🧪 5(카일즈)=81, 6(위토프)=101, 7(피보나치)=121
   static bool isTutorialStage(int stageNumber) {
     return stageNumber == 1 ||
         stageNumber == 21 ||
         stageNumber == 41 ||
-        stageNumber == 61;
+        stageNumber == 61 ||
+        stageNumber == 81 ||
+        stageNumber == 101 ||
+        stageNumber == 121;
   }
 
-  /// stageNumber → 월드 번호 (1~4, 4=빼빼로 최종)
+  /// stageNumber → 월드 번호 (1~7)
   static int worldOf(int stageNumber) {
     if (stageNumber <= 20) return 1;
     if (stageNumber <= 40) return 2;
     if (stageNumber <= 60) return 3;
-    return 4;
+    if (stageNumber <= 80) return 4;
+    if (stageNumber <= 100) return 5;
+    if (stageNumber <= 120) return 6;
+    return 7;
   }
 
   /// 게임 시작 시 표시할 진입 튜토리얼 스텝 리스트.
@@ -54,7 +60,8 @@ class TutorialManager {
         ];
       case 3:
         return [
-          TutorialStep(text: s.get('tutW3_1'), highlightTarget: 'maxtake_badge'),
+          TutorialStep(
+              text: s.get('tutW3_1'), highlightTarget: 'maxtake_badge'),
           TutorialStep(text: s.get('tutW3_2')),
           TutorialStep(text: s.get('tutW3_3')),
           TutorialStep(text: s.get('tutW3_4')),
@@ -65,6 +72,24 @@ class TutorialManager {
           TutorialStep(text: s.get('tutW5_1')),
           TutorialStep(text: s.get('tutW5_2')),
           TutorialStep(text: s.get('tutW5_3')),
+        ];
+      case 5: // 🧪 카일즈
+        return [
+          TutorialStep(text: s.get('tutW6_1')),
+          TutorialStep(text: s.get('tutW6_2')),
+          TutorialStep(text: s.get('tutW6_3')),
+        ];
+      case 6: // 🧪 위토프
+        return [
+          TutorialStep(text: s.get('tutW7_1')),
+          TutorialStep(text: s.get('tutW7_2')),
+          TutorialStep(text: s.get('tutW7_3')),
+        ];
+      case 7: // 🧪 피보나치
+        return [
+          TutorialStep(text: s.get('tutW8_1')),
+          TutorialStep(text: s.get('tutW8_2')),
+          TutorialStep(text: s.get('tutW8_3')),
         ];
     }
     return const [];

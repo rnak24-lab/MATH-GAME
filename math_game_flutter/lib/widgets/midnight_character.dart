@@ -186,8 +186,7 @@ class MidnightWithBubble extends StatelessWidget {
           child: Container(
             key: ValueKey(message),
             constraints: BoxConstraints(maxWidth: size * 1.8),
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(16),

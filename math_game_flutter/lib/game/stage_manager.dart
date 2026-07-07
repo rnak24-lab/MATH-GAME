@@ -60,12 +60,15 @@ class StageManager extends ChangeNotifier {
   /// 20판 전부 깨는 완주는 별개의 목표로 남는다.
   static const int _unlockClearsNeeded = 3;
 
-  /// 🧪 검수용 플래그: 빼빼로(최종) 월드 상시 해금.
+  /// 🧪 검수용 플래그: 빼빼로(3) + 테스트 월드(카일즈4/위토프5/피보나치6) 상시 해금.
   /// ⚠️ 출시 전 반드시 false로! (대표님 검수 편의를 위한 임시 오픈)
-  static const bool kReviewUnlockPepero = true;
+  static const bool kReviewUnlockTestWorlds = true;
 
-  /// 마지막 월드(빼빼로) id — 네줄 삭제 후 총 4월드(0~3).
-  static const int _lastWorldId = 3;
+  /// 검수 해금 시작 월드 id (3 = 빼빼로부터).
+  static const int _reviewUnlockFrom = 3;
+
+  /// 마지막 월드 id — 정식 4월드(0~3) + 테스트 3월드(4~6).
+  static const int _lastWorldId = 6;
 
   Future<void> _recalculateWorldUnlocked() async {
     int unlocked = 0;
@@ -116,7 +119,11 @@ class StageManager extends ChangeNotifier {
   }
 
   bool isWorldUnlocked(int worldId) {
-    if (kReviewUnlockPepero && worldId == _lastWorldId) return true;
+    if (kReviewUnlockTestWorlds &&
+        worldId >= _reviewUnlockFrom &&
+        worldId <= _lastWorldId) {
+      return true;
+    }
     return worldId <= worldUnlocked;
   }
 

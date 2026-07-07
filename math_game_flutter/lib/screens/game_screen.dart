@@ -68,6 +68,28 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   int _selectedRow = 0;
   int _selectedCount = 0; // 0 = 아무 돌도 안 집은 상태 (턴 시작 시 미리선택 없음)
   int _selectedPile = -1; // 빼빼로: 선택 없음 = -1 (미리 선택해주지 않기)
+
+  // ── 🧪 카일즈: 아무 위치 인접 1~2개 선택 ──
+  int _kSelRow = -1;
+  int _kSelStart = -1;
+  int _kSelCount = 0;
+
+  // ── 🧪 위토프: 줄별 suffix 선택 개수 ──
+  int _wSelA = 0;
+  int _wSelB = 0;
+
+  // ── 🧪 피보나치: 이번 턴 가져갈 수 있는 최대 (직전 상대 수의 2배, 첫 수 = n-1) ──
+  int _fibLimit = 0;
+
+  /// 마지막 돌 = 승리(normal play) 모드인가? (기본 님 모드는 마지막 돌 = 패배)
+  bool get _isNormalPlay =>
+      _config.mode == GameMode.kayles ||
+      _config.mode == GameMode.wythoff ||
+      _config.mode == GameMode.fibonacci;
+
+  /// 한 번에 가져갈 수 있는 최대 개수 (피보나치는 턴마다 변동).
+  int get _effectiveMaxTake =>
+      _config.mode == GameMode.fibonacci ? _fibLimit : _config.maxTake;
   int _splitA = 1;
 
   // Midnight state
@@ -128,6 +150,10 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     _config = _engine.generateStage(widget.stageNumber);
     _rows = List.from(_config.rows);
     _midnightMessage = _getGreeting();
+    // 피보나치: 첫 수는 "전부 빼기 금지" → 최대 n-1
+    if (_config.mode == GameMode.fibonacci) {
+      _fibLimit = _rows[0] - 1;
+    }
 
     // 월드별 1라운드 튜토리얼 활성화 여부 판정
     if (TutorialManager.isTutorialStage(widget.stageNumber)) {
@@ -197,6 +223,12 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         return s.get('modeTripleRow');
       case GameMode.quadRow:
         return s.get('modeQuadRow');
+      case GameMode.kayles:
+        return s.get('modeKayles');
+      case GameMode.wythoff:
+        return s.get('modeWythoff');
+      case GameMode.fibonacci:
+        return s.get('modeFibonacci');
     }
   }
 
@@ -210,6 +242,12 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       if (!canSplit) return true;
       // NimEngine.isAIWinning은 "방금 둔 쪽이 유리" = "다음 턴 플레이어 패배 확정" 동일 의미.
       return _engine.isAIWinning(_rows, GameMode.pepero);
+    }
+    if (_config.mode == GameMode.kayles || _config.mode == GameMode.wythoff) {
+      return _engine.isAIWinning(_rows, _config.mode);
+    }
+    if (_config.mode == GameMode.fibonacci) {
+      return _engine.fibonacciLosing(_rows[0], _fibLimit);
     }
     if (_config.mode == GameMode.singleRow) {
       int n = _rows[0];
@@ -235,6 +273,12 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       int n = initRows[0];
       if (n <= 0) return false;
       return (n - 1) % (_config.maxTake + 1) != 0;
+    }
+    if (_config.mode == GameMode.kayles || _config.mode == GameMode.wythoff) {
+      return !_engine.isAIWinning(initRows, _config.mode);
+    }
+    if (_config.mode == GameMode.fibonacci) {
+      return !_engine.fibonacciLosing(initRows[0], initRows[0] - 1);
     }
     if (_config.mode == GameMode.pepero) {
       // 분할 불가 상태면 선공이 즉시 짐.
@@ -316,15 +360,23 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   }
 
   bool _checkGameOver() {
-    int total = _rows.reduce((a, b) => a + b);
+    int total = _rows.isEmpty ? 0 : _rows.reduce((a, b) => a + b);
 
     if (_config.mode == GameMode.pepero) {
       bool canSplit = _rows.any((p) => p >= 3);
       if (!canSplit) {
+        // 못 쪼개는 쪽(= 지금 둘 차례)이 패배 → 상대를 못 두게 만들면 승리
         _endGame(_currentTurn == TurnOwner.player);
         return true;
       }
+    } else if (_isNormalPlay) {
+      // 🧪 normal play: 마지막 돌을 가져간 쪽(= 방금 둔 쪽)이 승리
+      if (total == 0) {
+        _endGame(_currentTurn != TurnOwner.player);
+        return true;
+      }
     } else {
+      // misère: 마지막 돌을 가져간 쪽이 패배
       if (total == 0) {
         _endGame(_currentTurn == TurnOwner.player);
         return true;
@@ -367,7 +419,8 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   }
 
   void _showNextStageDialog() {
-    bool hasNext = widget.stageNumber < 80;
+    // 🧪 테스트 월드 포함 140까지 (정식 출시 구성은 검수 후 80으로)
+    bool hasNext = widget.stageNumber < 140;
 
     showGeneralDialog(
       context: context,
@@ -535,8 +588,13 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         _rows.add(a);
         _rows.add(b);
         _rows.sort((x, y) => y.compareTo(x));
-      } else if (_config.mode == GameMode.singleRow) {
+      } else if (_config.mode == GameMode.singleRow ||
+          _config.mode == GameMode.fibonacci) {
         _rows[0] -= _selectedCount;
+        // 피보나치: 다음(한밤이) 턴 한도 = 내가 방금 가져간 수의 2배
+        if (_config.mode == GameMode.fibonacci) {
+          _fibLimit = tookCount * 2;
+        }
       } else {
         _rows[_selectedRow] -= _selectedCount;
       }
@@ -570,6 +628,15 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       case GameMode.pepero:
         move = _engine.peperoAI(_rows);
         break;
+      case GameMode.kayles:
+        move = _engine.kaylesAI(_rows);
+        break;
+      case GameMode.wythoff:
+        move = _engine.wythoffAI(_rows);
+        break;
+      case GameMode.fibonacci:
+        move = _engine.fibonacciAI(_rows[0], _fibLimit);
+        break;
     }
 
     _isAiAnimating = true;
@@ -592,6 +659,46 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         _rows.add(move.splitA);
         _rows.add(move.splitB);
         _rows.sort((x, y) => y.compareTo(x));
+      });
+    } else if (move.isKayles) {
+      // 🧪 카일즈: 슉! x count 후 줄 분할 적용
+      for (int i = 0; i < move.count; i++) {
+        if (!mounted || _phase != GamePhase.playing) return;
+        _spawnFlight();
+        setState(() {
+          _midnightFace = MidnightFace.neutral;
+          _midnightMessage = s.get('midnightTakeN', ['${i + 1}']);
+        });
+        await Future.delayed(const Duration(milliseconds: 400));
+      }
+      if (!mounted || _phase != GamePhase.playing) return;
+      setState(() {
+        _rows.removeAt(move.rowIndex);
+        if (move.kaylesLeft > 0) _rows.add(move.kaylesLeft);
+        if (move.kaylesRight > 0) _rows.add(move.kaylesRight);
+        _rows.sort((x, y) => y.compareTo(x));
+        _midnightMessage = s.get('midnightTookTotal', ['${move.count}']);
+      });
+    } else if (move.isWythoff) {
+      // 🧪 위토프: 각 무더기에서 하나씩 슉!
+      final int steps = move.takeA > move.takeB ? move.takeA : move.takeB;
+      for (int i = 0; i < steps; i++) {
+        if (!mounted || _phase != GamePhase.playing) return;
+        _spawnFlight();
+        setState(() {
+          if (i < move.takeA) _rows[0] -= 1;
+          if (i < move.takeB) _rows[1] -= 1;
+          _midnightFace = MidnightFace.neutral;
+          _midnightMessage = s.get('midnightTakeN', ['${i + 1}']);
+        });
+        await Future.delayed(const Duration(milliseconds: 400));
+      }
+      if (!mounted || _phase != GamePhase.playing) return;
+      setState(() {
+        _midnightMessage = (move.takeA > 0 && move.takeB > 0)
+            ? s.get('midnightTookBoth', ['${move.takeA}'])
+            : s.get('midnightTookTotal',
+                ['${move.takeA > 0 ? move.takeA : move.takeB}']);
       });
     } else {
       // Phase 2: 돌 1개씩 순차 제거 애니메이션
@@ -634,15 +741,28 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         TurnOwner.midnight,
         move.isPepero
             ? '$mnName  ${move.splitA}+${move.splitB}'
-            : (_rows.length > 1
-                ? '$mnName  −${move.count} · R${move.rowIndex + 1}'
-                : '$mnName  −${move.count}'));
+            : move.isKayles
+                ? '$mnName  −${move.count} ✂'
+                : move.isWythoff
+                    ? '$mnName  −${move.takeA}/−${move.takeB}'
+                    : (_rows.length > 1
+                        ? '$mnName  −${move.count} · R${move.rowIndex + 1}'
+                        : '$mnName  −${move.count}'));
 
     setState(() {
       _turnCount++;
       _currentTurn = TurnOwner.player;
       _isAiAnimating = false;
       _selectedCount = 0; // 내 턴 시작: 미리선택 없음
+      _kSelRow = -1;
+      _kSelStart = -1;
+      _kSelCount = 0;
+      _wSelA = 0;
+      _wSelB = 0;
+      // 피보나치: 다음(내) 턴 한도 = 한밤이가 방금 가져간 수의 2배
+      if (_config.mode == GameMode.fibonacci) {
+        _fibLimit = move.count * 2;
+      }
     });
 
     if (!_checkGameOver()) {
@@ -677,11 +797,28 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         case GameMode.pepero:
           hint = _engine.peperoAI(_rows);
           break;
+        case GameMode.kayles:
+          hint = _engine.kaylesAI(_rows);
+          break;
+        case GameMode.wythoff:
+          hint = _engine.wythoffAI(_rows);
+          break;
+        case GameMode.fibonacci:
+          hint = _engine.fibonacciAI(_rows[0], _fibLimit);
+          break;
       }
 
       if (hint.isPepero) {
         hintText = s.get('hintPepero', ['${hint.splitA}', '${hint.splitB}']);
-      } else if (_config.mode == GameMode.singleRow) {
+      } else if (hint.isWythoff) {
+        hintText = s.get('hintMultiRow', [
+          '${hint.takeA > 0 ? hint.takeA : hint.takeB}',
+          hint.takeA > 0 ? '1' : '2'
+        ]);
+      } else if (_config.mode == GameMode.singleRow ||
+          _config.mode == GameMode.fibonacci) {
+        hintText = s.get('hintSingleRow', ['${hint.count}']);
+      } else if (_config.mode == GameMode.kayles) {
         hintText = s.get('hintSingleRow', ['${hint.count}']);
       } else {
         hintText =
@@ -1048,6 +1185,16 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       case GameMode.pepero:
         qty = s.get('peperoChip');
         break;
+      case GameMode.kayles:
+        qty = s.get('kaylesChip');
+        break;
+      case GameMode.wythoff:
+        qty = s.get('wythoffChip');
+        break;
+      case GameMode.fibonacci:
+        // 🧪 턴마다 변하는 한도 — 칩이 실시간으로 갱신됨
+        qty = s.get('takeRange', ['$_fibLimit']);
+        break;
       default:
         qty = s.get('takeAny');
     }
@@ -1080,6 +1227,11 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         if (_config.mode == GameMode.pepero) ...[
           const SizedBox(width: 8),
           chip(s.get('peperoNoEqualChip')),
+        ],
+        // 🧪 normal play 모드: 승리 조건이 반대이므로 칩으로 상시 노출
+        if (_isNormalPlay) ...[
+          const SizedBox(width: 8),
+          chip(s.get('lastStoneWinChip')),
         ],
       ],
     );
@@ -1385,6 +1537,12 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     if (_config.mode == GameMode.pepero) {
       return _buildPeperoBoard();
     }
+    if (_config.mode == GameMode.kayles) {
+      return _buildKaylesBoard();
+    }
+    if (_config.mode == GameMode.wythoff) {
+      return _buildWythoffBoard();
+    }
     return _buildStonesBoard();
   }
 
@@ -1407,8 +1565,10 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     } else {
       count = len - tappedIndex; // 집기
     }
-    if (_config.mode == GameMode.singleRow && count > _config.maxTake) {
-      count = _config.maxTake;
+    if ((_config.mode == GameMode.singleRow ||
+            _config.mode == GameMode.fibonacci) &&
+        count > _effectiveMaxTake) {
+      count = _effectiveMaxTake;
     }
     if (count < 0) count = 0;
     if (count > len) count = len;
@@ -1485,6 +1645,393 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     );
   }
 
+  // ── 🧪 카일즈: 아무 위치의 인접 1~2개 선택 ──
+  void _selectKayles(int rowIdx, int i) {
+    if (_phase != GamePhase.playing ||
+        _currentTurn != TurnOwner.player ||
+        _isAiAnimating ||
+        _leaving) return;
+    _haptic();
+    setState(() {
+      final bool inSel = _kSelRow == rowIdx &&
+          _kSelCount > 0 &&
+          i >= _kSelStart &&
+          i < _kSelStart + _kSelCount;
+      if (inSel) {
+        // 쥔 돌을 다시 탭 = 그 돌만 내려놓기
+        if (_kSelCount == 2) {
+          _kSelStart = (i == _kSelStart) ? _kSelStart + 1 : _kSelStart;
+          _kSelCount = 1;
+        } else {
+          _kSelRow = -1;
+          _kSelStart = -1;
+          _kSelCount = 0;
+        }
+      } else if (_kSelRow == rowIdx &&
+          _kSelCount == 1 &&
+          (i == _kSelStart - 1 || i == _kSelStart + 1)) {
+        // 옆에 붙은 돌 = 이어서 잡기 (최대 2개)
+        _kSelStart = i < _kSelStart ? i : _kSelStart;
+        _kSelCount = 2;
+      } else {
+        // 새로 집기
+        _kSelRow = rowIdx;
+        _kSelStart = i;
+        _kSelCount = 1;
+      }
+    });
+  }
+
+  Widget _buildKaylesBoard() {
+    return Center(
+      child: LayoutBuilder(builder: (context, cons) {
+        final int maxLen = _rows.fold(1, (m, r) => r > m ? r : m).clamp(1, 40);
+        final double avail = cons.maxWidth - 32;
+        final double cell = (avail / maxLen).clamp(24.0, 44.0);
+        final double stone = (cell - 8).clamp(16.0, 34.0);
+        return SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Text(
+                  s.get('kaylesTapCta'),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: _mono,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: _Pal.cream.withOpacity(0.85),
+                  ),
+                ),
+              ),
+              ...List.generate(_rows.length, (rowIdx) {
+                final len = _rows[rowIdx];
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(len, (i) {
+                      final bool selected = _kSelRow == rowIdx &&
+                          i >= _kSelStart &&
+                          i < _kSelStart + _kSelCount;
+                      return _Stone(
+                        cell: cell,
+                        size: stone,
+                        selected: selected,
+                        leaving: _leaving && selected,
+                        onTap: () => _selectKayles(rowIdx, i),
+                      );
+                    }),
+                  ),
+                );
+              }),
+            ],
+          ),
+        );
+      }),
+    );
+  }
+
+  Widget _buildKaylesAction() {
+    final bool hasSel = _kSelCount > 0 && _kSelRow >= 0;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              s.get('takeCount'),
+              style: const TextStyle(
+                fontFamily: _mono,
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: _Pal.cream,
+              ),
+            ),
+            Text(
+              hasSel ? s.get('nPieces', ['$_kSelCount']) : '—',
+              style: const TextStyle(
+                fontFamily: _mono,
+                fontSize: 18,
+                fontWeight: FontWeight.w900,
+                color: _Pal.gold,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          width: double.infinity,
+          child: hasSel
+              ? _StampButton(
+                  label: s.get('takeNStones', ['$_kSelCount']),
+                  color: _Pal.alarm,
+                  onTap: _confirmKayles,
+                )
+              : Container(
+                  padding: const EdgeInsets.symmetric(vertical: 13),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: _Pal.frameHi, width: 1.5),
+                  ),
+                  child: Text(
+                    s.get('tapToSelectCta'),
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontFamily: _mono,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                      color: _Pal.cream,
+                    ),
+                  ),
+                ),
+        ),
+      ],
+    );
+  }
+
+  void _confirmKayles() {
+    if (_phase != GamePhase.playing ||
+        _currentTurn != TurnOwner.player ||
+        _isAiAnimating ||
+        _leaving ||
+        _kSelCount < 1 ||
+        _kSelRow < 0) return;
+    _haptic(true);
+    SfxService.instance.playTake();
+    setState(() => _leaving = true);
+    Future.delayed(const Duration(milliseconds: 360), () {
+      if (!mounted) return;
+      final int row = _kSelRow;
+      final int left = _kSelStart;
+      final int right = _rows[row] - (_kSelStart + _kSelCount);
+      final int took = _kSelCount;
+      _addLog(TurnOwner.player, '${_nameOf(TurnOwner.player)}  −$took ✂');
+      setState(() {
+        _leaving = false;
+        _rows.removeAt(row);
+        if (left > 0) _rows.add(left);
+        if (right > 0) _rows.add(right);
+        _rows.sort((x, y) => y.compareTo(x));
+        _kSelRow = -1;
+        _kSelStart = -1;
+        _kSelCount = 0;
+        _turnCount++;
+        _currentTurn = TurnOwner.midnight;
+      });
+      if (!_checkGameOver()) {
+        setState(() => _midnightFace = MidnightFace.neutral);
+        Future.delayed(const Duration(milliseconds: 1000), _midnightPlay);
+      }
+    });
+  }
+
+  // ── 🧪 위토프: 두 무더기 suffix 선택 (한쪽만 or 양쪽 같은 개수) ──
+  void _selectWythoff(int rowIdx, int i) {
+    if (_phase != GamePhase.playing ||
+        _currentTurn != TurnOwner.player ||
+        _isAiAnimating ||
+        _leaving) return;
+    final len = _rows[rowIdx];
+    final int cur = rowIdx == 0 ? _wSelA : _wSelB;
+    int count;
+    final bool tappedBoundary = cur > 0 && i == len - cur;
+    if (tappedBoundary) {
+      count = cur - 1; // 내려놓기
+    } else {
+      count = len - i; // 집기
+    }
+    if (count < 0) count = 0;
+    _haptic();
+    setState(() {
+      if (rowIdx == 0) {
+        _wSelA = count;
+      } else {
+        _wSelB = count;
+      }
+    });
+  }
+
+  bool get _wythoffValid =>
+      (_wSelA > 0 && _wSelB == 0) ||
+      (_wSelA == 0 && _wSelB > 0) ||
+      (_wSelA > 0 && _wSelA == _wSelB);
+
+  Widget _buildWythoffBoard() {
+    return Center(
+      child: LayoutBuilder(builder: (context, cons) {
+        final int maxLen = _rows.fold(1, (m, r) => r > m ? r : m).clamp(1, 40);
+        final double avail = cons.maxWidth - 32 - 34;
+        final double cell = (avail / maxLen).clamp(24.0, 44.0);
+        final double stone = (cell - 8).clamp(16.0, 34.0);
+        return SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(_rows.length, (rowIdx) {
+              final len = _rows[rowIdx];
+              final int sel = rowIdx == 0 ? _wSelA : _wSelB;
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: Text(
+                        'R${rowIdx + 1}',
+                        style: TextStyle(
+                          fontFamily: _mono,
+                          fontSize: 13,
+                          color: sel > 0
+                              ? _Pal.gold
+                              : _Pal.cream.withOpacity(0.45),
+                        ),
+                      ),
+                    ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: List.generate(len, (i) {
+                        final bool selected = i >= len - sel;
+                        return _Stone(
+                          cell: cell,
+                          size: stone,
+                          selected: selected,
+                          leaving: _leaving && selected,
+                          onTap: () => _selectWythoff(rowIdx, i),
+                        );
+                      }),
+                    ),
+                  ],
+                ),
+              );
+            }),
+          ),
+        );
+      }),
+    );
+  }
+
+  Widget _buildWythoffAction() {
+    final bool any = _wSelA > 0 || _wSelB > 0;
+    final bool valid = _wythoffValid;
+    final int total = _wSelA + _wSelB;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              s.get('takeCount'),
+              style: const TextStyle(
+                fontFamily: _mono,
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: _Pal.cream,
+              ),
+            ),
+            Text(
+              'R1 −$_wSelA · R2 −$_wSelB',
+              style: TextStyle(
+                fontFamily: _mono,
+                fontSize: 16,
+                fontWeight: FontWeight.w900,
+                color: !any
+                    ? _Pal.cream.withOpacity(0.5)
+                    : valid
+                        ? _Pal.gold
+                        : _Pal.alarmHi,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          width: double.infinity,
+          child: !any
+              ? Container(
+                  padding: const EdgeInsets.symmetric(vertical: 13),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: _Pal.frameHi, width: 1.5),
+                  ),
+                  child: Text(
+                    s.get('tapToSelectCta'),
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontFamily: _mono,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                      color: _Pal.cream,
+                    ),
+                  ),
+                )
+              : valid
+                  ? _StampButton(
+                      label: s.get('takeNStones', ['$total']),
+                      color: _Pal.alarm,
+                      onTap: _confirmWythoff,
+                    )
+                  : Container(
+                      padding: const EdgeInsets.symmetric(vertical: 13),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: _Pal.alarmHi, width: 2),
+                      ),
+                      child: Text(
+                        s.get('wythoffInvalid'),
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontFamily: _mono,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          color: _Pal.alarmHi,
+                        ),
+                      ),
+                    ),
+        ),
+      ],
+    );
+  }
+
+  void _confirmWythoff() {
+    if (_phase != GamePhase.playing ||
+        _currentTurn != TurnOwner.player ||
+        _isAiAnimating ||
+        _leaving ||
+        !_wythoffValid) return;
+    _haptic(true);
+    SfxService.instance.playTake();
+    setState(() => _leaving = true);
+    Future.delayed(const Duration(milliseconds: 360), () {
+      if (!mounted) return;
+      final int a = _wSelA, b = _wSelB;
+      _addLog(TurnOwner.player, '${_nameOf(TurnOwner.player)}  −$a/−$b');
+      setState(() {
+        _leaving = false;
+        _rows[0] -= a;
+        _rows[1] -= b;
+        _wSelA = 0;
+        _wSelB = 0;
+        _turnCount++;
+        _currentTurn = TurnOwner.midnight;
+      });
+      if (!_checkGameOver()) {
+        setState(() => _midnightFace = MidnightFace.neutral);
+        Future.delayed(const Duration(milliseconds: 1000), _midnightPlay);
+      }
+    });
+  }
+
   /// 빼빼로 보드 — 진짜 막대 비주얼.
   /// 묶음을 탭해 고르고(하늘색), 막대를 탭해 쪼갤 위치를 정한다(흰 분할선).
   /// 숫자는 부차적 정보로 작게만 표시.
@@ -1533,14 +2080,71 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                 ),
               ),
             ),
+          // 살아있는 묶음(쪼갤 수 있는 것)만 메인 무대에
           Wrap(
             spacing: 10,
             runSpacing: 12,
             alignment: WrapAlignment.center,
             crossAxisAlignment: WrapCrossAlignment.end,
-            children:
-                List.generate(_rows.length, (i) => _peperoBundle(i, myTurn)),
+            children: [
+              for (int i = 0; i < _rows.length; i++)
+                if (_rows[i] >= 3) _peperoBundle(i, myTurn),
+            ],
           ),
+          // 1~2개짜리(더 못 쪼개는 조각)는 아래 트레이로 치워서 무대를 깔끔하게
+          if (_rows.any((n) => n < 3)) ...[
+            const SizedBox(height: 18),
+            Container(
+              padding: const EdgeInsets.fromLTRB(10, 6, 10, 8),
+              decoration: BoxDecoration(
+                color: _Pal.deskBottom.withOpacity(0.5),
+                borderRadius: BorderRadius.circular(8),
+                border:
+                    Border.all(color: _Pal.frame.withOpacity(0.8), width: 1.2),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    s.get('peperoDeadTray'),
+                    style: TextStyle(
+                      fontFamily: _mono,
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w700,
+                      color: _Pal.cream.withOpacity(0.5),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 6,
+                    alignment: WrapAlignment.center,
+                    children: [
+                      for (final n in _rows)
+                        if (n < 3) _peperoDeadMini(n),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// 트레이용 미니 묶음 — 상호작용 없음, 작게.
+  Widget _peperoDeadMini(int n) {
+    return Opacity(
+      opacity: 0.65,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (int k = 0; k < n; k++)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 1),
+              child: _peperoStick(7, 24, dim: true),
+            ),
         ],
       ),
     );
@@ -1696,14 +2300,19 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       ),
       child: _config.mode == GameMode.pepero
           ? _buildPeperoAction()
-          : _buildStoneAction(),
+          : _config.mode == GameMode.kayles
+              ? _buildKaylesAction()
+              : _config.mode == GameMode.wythoff
+                  ? _buildWythoffAction()
+                  : _buildStoneAction(),
     );
   }
 
   Widget _buildStoneAction() {
     int maxCanTake = _rows[_selectedRow];
-    if (_config.mode == GameMode.singleRow) {
-      maxCanTake = maxCanTake.clamp(1, _config.maxTake);
+    if (_config.mode == GameMode.singleRow ||
+        _config.mode == GameMode.fibonacci) {
+      maxCanTake = maxCanTake.clamp(1, _effectiveMaxTake);
     }
     if (_selectedCount > maxCanTake) _selectedCount = maxCanTake;
     if (_selectedCount < 0) _selectedCount = 0;

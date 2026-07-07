@@ -8,6 +8,14 @@ class NimMove {
   final int splitA;
   final int splitB;
   final bool isPepero;
+  // 카일즈용: 제거 후 남는 좌/우 조각 크기
+  final bool isKayles;
+  final int kaylesLeft;
+  final int kaylesRight;
+  // 위토프용: 각 무더기에서 가져갈 개수
+  final bool isWythoff;
+  final int takeA;
+  final int takeB;
 
   NimMove({
     this.rowIndex = 0,
@@ -15,11 +23,19 @@ class NimMove {
     this.splitA = 0,
     this.splitB = 0,
     this.isPepero = false,
+    this.isKayles = false,
+    this.kaylesLeft = 0,
+    this.kaylesRight = 0,
+    this.isWythoff = false,
+    this.takeA = 0,
+    this.takeB = 0,
   });
 
   @override
   String toString() {
     if (isPepero) return 'Split into $splitA and $splitB';
+    if (isKayles) return 'Kayles take $count → [$kaylesLeft|$kaylesRight]';
+    if (isWythoff) return 'Wythoff take $takeA/$takeB';
     return 'Take $count from row $rowIndex';
   }
 }
@@ -128,7 +144,8 @@ class NimEngine {
           for (int a = 1; a < piles[i]; a++) {
             int b = piles[i] - a;
             if (a != b && a < b) {
-              int newGrundy = totalGrundy ^ _grundy(piles[i]) ^ _grundy(a) ^ _grundy(b);
+              int newGrundy =
+                  totalGrundy ^ _grundy(piles[i]) ^ _grundy(a) ^ _grundy(b);
               if (newGrundy == 0) {
                 return NimMove(
                   rowIndex: i,
@@ -186,7 +203,173 @@ class NimEngine {
     return mex;
   }
 
-  /// AI가 유리한 포지션인지 (nimsum == 0 -> 방금 둔 쪽이 유리)
+  // ── 🧪 카일즈 (Kayles) — 아무 위치 인접 1~2개 제거, 마지막 돌 = 승리 ──
+  final Map<int, int> _kaylesCache = {};
+
+  int _kaylesGrundy(int n) {
+    if (n <= 0) return 0;
+    if (_kaylesCache.containsKey(n)) return _kaylesCache[n]!;
+    final Set<int> reachable = {};
+    for (int t = 1; t <= 2 && t <= n; t++) {
+      for (int left = 0; left <= n - t; left++) {
+        reachable.add(_kaylesGrundy(left) ^ _kaylesGrundy(n - t - left));
+      }
+    }
+    int mex = 0;
+    while (reachable.contains(mex)) mex++;
+    _kaylesCache[n] = mex;
+    return mex;
+  }
+
+  NimMove kaylesAI(List<int> rows) {
+    if (rows.isEmpty || rows.every((r) => r <= 0)) return NimMove(count: 0);
+
+    int x = 0;
+    for (final r in rows) {
+      x ^= _kaylesGrundy(r);
+    }
+
+    if (x != 0) {
+      // 필승 수 탐색
+      for (int i = 0; i < rows.length; i++) {
+        final n = rows[i];
+        for (int t = 1; t <= 2 && t <= n; t++) {
+          for (int left = 0; left <= n - t; left++) {
+            final right = n - t - left;
+            if (x ^
+                    _kaylesGrundy(n) ^
+                    _kaylesGrundy(left) ^
+                    _kaylesGrundy(right) ==
+                0) {
+              return NimMove(
+                rowIndex: i,
+                count: t,
+                isKayles: true,
+                kaylesLeft: left,
+                kaylesRight: right,
+              );
+            }
+          }
+        }
+      }
+    }
+
+    // 지는 포지션 → 랜덤 수 (변수 주기)
+    final valid = <NimMove>[];
+    for (int i = 0; i < rows.length; i++) {
+      final n = rows[i];
+      for (int t = 1; t <= 2 && t <= n; t++) {
+        for (int left = 0; left <= n - t; left++) {
+          valid.add(NimMove(
+            rowIndex: i,
+            count: t,
+            isKayles: true,
+            kaylesLeft: left,
+            kaylesRight: n - t - left,
+          ));
+        }
+      }
+    }
+    if (valid.isNotEmpty) return valid[_rng.nextInt(valid.length)];
+    return NimMove(count: 0);
+  }
+
+  // ── 🧪 위토프 (Wythoff) — 한쪽 마음껏 or 양쪽 같은 개수, 마지막 돌 = 승리 ──
+  /// 냉(cold) 포지션: (⌊kφ⌋, ⌊kφ⌋+k) — 이 상태에서 둘 차례인 쪽이 진다.
+  bool wythoffCold(int p, int q) {
+    final int m = p < q ? p : q;
+    final int M = p < q ? q : p;
+    final int k = M - m;
+    final double phi = (1 + sqrt(5)) / 2;
+    return m == (k * phi).floor();
+  }
+
+  NimMove wythoffAI(List<int> rows) {
+    final int a = rows[0], b = rows[1];
+    if (a <= 0 && b <= 0) return NimMove(count: 0);
+
+    if (!wythoffCold(a, b)) {
+      // 필승: 냉 포지션으로 보내는 수 탐색
+      for (int t = 1; t <= a; t++) {
+        if (wythoffCold(a - t, b)) {
+          return NimMove(isWythoff: true, takeA: t, takeB: 0);
+        }
+      }
+      for (int t = 1; t <= b; t++) {
+        if (wythoffCold(a, b - t)) {
+          return NimMove(isWythoff: true, takeA: 0, takeB: t);
+        }
+      }
+      final int mn = a < b ? a : b;
+      for (int t = 1; t <= mn; t++) {
+        if (wythoffCold(a - t, b - t)) {
+          return NimMove(isWythoff: true, takeA: t, takeB: t);
+        }
+      }
+    }
+
+    // 지는 포지션 → 랜덤 (즉시 자멸 수는 피함: 전부 비우기 금지)
+    final valid = <NimMove>[];
+    for (int t = 1; t <= a; t++) {
+      if (!(a - t == 0 && b == 0)) {
+        valid.add(NimMove(isWythoff: true, takeA: t, takeB: 0));
+      }
+    }
+    for (int t = 1; t <= b; t++) {
+      if (!(a == 0 && b - t == 0)) {
+        valid.add(NimMove(isWythoff: true, takeA: 0, takeB: t));
+      }
+    }
+    final int mn = a < b ? a : b;
+    for (int t = 1; t <= mn; t++) {
+      if (!(a - t == 0 && b - t == 0)) {
+        valid.add(NimMove(isWythoff: true, takeA: t, takeB: t));
+      }
+    }
+    if (valid.isNotEmpty) return valid[_rng.nextInt(valid.length)];
+    // 어쩔 수 없이 마지막 처리 (사실상 승리 수)
+    return NimMove(isWythoff: true, takeA: a, takeB: b == a ? b : 0);
+  }
+
+  // ── 🧪 피보나치 님 — 직전 상대 수의 2배까지, 마지막 돌 = 승리 ──
+  /// 제켄도르프 분해의 최소항. (n ≥ 1)
+  int zeckendorfSmallest(int n) {
+    final fibs = <int>[1, 2];
+    while (fibs.last < n) {
+      fibs.add(fibs[fibs.length - 1] + fibs[fibs.length - 2]);
+    }
+    int rest = n, smallest = 0;
+    for (int i = fibs.length - 1; i >= 0; i--) {
+      if (fibs[i] <= rest) {
+        smallest = fibs[i];
+        rest -= fibs[i];
+      }
+    }
+    return smallest;
+  }
+
+  /// 현재 둘 차례가 지는 포지션인가 (남은 n, 이번 턴 최대 maxAllowed).
+  bool fibonacciLosing(int n, int maxAllowed) {
+    if (n <= 0) return false;
+    if (n <= maxAllowed) return false; // 전부 가져가면 즉시 승리
+    return zeckendorfSmallest(n) > maxAllowed;
+  }
+
+  NimMove fibonacciAI(int n, int maxAllowed) {
+    if (n <= 0) return NimMove(count: 0);
+    if (n <= maxAllowed) return NimMove(count: n); // 다 가져가면 승리!
+
+    final int s = zeckendorfSmallest(n);
+    if (s <= maxAllowed) return NimMove(count: s); // 필승 수
+
+    // 지는 포지션 → 작게 랜덤 (상대의 다음 한도를 최소화 + 자멸 방지)
+    int safeMax = (n - 1) ~/ 3; // c ≥ ⌈n/3⌉ 이면 상대가 나머지를 전부 가져감
+    if (safeMax < 1) safeMax = 1;
+    if (safeMax > maxAllowed) safeMax = maxAllowed;
+    return NimMove(count: 1 + _rng.nextInt(safeMax));
+  }
+
+  /// AI가 유리한 포지션인지 (= 다음에 둘 사람이 지는 포지션인지)
   bool isAIWinning(List<int> rows, GameMode mode) {
     if (mode == GameMode.pepero) {
       int totalGrundy = 0;
@@ -195,6 +378,22 @@ class NimEngine {
       }
       // grundy == 0이면 방금 둔 쪽이 유리 (상대가 불리)
       return totalGrundy == 0;
+    }
+
+    if (mode == GameMode.kayles) {
+      int x = 0;
+      for (final r in rows) {
+        x ^= _kaylesGrundy(r);
+      }
+      return x == 0;
+    }
+
+    if (mode == GameMode.wythoff) {
+      return wythoffCold(rows[0], rows.length > 1 ? rows[1] : 0);
+    }
+
+    if (mode == GameMode.fibonacci) {
+      return true; // fibonacci는 maxAllowed 필요 → fibonacciLosing 사용
     }
 
     if (mode == GameMode.singleRow) {
@@ -211,8 +410,8 @@ class NimEngine {
 
   /// 스테이지 설정 생성.
   ///
-  /// 월드 순서 (2026-07-07 대표님 확정 — 네줄 삭제, 총 4월드 80스테이지):
-  /// 한줄 → 두줄(거울 전략) → 세줄 → **빼빼로(Grundy, 최종 보스 월드)**.
+  /// 월드 순서 (2026-07-07): 한줄 → 두줄 → 세줄 → 빼빼로(최종)
+  /// + 🧪 테스트 월드 3종: 카일즈(81-100) → 위토프(101-120) → 피보나치(121-140).
   StageConfig generateStage(int stageNumber) {
     GameMode mode;
     if (stageNumber <= 20) {
@@ -221,9 +420,15 @@ class NimEngine {
       mode = GameMode.doubleRow;
     } else if (stageNumber <= 60) {
       mode = GameMode.tripleRow;
-    } else {
+    } else if (stageNumber <= 80) {
       // 61-80: 월드4 = 빼빼로(분할, Sprague-Grundy) 최종 도전
       mode = GameMode.pepero;
+    } else if (stageNumber <= 100) {
+      mode = GameMode.kayles;
+    } else if (stageNumber <= 120) {
+      mode = GameMode.wythoff;
+    } else {
+      mode = GameMode.fibonacci;
     }
 
     List<int> rows;
@@ -266,6 +471,36 @@ class NimEngine {
         int size = 6 + (stageNumber - 61);
         if (size > 20) size = 20;
         rows = [size];
+        break;
+      case GameMode.kayles:
+        // 81-100: 한 줄 → 두 줄 → 세 줄로 점점 복잡하게 (인접 1~2개 제거)
+        int t = stageNumber - 81; // 0~19
+        maxTake = 2;
+        if (t < 7) {
+          rows = [5 + t]; // 5~11
+        } else if (t < 14) {
+          int k = t - 7;
+          rows = [6 + k, 4 + k]; // ~[12,10]
+        } else {
+          int k = (t - 14) ~/ 2;
+          rows = [7 + k, 6 + k, 4 + k];
+        }
+        break;
+      case GameMode.wythoff:
+        // 101-120: 두 무더기. 냉 포지션으로 시작하면 선공 필패라 피한다.
+        int t = stageNumber - 101; // 0~19
+        int a = 3 + t;
+        int b = a + 2 + (t % 3);
+        if (wythoffCold(a, b)) b += 1;
+        rows = [a, b];
+        break;
+      case GameMode.fibonacci:
+        // 121-140: 한 무더기. 피보나치 수로 시작하면 선공 필패라 피한다.
+        int t = stageNumber - 121; // 0~19
+        int n = 6 + t; // 6~25
+        const fibsSet = {8, 13, 21};
+        if (fibsSet.contains(n)) n += 1;
+        rows = [n];
         break;
     }
 

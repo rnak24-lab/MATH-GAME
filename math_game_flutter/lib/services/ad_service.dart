@@ -8,19 +8,16 @@ class AdIds {
   static const bool useTestIds = true;
 
   // Google 공식 테스트 ID (Android)
-  static const String _testBannerId =
-      'ca-app-pub-3940256099942544/6300978111';
+  static const String _testBannerId = 'ca-app-pub-3940256099942544/6300978111';
   static const String _testInterstitialId =
       'ca-app-pub-3940256099942544/1033173712';
 
   // TODO: 대표님 실제 AdMob ID 확정 시 여기만 교체
-  static const String _realBannerId =
-      'ca-app-pub-3940256099942544/6300978111';
+  static const String _realBannerId = 'ca-app-pub-3940256099942544/6300978111';
   static const String _realInterstitialId =
       'ca-app-pub-3940256099942544/1033173712';
 
-  static String get banner =>
-      useTestIds ? _testBannerId : _realBannerId;
+  static String get banner => useTestIds ? _testBannerId : _realBannerId;
   static String get interstitial =>
       useTestIds ? _testInterstitialId : _realInterstitialId;
 }

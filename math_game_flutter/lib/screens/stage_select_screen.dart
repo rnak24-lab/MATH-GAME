@@ -100,46 +100,46 @@ class _StageSelectScreenState extends State<StageSelectScreen> {
       body: Container(
         decoration: const BoxDecoration(gradient: NimTheme.bg),
         child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: GridView.builder(
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 5,
-            crossAxisSpacing: 10,
-            mainAxisSpacing: 10,
-            childAspectRatio: 1,
-          ),
-          itemCount: 20,
-          itemBuilder: (context, index) {
-            int stage = worldStart + index;
-            bool isCleared = stageManager.isStageCleared(stage);
-            bool isPlayable = stageManager.isStagePlayable(stage);
+          padding: const EdgeInsets.all(16),
+          child: GridView.builder(
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 5,
+              crossAxisSpacing: 10,
+              mainAxisSpacing: 10,
+              childAspectRatio: 1,
+            ),
+            itemCount: 20,
+            itemBuilder: (context, index) {
+              int stage = worldStart + index;
+              bool isCleared = stageManager.isStageCleared(stage);
+              bool isPlayable = stageManager.isStagePlayable(stage);
 
-            return _StageCell(
-              stage: stage,
-              displayNumber: index + 1,
-              isCleared: isCleared,
-              isPlayable: isPlayable,
-              worldColor: world.color,
-              onTap: isPlayable
-                  ? () async {
-                      // (id=1144) 게임에서 복귀 시 setState로 진행/해금 갱신
-                      await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => GameScreen(
-                            stageManager: stageManager,
-                            stageNumber: stage,
-                            localeProvider: localeProvider,
+              return _StageCell(
+                stage: stage,
+                displayNumber: index + 1,
+                isCleared: isCleared,
+                isPlayable: isPlayable,
+                worldColor: world.color,
+                onTap: isPlayable
+                    ? () async {
+                        // (id=1144) 게임에서 복귀 시 setState로 진행/해금 갱신
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => GameScreen(
+                              stageManager: stageManager,
+                              stageNumber: stage,
+                              localeProvider: localeProvider,
+                            ),
                           ),
-                        ),
-                      );
-                      if (mounted) setState(() {});
-                    }
-                  : null,
-            );
-          },
+                        );
+                        if (mounted) setState(() {});
+                      }
+                    : null,
+              );
+            },
+          ),
         ),
-      ),
       ),
     );
   }
@@ -197,8 +197,7 @@ class _StageCell extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               if (isCleared)
-                const Icon(Icons.check_rounded,
-                    size: 18, color: NimTheme.win)
+                const Icon(Icons.check_rounded, size: 18, color: NimTheme.win)
               else if (!isPlayable)
                 const Icon(Icons.lock_rounded,
                     size: 15, color: NimTheme.inkSoft)
@@ -213,9 +212,7 @@ class _StageCell extends StatelessWidget {
                   fontSize: 16,
                   color: isCurrent
                       ? NimTheme.gold
-                      : (isCleared
-                          ? NimTheme.cream
-                          : NimTheme.inkSoft),
+                      : (isCleared ? NimTheme.cream : NimTheme.inkSoft),
                 ),
               ),
             ],
