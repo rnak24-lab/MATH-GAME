@@ -27,6 +27,24 @@ class _StageSelectScreenState extends State<StageSelectScreen> {
   WorldInfo get world => widget.world;
   LocaleProvider get localeProvider => widget.localeProvider;
 
+  // 진행도 변경 즉시 반영 — 다음 스테이지 연쇄(pushReplacement) 후
+  // 뒤로가기해도 클리어/해금 상태가 이미 최신으로 그려져 있게.
+  @override
+  void initState() {
+    super.initState();
+    widget.stageManager.addListener(_onProgress);
+  }
+
+  @override
+  void dispose() {
+    widget.stageManager.removeListener(_onProgress);
+    super.dispose();
+  }
+
+  void _onProgress() {
+    if (mounted) setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     int worldStart = world.id * 20 + 1;

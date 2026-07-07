@@ -103,6 +103,23 @@ class _WorldSelectScreenState extends State<WorldSelectScreen> {
   StageManager get stageManager => widget.stageManager;
   LocaleProvider get localeProvider => widget.localeProvider;
 
+  // 진행도(%·해금) 즉시 반영
+  @override
+  void initState() {
+    super.initState();
+    widget.stageManager.addListener(_onProgress);
+  }
+
+  @override
+  void dispose() {
+    widget.stageManager.removeListener(_onProgress);
+    super.dispose();
+  }
+
+  void _onProgress() {
+    if (mounted) setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     final s = localeProvider.strings;

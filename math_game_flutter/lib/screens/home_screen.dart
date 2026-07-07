@@ -41,10 +41,16 @@ class _HomeScreenState extends State<HomeScreen>
       setState(() => _showButtons = true);
     });
     // 언어는 기기 설정 자동 추종 (LocaleProvider.load) — 변경은 설정에서.
+    widget.stageManager.addListener(_onProgress); // 진행도 배지 즉시 반영
+  }
+
+  void _onProgress() {
+    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
+    widget.stageManager.removeListener(_onProgress);
     _fadeController.dispose();
     super.dispose();
   }

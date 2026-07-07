@@ -1,6 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class StageManager {
+/// 진행도가 바뀌면 notifyListeners()로 알림 —
+/// 화면들이 pushReplacement 연쇄 후 뒤로가기해도 즉시 최신 상태를 그린다.
+class StageManager extends ChangeNotifier {
   static const String _maxStageKey = 'max_stage';
   static const String _clearedKey = 'cleared_stages';
   static const String _worldUnlockedKey = 'world_unlocked';
@@ -48,6 +51,7 @@ class StageManager {
       await prefs.setInt(_maxStageKey, maxStage);
     }
     await _recalculateWorldUnlocked();
+    notifyListeners();
   }
 
   /// 월드 해금 규칙 (빠른 패스):
@@ -81,6 +85,7 @@ class StageManager {
     await prefs.remove(_clearedKey);
     await prefs.remove(_maxStageKey);
     await prefs.remove(_worldUnlockedKey);
+    notifyListeners();
   }
 
   Future<void> setTutorialDone() async {
