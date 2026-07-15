@@ -11,8 +11,8 @@ class AppStrings {
       'ko': 'Math NIM - 수학 님 게임',
     },
     'appSubtitle': {
-      'en': 'Math NIM Strategy Game with Midnight',
-      'ko': '한밤이와 함께하는 수학 님 게임',
+      'en': 'Math NIM Strategy Game with Yerin',
+      'ko': '예린이와 함께하는 수학 님 게임',
     },
 
     // ── Home Screen ──
@@ -21,8 +21,8 @@ class AppStrings {
       'ko': '수학 님 게임',
     },
     'midnightGreeting': {
-      'en': "Hi! I'm Midnight!",
-      'ko': '안녕! 나는 한밤이야 🎀',
+      'en': "Hi! I'm Yerin!",
+      'ko': '안녕! 나는 예린이야 🎀',
     },
     'continueGame': {
       'en': 'Continue',
@@ -239,16 +239,16 @@ class AppStrings {
       'ko': '내가 먼저!',
     },
     'midnightFirst': {
-      'en': 'Midnight first!',
-      'ko': '한밤이 먼저!',
+      'en': 'Yerin first!',
+      'ko': '예린이 먼저!',
     },
     'myTurn': {
       'en': '🎯 My Turn',
       'ko': '🎯 내 턴',
     },
     'midnightTurn': {
-      'en': "💭 Midnight's Turn...",
-      'ko': '💭 한밤이 턴...',
+      'en': "💭 Yerin's Turn...",
+      'ko': '💭 예린이 턴...',
     },
     'victory': {
       'en': '🎉 Victory!',
@@ -300,8 +300,8 @@ class AppStrings {
       'ko': '나',
     },
     'nameMidnight': {
-      'en': 'MIDNIGHT',
-      'ko': '한밤이',
+      'en': 'YERIN',
+      'ko': '예린',
     },
     'logStart': {
       'en': 'START · {0} first',
@@ -388,8 +388,8 @@ class AppStrings {
     },
     'hintDialogBody': {
       'en':
-          "Watch an ad and Midnight will whisper a move~ 🐾\n(Hints left: {0})",
-      'ko': '광고를 보면 한밤이가 수를 살짝 알려줄게~ 🐾\n(남은 힌트: {0}개)',
+          "Watch an ad and Yerin will whisper a move~ ✏️\n(Hints left: {0})",
+      'ko': '광고를 보면 예린이가 수를 살짝 알려줄게~ ✏️\n(남은 힌트: {0}개)',
     },
     'hintWatchAd': {
       'en': 'Watch ad & see hint',
@@ -519,38 +519,38 @@ class AppStrings {
     },
     // 톤: 승/패를 직접 말하지 않음. 웃음·놀림·장난기 위주.
     'greetWin': {
-      'en': "Hehe, shall we play? 😼",
-      'ko': '헤헤, 한판 놀아볼까? 😼',
+      'en': "Hehe, shall we play? 😝",
+      'ko': '후후, 한판 붙어볼래? 😝',
     },
     'greetConfident': {
       'en': "Ooh, today feels fun~",
-      'ko': '오늘은 왠지 재밌을 것 같은데~',
+      'ko': '오늘 왠지 느낌 좋단 말이지~',
     },
     'greetLetsGo': {
-      'en': "Let's have fun! 😸",
-      'ko': '즐겁게 해보자냥~ 😸',
+      'en': "Let's have fun! ✌️",
+      'ko': '재밌게 해보자구~ ✌️',
     },
     'turnPlayerFirst': {
       'en': 'Ooh, you first? Go on~',
-      'ko': '오, 네가 먼저? 해봐~',
+      'ko': '오~ 네가 먼저? 어디 해봐~',
     },
     'turnMidnightFirst': {
-      'en': "Hehe, me first then~ 😼",
-      'ko': '헤헤, 내가 먼저 갈게~ 😼',
+      'en': "Hehe, me first then~ 😏",
+      'ko': '후후, 그럼 내가 먼저 간다? 😏',
     },
 
     // ── Midnight Messages: 우위 상태 (놀리는/느긋한 느낌, 승패 직접 언급 X) ──
     'midnightWinLate1': {
-      'en': "Hehe~ 😼",
-      'ko': '헤헤~ 😼',
+      'en': "Hehe~ 😏",
+      'ko': '후후~ 😏',
     },
     'midnightWinLate2': {
       'en': "Hmm-hmm~ 🎵",
-      'ko': '흐음~ 🎵',
+      'ko': '콧노래 나온다~ 🎵',
     },
     'midnightWinLate3': {
-      'en': "Purr~ 😸",
-      'ko': '냐하~ 😸',
+      'en': "Yay~ ✨",
+      'ko': '아싸~ ✨',
     },
     'midnightWinEarly1': {
       'en': 'Interesting~',
@@ -561,30 +561,30 @@ class AppStrings {
       'ko': '흠, 어떻게 될까~?',
     },
     'midnightWinEarly3': {
-      'en': 'Hehe 🐾',
-      'ko': '헤헤 🐾',
+      'en': 'Hehe ✌️',
+      'ko': '헤헤 ✌️',
     },
 
     // ── Midnight Messages: 열세 상태 (감탄/놀람, 패배 직접 언급 X) ──
     'midnightLoseLate1': {
-      'en': "Oho? 😺",
-      'ko': '오호? 😺',
+      'en': "Huh?! 😳",
+      'ko': '어?! 😳',
     },
     'midnightLoseLate2': {
       'en': 'Wow, nice move~',
-      'ko': '우와, 좋은 수인걸~',
+      'ko': '헐, 방금 뭐야~ 좀 치는데?',
     },
     'midnightLoseLate3': {
-      'en': "Mrr... sneaky~",
-      'ko': '므으... 얄밉네~',
+      'en': "Hey... that's sneaky~ 💢",
+      'ko': '아 뭐야... 얄미워~ 💢',
     },
     'midnightLoseEarly1': {
       'en': 'Hmm, tricky~',
-      'ko': '음, 까다로운걸~',
+      'ko': '음, 이거 은근 까다롭네~',
     },
     'midnightLoseEarly2': {
       'en': 'Oh? Let me think...',
-      'ko': '어라? 생각 좀 해야겠어...',
+      'ko': '잠깐, 생각 좀 할게...',
     },
     'midnightLoseEarly3': {
       'en': 'Hmmm... 🤔',
@@ -593,12 +593,12 @@ class AppStrings {
 
     // ── Midnight Messages: AI moves ──
     'midnightTakeN': {
-      'en': "I'll grab {0}~ 🐾",
-      'ko': '{0}개 콕~ 🐾',
+      'en': "I'll grab {0}~ ✏️",
+      'ko': '{0}개 콕~ ✏️',
     },
     'midnightTakeFromRow': {
-      'en': 'Row {1}, {0} pieces~ 🐾',
-      'ko': '{1}번 줄에서 {0}개~ 🐾',
+      'en': 'Row {1}, {0} pieces~ ✏️',
+      'ko': '{1}번 줄에서 {0}개~ ✏️',
     },
     'midnightSplit': {
       'en': "Snap~ {0} and {1}! ✂️",
@@ -607,53 +607,53 @@ class AppStrings {
 
     // ── Midnight Messages: AI turn animation ──
     'midnightThinking': {
-      'en': "Hehe, let me think~ 😼",
-      'ko': '헤헤, 뭘 가져갈까~ 😼',
+      'en': "Hmm, let me think~ 🤔",
+      'ko': '음~ 뭘 가져갈까나~ 🤔',
     },
     'midnightTookTotal': {
-      'en': 'Took {0}~ 🐾',
-      'ko': '{0}개 가져갔지롱~ 🐾',
+      'en': 'Took {0}~ 😝',
+      'ko': '{0}개 가져갔지롱~ 😝',
     },
     'midnightTookFromRowTotal': {
-      'en': 'Row {1}, {0} pieces~ 🐾',
-      'ko': '{1}번 줄에서 {0}개~ 🐾',
+      'en': 'Row {1}, {0} pieces~ ✏️',
+      'ko': '{1}번 줄에서 {0}개~ ✏️',
     },
     'yourTurnNow': {
-      'en': 'Your turn~ 😸',
-      'ko': '자, 네 차례~ 😸',
+      'en': 'Your turn~ 😊',
+      'ko': '자, 네 차례야~ 😊',
     },
 
     // ── Midnight Messages: Game Over (승/패 직접 언급 없이 톤만) ──
     'midnightLost': {
-      'en': "Mrrr~ you got me this time! 🐾",
-      'ko': '므으~ 이번엔 당했네! 🐾',
+      'en': "What?! You got me this time! 😳",
+      'ko': '아 뭐야~ 이번엔 내가 당했잖아! 😳',
     },
     'midnightWon': {
-      'en': 'Hehe~ that was fun! 😼',
-      'ko': '헤헤~ 재밌었어! 😼',
+      'en': 'Hehe~ that was fun! 😝',
+      'ko': '후후~ 재밌었어! 😝',
     },
     'midnightNextTime': {
-      'en': "Come play again~ 😸",
-      'ko': '또 놀러 와~ 😸',
+      'en': "Come challenge me again~ 📚",
+      'ko': '또 도전하러 와~ 📚',
     },
 
-    // ── Hints ── (😻 살짝 귀띔해주는 느낌)
+    // ── Hints ── (🤫 살짝 귀띔해주는 느낌)
     'hintPepero': {
-      'en': '😻 Psst~ try splitting into {0} and {1}!',
-      'ko': '😻 살짝 알려줄게~ {0}과 {1}로 나눠봐!',
+      'en': '🤫 Psst~ try splitting into {0} and {1}!',
+      'ko': '🤫 살짝 알려줄게~ {0}과 {1}로 나눠봐!',
     },
     'hintSingleRow': {
-      'en': '😻 Psst~ try taking {0}!',
-      'ko': '😻 살짝 알려줄게~ {0}개 가져가봐!',
+      'en': '🤫 Psst~ try taking {0}!',
+      'ko': '🤫 살짝 알려줄게~ {0}개 가져가봐!',
     },
     'hintMultiRow': {
-      'en': '😻 Psst~ try taking {0} from row {1}!',
-      'ko': '😻 살짝 알려줄게~ {1}번 줄에서 {0}개!',
+      'en': '🤫 Psst~ try taking {0} from row {1}!',
+      'ko': '🤫 살짝 알려줄게~ {1}번 줄에서 {0}개!',
     },
     // (id=1201) nimSum=0 (이미 져버린 상태)에서 누르는 힌트: 다음 판 선공/후공 추천
     'hintLosingNextChoice': {
-      'en': "😿 This round is mine already! Next time, pick '{0}' to win!",
-      'ko': "😿 이번 판은 한밤이이 이기는 상태야. 다시 도전할 때 '{0}'를 선택하면 이길 수 있어!",
+      'en': "😥 This round is mine already! Next time, pick '{0}' to win!",
+      'ko': "😥 이번 판은 예린이가 이기는 상태야. 다시 도전할 때 '{0}'를 선택하면 이길 수 있어!",
     },
 
     // ── Tutorial (예린 시나리오 W1~W5) ──
@@ -667,8 +667,8 @@ class AppStrings {
     },
     // W1: 기초 NIM — 짧고 액션 지시형 (줄글 설명 금지, 따라 하면 무조건 승리)
     'tutW1_1': {
-      'en': "Hi! I'm Midnight. Let's just play!",
-      'ko': '안녕! 나는 한밤이! 바로 해보자냥',
+      'en': "Hi! I'm Yerin. Let's just play!",
+      'ko': '안녕! 나는 예린! 바로 해보자~',
     },
     'tutW1_2': {
       'en': 'Tap a stone to grab it. Tap again to put it back.',
