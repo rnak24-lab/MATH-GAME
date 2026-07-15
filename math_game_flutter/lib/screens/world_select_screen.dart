@@ -34,61 +34,65 @@ class WorldInfo {
 // - 중단: 월드 색 원본
 // - 하단: 연한 크림톤 (보드가 얹힐 때 가독성)
 // - 공통 톤 패턴으로 5개 월드 일관성 유지
+// (2026-07-08) 학교 컨셉 「하루의 흐름」 — 등교길(아침) → 옥상(점심) → 방과후(노을) → 밤 도서관.
+// 시간이 흐를수록 배경이 어두워져 난이도 상승과 자연스럽게 맞물린다.
 const List<WorldInfo> worlds = [
   WorldInfo(
     id: 0,
-    nameKey: 'worldAlleyCorner',
-    emoji: '🚪',
-    color: Color(0xFF66BB6A),
+    nameKey: 'worldMorningRoad',
+    emoji: '🌸',
+    color: Color(0xFFF48FB1),
     subtitleKey: 'worldSubtitleSingleRow',
-    bgGradient: [Color(0xFF2E4F30), Color(0xFF66BB6A), Color(0xFFE8F5E9)],
+    // 벚꽃 흩날리는 아침 등교길
+    bgGradient: [Color(0xFF6D3A4E), Color(0xFFF48FB1), Color(0xFFFFF0F5)],
   ),
   WorldInfo(
     id: 1,
-    nameKey: 'worldNeonTavern',
-    emoji: '🍺',
-    color: Color(0xFF42A5F5),
+    nameKey: 'worldRooftopLunch',
+    emoji: '☁️',
+    color: Color(0xFF4FC3F7),
     subtitleKey: 'worldSubtitleDoubleRow',
-    bgGradient: [Color(0xFF1A3A5C), Color(0xFF42A5F5), Color(0xFFE3F2FD)],
+    // 화창한 점심시간 옥상 하늘
+    bgGradient: [Color(0xFF1A3A5C), Color(0xFF4FC3F7), Color(0xFFE1F5FE)],
   ),
-  // (2026-07-07) 네줄 월드 삭제 — 총 4월드: 한줄 → 두줄 → 세줄 → 빼빼로(최종).
   WorldInfo(
     id: 2,
-    nameKey: 'worldSmokeDen',
-    emoji: '💨',
-    color: Color(0xFF8D6E63),
+    nameKey: 'worldAfterSchool',
+    emoji: '🌇',
+    color: Color(0xFFFF8A50),
     subtitleKey: 'worldSubtitleTripleRow',
-    bgGradient: [Color(0xFF3E2723), Color(0xFF8D6E63), Color(0xFFEFEBE9)],
+    // 노을 지는 방과후 교실 — 세피아 감성과 최고 궁합
+    bgGradient: [Color(0xFF5D2E0D), Color(0xFFFF8A50), Color(0xFFFFF3E0)],
   ),
   WorldInfo(
     id: 3,
-    nameKey: 'worldTheLastBet',
-    emoji: '🎲',
-    color: Color(0xFFEF5350),
-    // 최종 월드 = 빼빼로(분할, Grundy) — 가장 어려운 개념을 마지막에.
+    nameKey: 'worldNightLibrary',
+    emoji: '🌙',
+    color: Color(0xFF5C6BC0),
+    // 최종 월드 = 빼빼로(분할, Grundy) — 밤의 도서관, 스탠드 불빛 최종 보스전.
     subtitleKey: 'worldSubtitlePepero',
-    bgGradient: [Color(0xFF5D1A1A), Color(0xFFEF5350), Color(0xFFFFEBEE)],
+    bgGradient: [Color(0xFF1A1F3C), Color(0xFF5C6BC0), Color(0xFFE8EAF6)],
   ),
-  // ── 🧪 테스트 월드 3종 (2026-07-07 대표님 검수용 — 출시 구성은 검수 후 결정) ──
+  // ── 🧪 테스트 월드 3종 (학교 컨셉 — 출시 편성은 검수 후 결정) ──
   WorldInfo(
     id: 4,
-    nameKey: 'worldAlleyLanes',
-    emoji: '🎳',
+    nameKey: 'worldGym',
+    emoji: '🏀',
     color: Color(0xFF26A69A),
     subtitleKey: 'worldSubtitleKayles',
     bgGradient: [Color(0xFF0F3D38), Color(0xFF26A69A), Color(0xFFE0F2F1)],
   ),
   WorldInfo(
     id: 5,
-    nameKey: 'worldGoldenScale',
-    emoji: '⚖️',
+    nameKey: 'worldScienceLab',
+    emoji: '⚗️',
     color: Color(0xFFFFB300),
     subtitleKey: 'worldSubtitleWythoff',
     bgGradient: [Color(0xFF4A3500), Color(0xFFFFB300), Color(0xFFFFF8E1)],
   ),
   WorldInfo(
     id: 6,
-    nameKey: 'worldRabbitHole',
+    nameKey: 'worldRabbitHutch',
     emoji: '🐇',
     color: Color(0xFF7E57C2),
     subtitleKey: 'worldSubtitleFibonacci',

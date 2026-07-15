@@ -67,38 +67,35 @@ class AppStrings {
       'en': 'Select World',
       'ko': '월드 선택',
     },
-    'worldAlleyCorner': {
-      'en': 'Alley Corner',
-      'ko': '뒷골목 입구',
+    // ── 학교 컨셉 「하루의 흐름」 (2026-07-08 대표님 확정: 등교길→옥상→방과후→밤 도서관) ──
+    'worldMorningRoad': {
+      'en': 'Morning Road',
+      'ko': '등교길',
     },
-    'worldNeonTavern': {
-      'en': 'Neon Tavern',
-      'ko': '네온 술집',
+    'worldRooftopLunch': {
+      'en': 'Rooftop Lunch',
+      'ko': '점심시간 옥상',
     },
-    'worldSmokeDen': {
-      'en': 'Smoke Den',
-      'ko': '연기 아지트',
+    'worldAfterSchool': {
+      'en': 'After School',
+      'ko': '방과후 교실',
     },
-    'worldShadowMarket': {
-      'en': 'Shadow Market',
-      'ko': '그림자 시장',
+    'worldNightLibrary': {
+      'en': 'Night Library',
+      'ko': '밤의 도서관',
     },
-    'worldTheLastBet': {
-      'en': 'The Last Bet',
-      'ko': '마지막 배팅',
+    // ── 🧪 테스트 월드 3종 (학교 컨셉) ──
+    'worldGym': {
+      'en': 'The Gym',
+      'ko': '체육관',
     },
-    // ── 🧪 테스트 월드 3종 ──
-    'worldAlleyLanes': {
-      'en': 'Alley Lanes',
-      'ko': '골목 볼링장',
+    'worldScienceLab': {
+      'en': 'Science Lab',
+      'ko': '과학실',
     },
-    'worldGoldenScale': {
-      'en': 'Golden Scale',
-      'ko': '황금 저울',
-    },
-    'worldRabbitHole': {
-      'en': 'Rabbit Hole',
-      'ko': '토끼 굴',
+    'worldRabbitHutch': {
+      'en': 'Rabbit Hutch',
+      'ko': '뒤뜰 토끼장',
     },
     'worldSubtitleKayles': {
       'en': 'Kayles · TEST',
@@ -752,8 +749,8 @@ class AppStrings {
     },
     // 🧪 카일즈 튜토리얼
     'tutW6_1': {
-      'en': 'Alley Lanes! Take 1 or 2 stones from ANYWHERE in a row.',
-      'ko': '골목 볼링장! 이번엔 아무 위치의 돌이나 가져갈 수 있어.',
+      'en': 'The Gym! Take 1 or 2 stones from ANYWHERE in a row.',
+      'ko': '체육관이야! 이번엔 아무 위치의 돌이나 가져갈 수 있어.',
     },
     'tutW6_2': {
       'en':
@@ -767,7 +764,7 @@ class AppStrings {
     // 🧪 위토프 튜토리얼
     'tutW7_1': {
       'en': 'Golden Scale! Two piles. Take as many as you want from ONE.',
-      'ko': '황금 저울! 무더기 두 개. 한쪽에서 마음껏 가져가.',
+      'ko': '과학실이야! 무더기 두 개. 한쪽에서 마음껏 가져가.',
     },
     'tutW7_2': {
       'en': 'Or take the SAME amount from BOTH piles at once!',
@@ -780,7 +777,7 @@ class AppStrings {
     // 🧪 피보나치 튜토리얼
     'tutW8_1': {
       'en': "Rabbit Hole rule: first move, you CAN'T take them all!",
-      'ko': '토끼 굴 규칙: 첫 수엔 전부 가져가기 금지!',
+      'ko': '토끼장 규칙: 첫 수엔 전부 가져가기 금지!',
     },
     'tutW8_2': {
       'en': 'After that: up to DOUBLE what I just took. Watch the chip!',
