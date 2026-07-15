@@ -4,6 +4,8 @@ import 'dart:async';
 import 'dart:math' as math;
 import '../services/app_settings.dart';
 import '../services/sfx_service.dart';
+import '../services/music_service.dart';
+import 'settings_screen.dart';
 import '../game/stage_manager.dart';
 import '../game/nim_engine.dart';
 import '../models/game_state.dart';
@@ -983,22 +985,65 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
             ),
           ),
           if (_phase == GamePhase.playing && _currentTurn == TurnOwner.player)
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: TextButton.icon(
-                onPressed: _hintsLeft > 0 ? _showHint : null,
-                icon: Icon(Icons.lightbulb_outline,
-                    size: 18, color: _hintsLeft > 0 ? _Pal.gold : _Pal.inkSoft),
-                label: Text('$_hintsLeft',
-                    style: TextStyle(
-                        fontFamily: _mono,
-                        color: _hintsLeft > 0 ? _Pal.gold : _Pal.inkSoft,
-                        fontWeight: FontWeight.w800)),
-              ),
+            TextButton.icon(
+              onPressed: _hintsLeft > 0 ? _showHint : null,
+              icon: Icon(Icons.lightbulb_outline,
+                  size: 18, color: _hintsLeft > 0 ? _Pal.gold : _Pal.inkSoft),
+              label: Text('$_hintsLeft',
+                  style: TextStyle(
+                      fontFamily: _mono,
+                      color: _hintsLeft > 0 ? _Pal.gold : _Pal.inkSoft,
+                      fontWeight: FontWeight.w800)),
             ),
+          // 음소거 토글 — 배경음악+효과음 한 번에 (언제든 누를 수 있음)
+          IconButton(
+            visualDensity: VisualDensity.compact,
+            icon: Icon(
+              _isMuted ? Icons.volume_off_rounded : Icons.volume_up_rounded,
+              size: 20,
+              color: _isMuted ? _Pal.inkSoft : _Pal.cream,
+            ),
+            tooltip: s.get('muteToggle'),
+            onPressed: _toggleMute,
+          ),
+          // 설정 — 게임 중 언제든 진입
+          IconButton(
+            visualDensity: VisualDensity.compact,
+            padding: const EdgeInsets.only(right: 10),
+            icon:
+                const Icon(Icons.settings_rounded, size: 20, color: _Pal.gold),
+            tooltip: s.get('settings'),
+            onPressed: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => SettingsScreen(
+                    localeProvider: widget.localeProvider,
+                    onChanged: () {
+                      if (mounted) setState(() {});
+                    },
+                    stageManager: widget.stageManager,
+                  ),
+                ),
+              );
+              if (mounted) setState(() {}); // 언어/사운드 변경 반영
+            },
+          ),
         ],
       ),
     );
+  }
+
+  bool get _isMuted => !AppSettings.instance.music && !AppSettings.instance.sfx;
+
+  /// 음소거 토글: 하나라도 켜져 있으면 전부 끄고, 다 꺼져 있으면 전부 켠다.
+  Future<void> _toggleMute() async {
+    _haptic();
+    final bool mute = !_isMuted;
+    await AppSettings.instance.setMusic(!mute);
+    await AppSettings.instance.setSfx(!mute);
+    await MusicService.instance.setEnabled(!mute);
+    if (mounted) setState(() {});
   }
 
   /// 하단 상태 티커: 날짜/턴/모드 규칙을 흐르는 정보 바.
