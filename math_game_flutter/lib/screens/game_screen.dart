@@ -34,6 +34,19 @@ class _Pal {
   static const win = Color(0xFF5E7D52); // 승리/성공
   static const sky = Color(0xFF79C6EA); // 빼빼로 선택(하늘색)
   static const alarmHi = Color(0xFFE0574A); // 경고 밝은 버전(어두운 배경 위)
+
+  // ── 교실 팔레트 (2026-07-08 대표님 원화 기준 — 손그림 파스텔) ──
+  static const roomWall = Color(0xFFF2EDE3); // 크림 벽
+  static const roomWallLow = Color(0xFFE7DED0); // 벽 아랫단(살짝 어둡게)
+  static const chalkboard = Color(0xFF3F9C6F); // 초록 칠판
+  static const chalkboardDark = Color(0xFF2E7D5B); // 칠판 음영
+  static const woodFrame = Color(0xFFC98F52); // 나무 프레임/문설주
+  static const deskWood = Color(0xFFD9A05B); // 밝은 나무 책상
+  static const deskWoodDark = Color(0xFFB98443); // 책상 결/모서리
+  static const windowGlass = Color(0xFFBFD8EC); // 창문 하늘
+  static const windowFrame = Color(0xFFEFF2F4); // 창틀
+  static const cloud = Color(0xFFF6F3E7); // 구름
+  static const sketchInk = Color(0xFF3A342E); // 손그림 라인/낙서
 }
 
 const String _mono = 'NeoDGM'; // 한글+영문 픽셀 폰트 (10번 제안)
@@ -1353,6 +1366,10 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       child: Stack(
         clipBehavior: Clip.none,
         children: [
+          // 0) 교실 배경 — 대표님 원화 구도: 칠판(좌) + 낙서 있는 창문(우) + 크림 벽
+          const Positioned.fill(
+            child: CustomPaint(painter: _ClassroomPainter()),
+          ),
           // 1) 도장/칩 — 맨 위
           Positioned(
             top: 2,
@@ -1392,12 +1409,13 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                 child: Container(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: _Pal.frame, width: 3),
-                    boxShadow: const [
+                    // 교실 책상 — 밝은 나무 + 진한 우드 테두리 (원화 스타일)
+                    border: Border.all(color: _Pal.deskWoodDark, width: 3),
+                    boxShadow: [
                       BoxShadow(
-                          color: Colors.black54,
-                          blurRadius: 12,
-                          offset: Offset(0, 4)),
+                          color: Colors.black.withOpacity(0.25),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4)),
                     ],
                   ),
                   clipBehavior: Clip.antiAlias,
@@ -2820,48 +2838,169 @@ class _Stone extends StatelessWidget {
 }
 
 /// 탑뷰 책상 표면: 어두운 나무 + 미세 그리드 + 등록(+) 마크.
+/// 교실 배경 — 대표님 원화(2026-07-08) 구도 재현:
+/// 크림 벽 + 왼쪽 초록 칠판(나무 프레임) + 오른쪽 창문(구름 하늘 + 매직 낙서).
+class _ClassroomPainter extends CustomPainter {
+  const _ClassroomPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width, h = size.height;
+
+    // 벽 — 위 크림, 아래 살짝 어둡게
+    canvas.drawRect(Rect.fromLTWH(0, 0, w, h), Paint()..color = _Pal.roomWall);
+    canvas.drawRect(Rect.fromLTWH(0, h * 0.52, w, h * 0.48),
+        Paint()..color = _Pal.roomWallLow);
+    // 벽 몰딩(허리선) 나무 띠
+    canvas.drawRect(Rect.fromLTWH(0, h * 0.50, w, h * 0.025),
+        Paint()..color = _Pal.woodFrame);
+
+    // ── 왼쪽: 초록 칠판 ──
+    final board = Rect.fromLTWH(-12, h * 0.03, w * 0.34, h * 0.42);
+    // 나무 프레임 (칠판보다 살짝 크게)
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(board.inflate(7), const Radius.circular(4)),
+      Paint()..color = _Pal.woodFrame,
+    );
+    canvas.drawRect(board, Paint()..color = _Pal.chalkboard);
+    // 칠판 음영 (원화의 대각 반사)
+    final shade = Path()
+      ..moveTo(board.left, board.bottom)
+      ..lineTo(board.right, board.top + board.height * 0.35)
+      ..lineTo(board.right, board.bottom)
+      ..close();
+    canvas.drawPath(
+        shade, Paint()..color = _Pal.chalkboardDark.withOpacity(0.45));
+    // 분필 받침대
+    canvas.drawRect(
+      Rect.fromLTWH(board.left, board.bottom + 7, board.width + 14, 6),
+      Paint()..color = _Pal.woodFrame,
+    );
+
+    // ── 오른쪽: 창문 ──
+    final win = Rect.fromLTWH(w * 0.42, h * 0.02, w * 0.62, h * 0.46);
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(win.inflate(6), const Radius.circular(3)),
+      Paint()..color = _Pal.windowFrame,
+    );
+    canvas.drawRect(win, Paint()..color = _Pal.windowGlass);
+
+    // 구름 2덩이 — 크림 블롭 + 스케치 아크(원화의 러프 라인)
+    final cloudPaint = Paint()..color = _Pal.cloud;
+    void cloudAt(double cx, double cy, double s) {
+      canvas.drawCircle(Offset(cx, cy), 16 * s, cloudPaint);
+      canvas.drawCircle(Offset(cx + 18 * s, cy - 6 * s), 13 * s, cloudPaint);
+      canvas.drawCircle(Offset(cx + 34 * s, cy + 2 * s), 15 * s, cloudPaint);
+      canvas.drawCircle(Offset(cx + 16 * s, cy + 8 * s), 12 * s, cloudPaint);
+    }
+
+    cloudAt(win.left + win.width * 0.16, win.top + win.height * 0.30, 1.0);
+    cloudAt(win.left + win.width * 0.58, win.top + win.height * 0.16, 1.15);
+    // 스케치 라인 몇 개 (구름 테두리 일부만 — 손그림 느낌)
+    final sketch = Paint()
+      ..color = _Pal.sketchInk.withOpacity(0.65)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2
+      ..strokeCap = StrokeCap.round;
+    canvas.drawArc(
+        Rect.fromCircle(
+            center: Offset(
+                win.left + win.width * 0.62, win.top + win.height * 0.12),
+            radius: 15),
+        3.4,
+        1.8,
+        false,
+        sketch);
+    canvas.drawArc(
+        Rect.fromCircle(
+            center: Offset(
+                win.left + win.width * 0.20, win.top + win.height * 0.26),
+            radius: 13),
+        3.0,
+        1.6,
+        false,
+        sketch);
+
+    // 창살 (십자)
+    final bar = Paint()..color = _Pal.windowFrame;
+    canvas.drawRect(
+        Rect.fromLTWH(win.left + win.width * 0.48, win.top, 5, win.height),
+        bar);
+    canvas.drawRect(
+        Rect.fromLTWH(win.left, win.top + win.height * 0.62, win.width, 5),
+        bar);
+
+    // 🦑 유리 매직 낙서 — 원화의 오징어 낙서 오마주 (오른쪽 아래 유리칸)
+    final doodle = Paint()
+      ..color = _Pal.sketchInk.withOpacity(0.8)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.2
+      ..strokeCap = StrokeCap.round;
+    final dx = win.left + win.width * 0.72;
+    final dy = win.top + win.height * 0.76;
+    // 머리(세모 두건) + 몸통
+    final squid = Path()
+      ..moveTo(dx - 10, dy - 6)
+      ..quadraticBezierTo(dx - 4, dy - 22, dx + 2, dy - 8)
+      ..quadraticBezierTo(dx + 12, dy - 14, dx + 10, dy - 2)
+      ..quadraticBezierTo(dx + 14, dy + 6, dx + 4, dy + 6)
+      ..quadraticBezierTo(dx - 8, dy + 8, dx - 10, dy - 6);
+    canvas.drawPath(squid, doodle);
+    // 다리 3개 (구불구불)
+    for (int i = 0; i < 3; i++) {
+      final lx = dx - 6 + i * 7.0;
+      final leg = Path()
+        ..moveTo(lx, dy + 6)
+        ..quadraticBezierTo(lx - 3, dy + 12, lx + 1, dy + 16)
+        ..quadraticBezierTo(lx + 4, dy + 19, lx + 2, dy + 22);
+      canvas.drawPath(leg, doodle);
+    }
+    // 눈 2개
+    final eye = Paint()..color = _Pal.sketchInk.withOpacity(0.8);
+    canvas.drawCircle(Offset(dx - 3, dy - 3), 1.6, eye);
+    canvas.drawCircle(Offset(dx + 5, dy - 3), 1.6, eye);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
 class _DeskPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final bg = Paint()..color = const Color(0xFF2B251D);
+    // (2026-07-08 교실 원화 스타일) 밝은 나무 책상 — 손그림 결 느낌
+    final bg = Paint()..color = _Pal.deskWood;
     canvas.drawRect(Offset.zero & size, bg);
 
-    // 미세 그리드
-    final grid = Paint()
-      ..color = _Pal.grid
-      ..strokeWidth = 1;
-    const step = 38.0;
-    for (double x = step; x < size.width; x += step) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), grid);
-    }
-    for (double y = step; y < size.height; y += step) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), grid);
-    }
-
-    // 등록(+) 마크 — 모서리 안쪽
-    final mark = Paint()
-      ..color = const Color(0x33E8DCC0)
-      ..strokeWidth = 1.5;
-    const m = 22.0;
-    const pad = 18.0;
-    void plus(double cx, double cy) {
-      canvas.drawLine(Offset(cx - m / 2, cy), Offset(cx + m / 2, cy), mark);
-      canvas.drawLine(Offset(cx, cy - m / 2), Offset(cx, cy + m / 2), mark);
+    // 나무 결 — 러프한 가로 스트로크 (원화의 연필 결 느낌)
+    final grain = Paint()
+      ..color = _Pal.deskWoodDark.withOpacity(0.35)
+      ..strokeWidth = 1.6
+      ..strokeCap = StrokeCap.round;
+    final rnd = math.Random(7); // 고정 시드 — 매 프레임 동일
+    for (int i = 0; i < 14; i++) {
+      final y = size.height * (0.08 + 0.9 * rnd.nextDouble());
+      final x0 = size.width * (0.05 + 0.25 * rnd.nextDouble());
+      final len = size.width * (0.15 + 0.45 * rnd.nextDouble());
+      final bow = 2.0 + rnd.nextDouble() * 3.0;
+      final path = Path()
+        ..moveTo(x0, y)
+        ..quadraticBezierTo(x0 + len / 2, y + bow, x0 + len, y);
+      canvas.drawPath(path, grain..style = PaintingStyle.stroke);
     }
 
-    plus(pad + 8, pad + 8);
-    plus(size.width - pad - 8, pad + 8);
-    plus(pad + 8, size.height - pad - 8);
-    plus(size.width - pad - 8, size.height - pad - 8);
-    plus(size.width / 2, size.height / 2);
-
-    // 가장자리 비네팅
-    final vignette = Paint()
-      ..shader = RadialGradient(
-        colors: [Colors.transparent, Colors.black.withOpacity(0.45)],
-        stops: const [0.6, 1.0],
+    // 아래쪽 살짝 어둡게 — 책상 두께감
+    final shade = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [
+          Colors.transparent,
+          _Pal.deskWoodDark.withOpacity(0.25),
+        ],
+        stops: const [0.75, 1.0],
       ).createShader(Offset.zero & size);
-    canvas.drawRect(Offset.zero & size, vignette);
+    canvas.drawRect(Offset.zero & size, shade);
   }
 
   @override
