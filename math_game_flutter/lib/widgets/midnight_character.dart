@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
 
-/// Midnight의 표정 단계 (기존 6종 유지 — game_screen.dart 호환).
+/// 예린(YERIN)의 표정 단계.
+/// (2026-07-08 리브랜딩 — enum/에셋 경로명은 호환 위해 유지, 아트는 예린 원화로 교체 예정)
 enum MidnightFace {
   happy1, // 살짝 미소 (유리할 때 초반) → happy.png
   happy2, // 활짝 웃음 (유리할 때 후반 / 승리) → happy.png + sparkle
   worried1, // 살짝 곤란 → sleepy.png (부드러운 실망)
-  worried2, // 매우 곤란 / 패배 → angry.png (하린 에셋 매핑)
-  neutral, // 시작/대기 → default.png
+  worried2, // 매우 곤란 / 패배 → angry.png
+  neutral, // 시작/대기 → default.png (대표님 원화 1: 잔잔한 미소)
   confident, // 자신만만 → smug.png
+  thinking, // 🤔 고민 — 예린 턴 생각 중 (대표님 원화 2: 턱 괴고 미간)
 }
 
 /// MidnightFace → 실제 에셋 경로 매핑 (PNG 기본).
-/// 하린이 배치한 6종 (default/happy/surprised/sleepy/smug/angry)을 사용.
 String _midnightAssetPath(MidnightFace face, {bool gif = false}) {
   final String base;
   switch (face) {
@@ -30,6 +31,11 @@ String _midnightAssetPath(MidnightFace face, {bool gif = false}) {
       break;
     case MidnightFace.confident:
       base = 'smug';
+      break;
+    case MidnightFace.thinking:
+      // TODO(예린 아트): thinking.png 도착 시 'thinking'으로 교체.
+      // 임시로 default 사용 (고양이 에셋엔 고민 표정 없음).
+      base = 'default';
       break;
   }
   if (gif) {
@@ -140,6 +146,8 @@ class _FallbackPlaceholder extends StatelessWidget {
         return '😾';
       case MidnightFace.confident:
         return '😼';
+      case MidnightFace.thinking:
+        return '🤔';
       case MidnightFace.neutral:
         return '🐱';
     }

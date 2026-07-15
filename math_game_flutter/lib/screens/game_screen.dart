@@ -363,8 +363,8 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         }
         _midnightMessage = s.get('turnPlayerFirst');
       } else {
-        // AI가 선공: AI턴 중 표정은 neutral 고정
-        _midnightFace = MidnightFace.neutral;
+        // AI가 선공: 첫 수 고민부터 시작
+        _midnightFace = MidnightFace.thinking;
         _midnightMessage = s.get('turnMidnightFirst');
       }
     });
@@ -619,9 +619,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     });
 
     if (!_checkGameOver()) {
-      // AI턴 진입 시 표정은 neutral 유지 (생각중 메시지만)
+      // AI턴 진입 → 🤔 고민 표정 (대표님 원화 2)
       setState(() {
-        _midnightFace = MidnightFace.neutral;
+        _midnightFace = MidnightFace.thinking;
       });
       Future.delayed(const Duration(milliseconds: 1000), _midnightPlay);
     }
@@ -656,9 +656,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
 
     _isAiAnimating = true;
 
-    // Phase 1: "Midnight의 차례..." 표시 (0.5초 딜레이)
+    // Phase 1: "예린이 차례..." — 🤔 고민 표정 + 생각중 메시지 (0.5초 딜레이)
     setState(() {
-      _midnightFace = MidnightFace.neutral;
+      _midnightFace = MidnightFace.thinking;
       _midnightMessage = s.get('midnightThinking');
     });
     await Future.delayed(const Duration(milliseconds: 500));
@@ -1951,7 +1951,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         _currentTurn = TurnOwner.midnight;
       });
       if (!_checkGameOver()) {
-        setState(() => _midnightFace = MidnightFace.neutral);
+        setState(() => _midnightFace = MidnightFace.thinking);
         Future.delayed(const Duration(milliseconds: 1000), _midnightPlay);
       }
     });
@@ -2151,7 +2151,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         _currentTurn = TurnOwner.midnight;
       });
       if (!_checkGameOver()) {
-        setState(() => _midnightFace = MidnightFace.neutral);
+        setState(() => _midnightFace = MidnightFace.thinking);
         Future.delayed(const Duration(milliseconds: 1000), _midnightPlay);
       }
     });
@@ -2607,7 +2607,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                       });
                       if (!_checkGameOver()) {
                         setState(() {
-                          _midnightFace = MidnightFace.neutral;
+                          _midnightFace = MidnightFace.thinking;
                         });
                         Future.delayed(
                             const Duration(milliseconds: 1000), _midnightPlay);
