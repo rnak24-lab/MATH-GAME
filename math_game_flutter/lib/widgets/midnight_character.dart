@@ -12,7 +12,35 @@ enum MidnightFace {
   thinking, // 🤔 고민 — 예린 턴 생각 중 (대표님 원화 2: 턱 괴고 미간)
 }
 
-/// MidnightFace → 실제 에셋 경로 매핑 (PNG 기본).
+/// 예린 표정 PNG 경로 (assets/yerin/ — 외주/신규 아트 드롭인 폴더).
+/// 파일이 없으면 위젯에서 고양이(assets/midnight/)로 폴백된다.
+String _yerinAssetPath(MidnightFace face) {
+  final String base;
+  switch (face) {
+    case MidnightFace.neutral:
+      base = 'default';
+      break;
+    case MidnightFace.happy1:
+    case MidnightFace.happy2:
+      base = 'happy';
+      break;
+    case MidnightFace.worried1:
+      base = 'worried';
+      break;
+    case MidnightFace.worried2:
+      base = 'upset';
+      break;
+    case MidnightFace.confident:
+      base = 'smug';
+      break;
+    case MidnightFace.thinking:
+      base = 'thinking';
+      break;
+  }
+  return 'assets/yerin/$base.png';
+}
+
+/// (폴백) 구 고양이 에셋 경로 매핑.
 String _midnightAssetPath(MidnightFace face, {bool gif = false}) {
   final String base;
   switch (face) {
@@ -33,8 +61,7 @@ String _midnightAssetPath(MidnightFace face, {bool gif = false}) {
       base = 'smug';
       break;
     case MidnightFace.thinking:
-      // TODO(예린 아트): thinking.png 도착 시 'thinking'으로 교체.
-      // 임시로 default 사용 (고양이 에셋엔 고민 표정 없음).
+      // 고양이 에셋엔 고민 표정 없음 → default
       base = 'default';
       break;
   }
@@ -91,23 +118,32 @@ class _MidnightCharacterState extends State<MidnightCharacter>
 
   @override
   Widget build(BuildContext context) {
-    final path = _midnightAssetPath(widget.face, gif: widget.useGif);
+    final yerinPath = _yerinAssetPath(widget.face);
+    final catPath = _midnightAssetPath(widget.face, gif: widget.useGif);
 
     // AnimatedSwitcher로 표정 전환 시 크로스페이드(150ms)
+    // 예린 PNG(assets/yerin/) 우선 → 없으면 고양이(임시) → 그것도 없으면 플레이스홀더
     final image = AnimatedSwitcher(
       duration: const Duration(milliseconds: 180),
       switchInCurve: Curves.easeOut,
       switchOutCurve: Curves.easeIn,
       child: Image.asset(
-        path,
-        key: ValueKey(path),
+        yerinPath,
+        key: ValueKey('$yerinPath|${widget.face}'),
         width: widget.size,
         height: widget.size,
         fit: BoxFit.contain,
         gaplessPlayback: true,
-        errorBuilder: (ctx, err, stack) => _FallbackPlaceholder(
-          size: widget.size,
-          face: widget.face,
+        errorBuilder: (ctx, err, stack) => Image.asset(
+          catPath,
+          width: widget.size,
+          height: widget.size,
+          fit: BoxFit.contain,
+          gaplessPlayback: true,
+          errorBuilder: (ctx, err, stack) => _FallbackPlaceholder(
+            size: widget.size,
+            face: widget.face,
+          ),
         ),
       ),
     );

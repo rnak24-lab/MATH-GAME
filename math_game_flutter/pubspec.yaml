@@ -72,6 +72,8 @@ flutter:
     - assets/midnight/
     - assets/midnight/gif/
     - assets/audio/
+    - assets/backgrounds/ # 월드별 배경 (미드저니) — world0~3.png 넣으면 자동 적용
+    - assets/yerin/ # 예린 표정 PNG(투명) — default/thinking/happy/smug/worried/upset.png 넣으면 자동 교체
     - assets/app_icon.png
     - assets/app_icon_master.png
 

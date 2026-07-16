@@ -1366,9 +1366,16 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          // 0) 교실 배경 — 대표님 원화 구도: 칠판(좌) + 낙서 있는 창문(우) + 크림 벽
-          const Positioned.fill(
-            child: CustomPaint(painter: _ClassroomPainter()),
+          // 0) 월드 배경 — assets/backgrounds/world{id}.png (미드저니)가 있으면 사용,
+          //    없으면 코드 교실(칠판+창문+낙서)로 폴백. 캐릭터 PNG는 이 위에 얹힌다.
+          Positioned.fill(
+            child: Image.asset(
+              'assets/backgrounds/world${worldForStage(widget.stageNumber).id}.png',
+              fit: BoxFit.cover,
+              alignment: Alignment.topCenter,
+              errorBuilder: (_, __, ___) =>
+                  const CustomPaint(painter: _ClassroomPainter()),
+            ),
           ),
           // 1) 도장/칩 — 맨 위
           Positioned(
