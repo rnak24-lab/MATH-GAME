@@ -1377,7 +1377,24 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                   const CustomPaint(painter: _ClassroomPainter()),
             ),
           ),
-          // 1) 도장/칩 — 맨 위
+          // 1) 예린 — 중앙에 크게, 가슴 아래까지 (진짜 마주 앉아 대결하는 느낌)
+          //    하반신은 테이블(top:258)에 가려진다.
+          Positioned(
+            top: 30,
+            left: 0,
+            right: 0,
+            child: Center(child: _catFigure(size: 300)),
+          ),
+          // 말풍선 — 예린 얼굴 오른쪽
+          Positioned(
+            top: 64,
+            right: 6,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 150),
+              child: _tauntBubble(_midnightMessage),
+            ),
+          ),
+          // 2) 도장/칩 — 맨 위 (예린 위 레이어라 항상 보임)
           Positioned(
             top: 2,
             left: 8,
@@ -1386,32 +1403,16 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
               child: FittedBox(fit: BoxFit.scaleDown, child: overlay),
             ),
           ),
-          // 2) 한밤이 — 왼쪽으로 비켜 앉아서 말풍선 자리 확보 (하반신은 테이블에 가려 상반신만)
+          // 3) 테이블 — 예린 가슴 아래에서 시작 (평평, 남은 영역 꽉 채움)
           Positioned(
-            top: 38,
-            left: 18,
-            child: _catFigure(size: 140),
-          ),
-          // 말풍선 — 고양이 오른쪽, 넓게 (꼬리가 고양이 쪽)
-          Positioned(
-            top: 48,
-            left: 162,
-            right: 10,
-            child: Align(
-              alignment: Alignment.topLeft,
-              child: _tauntBubble(_midnightMessage),
-            ),
-          ),
-          // 3) 테이블 — 평평(원근 X), 좌우 여백 + 세로 80%로 축소 (판 크기 다이어트)
-          Positioned(
-            top: 130,
+            top: 258,
             bottom: 0,
             left: 28,
             right: 28,
             child: Align(
               alignment: Alignment.topCenter,
               child: FractionallySizedBox(
-                heightFactor: 0.8,
+                heightFactor: 1.0,
                 widthFactor: 1.0,
                 child: Container(
                   decoration: BoxDecoration(
