@@ -109,7 +109,30 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
 
   // Midnight state
   MidnightFace _midnightFace = MidnightFace.neutral;
-  String _midnightMessage = '';
+
+  // 대사는 "키+인자"로 저장하고 그릴 때 현재 언어로 해석
+  // → 게임 중 언어를 바꿔도 말풍선이 즉시 새 언어로 표시된다.
+  String? _msgKey;
+  List<String> _msgArgs = const [];
+  bool _msgAppendAutoHint = false; // 패배 시 자동 힌트 덧붙임 여부
+
+  String get _midnightMessage {
+    if (_msgKey == null) return '';
+    String m = s.get(_msgKey!, _msgArgs);
+    if (_msgAppendAutoHint) {
+      m = '$m\n\n${TutorialManager.autoHintOnConsecutiveLoss(widget.stageNumber, s)}';
+    }
+    return m;
+  }
+
+  /// 말풍선 대사 설정 (setState 밖에서도 호출 가능 — 호출부가 setState 책임)
+  void _say(String key,
+      [List<String> args = const [], bool appendAutoHint = false]) {
+    _msgKey = key;
+    _msgArgs = args;
+    _msgAppendAutoHint = appendAutoHint;
+  }
+
   bool _isAiAnimating = false;
   bool _leaving = false; // Take 시 선택된 돌이 슈르륵 빠지는 중
 
@@ -164,7 +187,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     super.initState();
     _config = _engine.generateStage(widget.stageNumber);
     _rows = List.from(_config.rows);
-    _midnightMessage = _getGreeting();
+    _sayGreeting();
     // 피보나치: 첫 수는 "전부 빼기 금지" → 최대 n-1
     if (_config.mode == GameMode.fibonacci) {
       _fibLimit = _rows[0] - 1;
@@ -183,7 +206,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       _currentTurn = TurnOwner.player;
       _firstMover = TurnOwner.player;
       _moveLog.add(_LogEntry(null, s.get('logStart', [s.get('nameYou')])));
-      _midnightMessage = s.get('turnPlayerFirst');
+      _say('turnPlayerFirst');
     }
   }
 
@@ -212,7 +235,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     });
   }
 
-  String _getGreeting() {
+  void _sayGreeting() {
     List<String> greetingKeys = [
       'greetReady',
       'greetWin',
@@ -221,9 +244,10 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     ];
     String key = greetingKeys[widget.stageNumber % greetingKeys.length];
     if (key == 'greetReady') {
-      return s.get(key, ['${widget.stageNumber}']);
+      _say(key, ['${widget.stageNumber}']);
+    } else {
+      _say(key);
     }
-    return s.get(key);
   }
 
   String _getModeTitle() {
@@ -325,7 +349,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
             'midnightWinLate2',
             'midnightWinLate3'
           ];
-          _midnightMessage = s.get(keys[_turnCount % keys.length]);
+          _say(keys[_turnCount % keys.length]);
         } else {
           _midnightFace = MidnightFace.happy1;
           List<String> keys = [
@@ -333,12 +357,12 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
             'midnightWinEarly2',
             'midnightWinEarly3'
           ];
-          _midnightMessage = s.get(keys[_turnCount % keys.length]);
+          _say(keys[_turnCount % keys.length]);
         }
       } else {
         _consecutiveLossTurns = 0;
         _midnightFace = MidnightFace.neutral;
-        _midnightMessage = s.get('yourTurnNow');
+        _say('yourTurnNow');
       }
     });
   }
@@ -361,11 +385,11 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         } else {
           _midnightFace = MidnightFace.neutral;
         }
-        _midnightMessage = s.get('turnPlayerFirst');
+        _say('turnPlayerFirst');
       } else {
         // AI가 선공: 첫 수 고민부터 시작
         _midnightFace = MidnightFace.thinking;
-        _midnightMessage = s.get('turnMidnightFirst');
+        _say('turnMidnightFirst');
       }
     });
 
@@ -407,19 +431,16 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       _playerWon = playerWins;
       if (playerWins) {
         _midnightFace = MidnightFace.worried2;
-        _midnightMessage = s.get('midnightLost');
+        _say('midnightLost');
         _consecutiveDefeats = 0;
       } else {
         _midnightFace = MidnightFace.happy2;
-        _midnightMessage = s.get('midnightWon');
         _consecutiveDefeats++;
         // 자동 힌트: 스테이지 1은 첫 패배 즉시, 그 외 튜토리얼 스테이지는 2연패 시
         final int hintAfter = widget.stageNumber == 1 ? 1 : 2;
-        if (_consecutiveDefeats >= hintAfter &&
-            TutorialManager.isTutorialStage(widget.stageNumber)) {
-          _midnightMessage =
-              '${s.get('midnightWon')}\n\n${TutorialManager.autoHintOnConsecutiveLoss(widget.stageNumber, s)}';
-        }
+        final bool autoHint = _consecutiveDefeats >= hintAfter &&
+            TutorialManager.isTutorialStage(widget.stageNumber);
+        _say('midnightWon', const [], autoHint);
       }
     });
 
@@ -659,7 +680,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     // Phase 1: "예린이 차례..." — 🤔 고민 표정 + 생각중 메시지 (0.5초 딜레이)
     setState(() {
       _midnightFace = MidnightFace.thinking;
-      _midnightMessage = s.get('midnightThinking');
+      _say('midnightThinking');
     });
     await Future.delayed(const Duration(milliseconds: 500));
     if (!mounted || _phase != GamePhase.playing) return;
@@ -668,8 +689,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       // 빼빼로: 한번에 분할 (순차 애니메이션 대상 아님). AI턴 중 표정은 neutral 유지.
       setState(() {
         _midnightFace = MidnightFace.neutral;
-        _midnightMessage =
-            s.get('midnightSplit', ['${move.splitA}', '${move.splitB}']);
+        _say('midnightSplit', ['${move.splitA}', '${move.splitB}']);
         _rows.removeAt(move.rowIndex);
         _rows.add(move.splitA);
         _rows.add(move.splitB);
@@ -682,7 +702,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         _spawnFlight();
         setState(() {
           _midnightFace = MidnightFace.neutral;
-          _midnightMessage = s.get('midnightTakeN', ['${i + 1}']);
+          _say('midnightTakeN', ['${i + 1}']);
         });
         await Future.delayed(const Duration(milliseconds: 400));
       }
@@ -692,7 +712,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         if (move.kaylesLeft > 0) _rows.add(move.kaylesLeft);
         if (move.kaylesRight > 0) _rows.add(move.kaylesRight);
         _rows.sort((x, y) => y.compareTo(x));
-        _midnightMessage = s.get('midnightTookTotal', ['${move.count}']);
+        _say('midnightTookTotal', ['${move.count}']);
       });
     } else if (move.isWythoff) {
       // 🧪 위토프: 각 무더기에서 하나씩 슉!
@@ -704,16 +724,18 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
           if (i < move.takeA) _rows[0] -= 1;
           if (i < move.takeB) _rows[1] -= 1;
           _midnightFace = MidnightFace.neutral;
-          _midnightMessage = s.get('midnightTakeN', ['${i + 1}']);
+          _say('midnightTakeN', ['${i + 1}']);
         });
         await Future.delayed(const Duration(milliseconds: 400));
       }
       if (!mounted || _phase != GamePhase.playing) return;
       setState(() {
-        _midnightMessage = (move.takeA > 0 && move.takeB > 0)
-            ? s.get('midnightTookBoth', ['${move.takeA}'])
-            : s.get('midnightTookTotal',
-                ['${move.takeA > 0 ? move.takeA : move.takeB}']);
+        if (move.takeA > 0 && move.takeB > 0) {
+          _say('midnightTookBoth', ['${move.takeA}']);
+        } else {
+          _say('midnightTookTotal',
+              ['${move.takeA > 0 ? move.takeA : move.takeB}']);
+        }
       });
     } else {
       // Phase 2: 돌 1개씩 순차 제거 애니메이션
@@ -725,10 +747,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
           _rows[move.rowIndex] -= 1;
           _midnightFace = MidnightFace.neutral;
           if (_config.mode == GameMode.singleRow) {
-            _midnightMessage = s.get('midnightTakeN', ['${i + 1}']);
+            _say('midnightTakeN', ['${i + 1}']);
           } else {
-            _midnightMessage = s.get(
-                'midnightTakeFromRow', ['${i + 1}', '${move.rowIndex + 1}']);
+            _say('midnightTakeFromRow', ['${i + 1}', '${move.rowIndex + 1}']);
           }
         });
         // 돌 1개당 0.4초 간격
@@ -739,9 +760,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       // Phase 3: 총 가져간 수 카운터 표시
       setState(() {
         if (_config.mode == GameMode.singleRow) {
-          _midnightMessage = s.get('midnightTookTotal', ['${move.count}']);
+          _say('midnightTookTotal', ['${move.count}']);
         } else {
-          _midnightMessage = s.get('midnightTookFromRowTotal',
+          _say('midnightTookFromRowTotal',
               ['${move.count}', '${move.rowIndex + 1}']);
         }
       });
@@ -1178,7 +1199,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     if (_tutorialIndex >= _tutorialSteps.length) {
       return const SizedBox.shrink();
     }
-    final step = _tutorialSteps[_tutorialIndex];
+    // 매 build마다 현재 언어로 재해석 — 게임 중 언어 변경 즉시 반영
+    final steps = TutorialManager.entrySteps(widget.stageNumber, s);
+    final step = steps[_tutorialIndex];
     final bool isLast = _tutorialIndex == _tutorialSteps.length - 1;
     return Positioned.fill(
       child: GestureDetector(
