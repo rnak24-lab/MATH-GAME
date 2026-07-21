@@ -15,7 +15,7 @@ class SfxService {
     final p = _pool[_i = (_i + 1) % _pool.length];
     try {
       await p.stop();
-      await p.play(AssetSource('audio/sfx_take.wav'), volume: 0.8);
+      await p.play(AssetSource('audio/sfx_take.mp3'), volume: 0.8);
     } catch (_) {}
   }
 }

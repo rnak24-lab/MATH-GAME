@@ -111,26 +111,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       color: Color(0xFFC9A24B)),
                   const SizedBox(width: 16),
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          s.get('musicTitle'),
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xFF332817),
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          s.get('musicDesc'),
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                      ],
+                    child: Text(
+                      s.get('musicTitle'),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xFF332817),
+                      ),
                     ),
                   ),
                   Switch(
@@ -203,26 +190,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       color: Color(0xFFC9A24B)),
                   const SizedBox(width: 16),
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          s.get('sfxTitle'),
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xFF332817),
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          s.get('sfxDesc'),
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                      ],
+                    child: Text(
+                      s.get('sfxTitle'),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xFF332817),
+                      ),
                     ),
                   ),
                   Switch(
@@ -251,26 +225,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const Icon(Icons.vibration_rounded, color: Color(0xFFC9A24B)),
                   const SizedBox(width: 16),
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          s.get('hapticsTitle'),
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xFF332817),
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          s.get('hapticsDesc'),
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                      ],
+                    child: Text(
+                      s.get('hapticsTitle'),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xFF332817),
+                      ),
                     ),
                   ),
                   Switch(

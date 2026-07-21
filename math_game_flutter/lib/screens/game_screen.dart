@@ -1029,6 +1029,14 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                       color: _hintsLeft > 0 ? _Pal.gold : _Pal.inkSoft,
                       fontWeight: FontWeight.w800)),
             ),
+          // ? 게임 규칙 — 언제든 현재 모드 규칙 확인
+          IconButton(
+            visualDensity: VisualDensity.compact,
+            icon: const Icon(Icons.help_outline_rounded,
+                size: 20, color: _Pal.cream),
+            tooltip: s.get('rulesTitle'),
+            onPressed: _showModeRules,
+          ),
           // 음소거 토글 — 배경음악+효과음 한 번에 (언제든 누를 수 있음)
           IconButton(
             visualDensity: VisualDensity.compact,
@@ -1062,6 +1070,86 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
               );
               if (mounted) setState(() {}); // 언어/사운드 변경 반영
             },
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 현재 모드의 규칙 다이얼로그 — 탑바 ? 버튼.
+  void _showModeRules() {
+    String ruleKey;
+    List<String> ruleArgs = const [];
+    switch (_config.mode) {
+      case GameMode.singleRow:
+        ruleKey = 'ruleSingleRow';
+        ruleArgs = ['${_config.maxTake}'];
+        break;
+      case GameMode.doubleRow:
+        ruleKey = 'ruleDoubleRow';
+        break;
+      case GameMode.tripleRow:
+        ruleKey = 'ruleTripleRow';
+        break;
+      case GameMode.quadRow:
+        ruleKey = 'ruleQuadRow';
+        break;
+      case GameMode.pepero:
+        ruleKey = 'rulePepero';
+        break;
+      case GameMode.kayles:
+        ruleKey = 'ruleKayles';
+        break;
+      case GameMode.wythoff:
+        ruleKey = 'ruleWythoff';
+        break;
+      case GameMode.fibonacci:
+        ruleKey = 'ruleFibonacci';
+        break;
+    }
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: _Pal.cream,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        title: Row(
+          children: [
+            const Icon(Icons.help_outline_rounded,
+                size: 22, color: _Pal.inkSoft),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                _getModeTitle(),
+                style: const TextStyle(
+                  fontFamily: _mono,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w900,
+                  color: _Pal.ink,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          s.get(ruleKey, ruleArgs),
+          style: const TextStyle(
+            fontFamily: _mono,
+            fontSize: 14.5,
+            height: 1.6,
+            color: _Pal.ink,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        actions: [
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: _Pal.gold,
+              foregroundColor: _Pal.ink,
+            ),
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(s.get('ok'),
+                style: const TextStyle(
+                    fontFamily: _mono, fontWeight: FontWeight.w800)),
           ),
         ],
       ),

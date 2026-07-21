@@ -72,146 +72,161 @@ class _HomeScreenState extends State<HomeScreen>
         width: double.infinity,
         height: double.infinity,
         decoration: const BoxDecoration(gradient: NimTheme.bg),
-        child: SafeArea(
-          child: Column(
-            children: [
-              // 설정
-              Align(
-                alignment: Alignment.topRight,
-                child: Padding(
-                  padding: const EdgeInsets.only(right: 8, top: 4),
-                  child: IconButton(
-                    icon: const Icon(Icons.settings_rounded,
-                        color: NimTheme.cream, size: 26),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => SettingsScreen(
-                            localeProvider: widget.localeProvider,
-                            onChanged: () => setState(() {}),
-                            stageManager: widget.stageManager,
-                          ),
-                        ),
-                      ).then((_) {
-                        if (mounted) setState(() {});
-                      });
-                    },
+        // 수학 기호 난사 배경 (assets/backgrounds/home.png 있으면 사용)
+        foregroundDecoration: null,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            Image.asset(
+              'assets/backgrounds/home.png',
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+            ),
+            _homeBody(s),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _homeBody(dynamic s) {
+    return SafeArea(
+      child: Column(
+        children: [
+          // 설정
+          Align(
+            alignment: Alignment.topRight,
+            child: Padding(
+              padding: const EdgeInsets.only(right: 8, top: 4),
+              child: IconButton(
+                icon: const Icon(Icons.settings_rounded,
+                    color: NimTheme.cream, size: 26),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => SettingsScreen(
+                        localeProvider: widget.localeProvider,
+                        onChanged: () => setState(() {}),
+                        stageManager: widget.stageManager,
+                      ),
+                    ),
+                  ).then((_) {
+                    if (mounted) setState(() {});
+                  });
+                },
+              ),
+            ),
+          ),
+          const Spacer(),
+          // 타이틀 (픽셀 폰트, 골드)
+          const Text(
+            'Math NIM',
+            style: TextStyle(
+              fontFamily: NimTheme.font,
+              fontSize: 44,
+              color: NimTheme.gold,
+              letterSpacing: 2,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            s.get('mathNimSubtitle'),
+            style: const TextStyle(
+              fontFamily: NimTheme.font,
+              fontSize: 16,
+              color: NimTheme.inkSoft,
+            ),
+          ),
+          const Spacer(),
+          // 큰 한밤이 + 스포트라이트 (주인공답게)
+          SizedBox(
+            width: 240,
+            height: 220,
+            child: Stack(
+              alignment: Alignment.bottomCenter,
+              children: [
+                Center(
+                  child: Container(
+                    width: 230,
+                    height: 230,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(
+                        colors: [
+                          NimTheme.cream.withOpacity(0.22),
+                          NimTheme.gold.withOpacity(0.07),
+                          Colors.transparent,
+                        ],
+                        stops: const [0.0, 0.5, 0.8],
+                      ),
+                    ),
                   ),
                 ),
-              ),
-              const Spacer(),
-              // 타이틀 (픽셀 폰트, 골드)
-              const Text(
-                'Math NIM',
-                style: TextStyle(
-                  fontFamily: NimTheme.font,
-                  fontSize: 44,
-                  color: NimTheme.gold,
-                  letterSpacing: 2,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                s.get('mathNimSubtitle'),
-                style: const TextStyle(
-                  fontFamily: NimTheme.font,
-                  fontSize: 16,
-                  color: NimTheme.inkSoft,
-                ),
-              ),
-              const Spacer(),
-              // 큰 한밤이 + 스포트라이트 (주인공답게)
-              SizedBox(
-                width: 240,
-                height: 220,
-                child: Stack(
-                  alignment: Alignment.bottomCenter,
-                  children: [
-                    Center(
-                      child: Container(
-                        width: 230,
-                        height: 230,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: RadialGradient(
-                            colors: [
-                              NimTheme.cream.withOpacity(0.22),
-                              NimTheme.gold.withOpacity(0.07),
-                              Colors.transparent,
-                            ],
-                            stops: const [0.0, 0.5, 0.8],
-                          ),
-                        ),
-                      ),
+                Positioned(
+                  bottom: 14,
+                  child: Container(
+                    width: 100,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.35),
+                      borderRadius: BorderRadius.circular(30),
                     ),
-                    Positioned(
-                      bottom: 14,
-                      child: Container(
-                        width: 100,
-                        height: 12,
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.35),
-                          borderRadius: BorderRadius.circular(30),
-                        ),
-                      ),
-                    ),
-                    const Padding(
-                      padding: EdgeInsets.only(bottom: 12),
-                      child: MidnightCharacter(
-                        face: MidnightFace.happy1,
-                        size: 180,
-                        animate: false,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                s.get('midnightGreeting'),
-                style: const TextStyle(
-                  fontFamily: NimTheme.font,
-                  fontSize: 15,
-                  color: NimTheme.cream,
+                const Padding(
+                  padding: EdgeInsets.only(bottom: 12),
+                  child: MidnightCharacter(
+                    face: MidnightFace.happy1,
+                    size: 180,
+                    animate: false,
+                  ),
                 ),
-              ),
-              const Spacer(),
-              // 진행 배지: 다음 목적지 (월드명 · 스테이지 N)
-              if (_hasProgress) _progressBadge(s),
-              const SizedBox(height: 14),
-              // 버튼들
-              AnimatedOpacity(
-                opacity: _showButtons ? 1.0 : 0.0,
-                duration: const Duration(milliseconds: 600),
-                child: Column(
-                  children: [
-                    _stampButton(
-                      label: _hasProgress
-                          ? s.get('continueGame')
-                          : s.get('startGame'),
-                      icon: Icons.play_arrow_rounded,
-                      color: NimTheme.gold,
-                      textColor: NimTheme.deskBottom,
-                      onTap: _goToWorldSelect,
-                    ),
-                    if (_hasProgress) ...[
-                      const SizedBox(height: 10),
-                      _stampButton(
-                        label: s.get('selectStage'),
-                        icon: Icons.grid_view_rounded,
-                        color: NimTheme.frame,
-                        textColor: NimTheme.cream,
-                        onTap: _goToWorldSelect,
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              const Spacer(),
-            ],
+              ],
+            ),
           ),
-        ),
+          const SizedBox(height: 6),
+          Text(
+            s.get('midnightGreeting'),
+            style: const TextStyle(
+              fontFamily: NimTheme.font,
+              fontSize: 15,
+              color: NimTheme.cream,
+            ),
+          ),
+          const Spacer(),
+          // 진행 배지: 다음 목적지 (월드명 · 스테이지 N)
+          if (_hasProgress) _progressBadge(s),
+          const SizedBox(height: 14),
+          // 버튼들
+          AnimatedOpacity(
+            opacity: _showButtons ? 1.0 : 0.0,
+            duration: const Duration(milliseconds: 600),
+            child: Column(
+              children: [
+                _stampButton(
+                  label:
+                      _hasProgress ? s.get('continueGame') : s.get('startGame'),
+                  icon: Icons.play_arrow_rounded,
+                  color: NimTheme.gold,
+                  textColor: NimTheme.deskBottom,
+                  onTap: _goToWorldSelect,
+                ),
+                if (_hasProgress) ...[
+                  const SizedBox(height: 10),
+                  _stampButton(
+                    label: s.get('selectStage'),
+                    icon: Icons.grid_view_rounded,
+                    color: NimTheme.frame,
+                    textColor: NimTheme.cream,
+                    onTap: _goToWorldSelect,
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const Spacer(),
+        ],
       ),
     );
   }

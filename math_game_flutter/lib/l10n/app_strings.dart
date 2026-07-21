@@ -429,6 +429,14 @@ class AppStrings {
       'en': 'How to Play',
       'ko': '게임 규칙',
     },
+    'rulesTitle': {
+      'en': 'Rules',
+      'ko': '게임 규칙',
+    },
+    'ok': {
+      'en': 'OK',
+      'ko': '확인',
+    },
     'resetProgress': {
       'en': 'Reset Progress',
       'ko': '진행도 초기화',
