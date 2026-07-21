@@ -100,7 +100,7 @@ class _HomeScreenState extends State<HomeScreen>
               padding: const EdgeInsets.only(right: 8, top: 4),
               child: IconButton(
                 icon: const Icon(Icons.settings_rounded,
-                    color: NimTheme.cream, size: 26),
+                    color: Color(0xFF2F2B57), size: 26),
                 onPressed: () {
                   Navigator.push(
                     context,
@@ -119,7 +119,7 @@ class _HomeScreenState extends State<HomeScreen>
             ),
           ),
           const Spacer(),
-          // 타이틀 (픽셀 폰트, 골드)
+          // 타이틀 (픽셀 폰트, 골드 + 네이비 그림자 — 밝은 수학낙서 배경 위 가독성)
           const Text(
             'Math NIM',
             style: TextStyle(
@@ -127,6 +127,10 @@ class _HomeScreenState extends State<HomeScreen>
               fontSize: 44,
               color: NimTheme.gold,
               letterSpacing: 2,
+              shadows: [
+                Shadow(offset: Offset(2, 2), color: Color(0xFF2F2B57)),
+                Shadow(offset: Offset(-1, -1), color: Color(0xFF2F2B57)),
+              ],
             ),
           ),
           const SizedBox(height: 4),
@@ -135,7 +139,7 @@ class _HomeScreenState extends State<HomeScreen>
             style: const TextStyle(
               fontFamily: NimTheme.font,
               fontSize: 16,
-              color: NimTheme.inkSoft,
+              color: Color(0xFF2F2B57),
             ),
           ),
           const Spacer(),
@@ -186,12 +190,20 @@ class _HomeScreenState extends State<HomeScreen>
             ),
           ),
           const SizedBox(height: 6),
-          Text(
-            s.get('midnightGreeting'),
-            style: const TextStyle(
-              fontFamily: NimTheme.font,
-              fontSize: 15,
-              color: NimTheme.cream,
+          // 인사말 — 흰 반투명 캡슐로 배경 낙서와 분리
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.75),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Text(
+              s.get('midnightGreeting'),
+              style: const TextStyle(
+                fontFamily: NimTheme.font,
+                fontSize: 15,
+                color: Color(0xFF2F2B57),
+              ),
             ),
           ),
           const Spacer(),
