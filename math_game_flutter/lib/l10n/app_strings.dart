@@ -362,6 +362,19 @@ class AppStrings {
       'en': 'Last stone WINS',
       'ko': '마지막 돌 = 승리!',
     },
+    // ── (v2) 예린 찌르기 반응 ──
+    'pokeReact1': {
+      'en': "Hey! What was that for!",
+      'ko': '아 뭐야! 갑자기 왜 찔러~',
+    },
+    'pokeReact2': {
+      'en': "I'm concentrating here...",
+      'ko': '지금 집중하고 있거든...?',
+    },
+    'pokeReact3': {
+      'en': "Hmph. Just make your move~",
+      'ko': '흥, 그럴 시간에 네 수나 둬~',
+    },
     'lastStoneLoseChip': {
       'en': 'Last stone LOSES',
       'ko': '마지막 돌 잡으면 패배!',

@@ -1144,6 +1144,39 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     );
   }
 
+  // ── (v2) 예린 찌르기 상호작용 ──
+  bool _poked = false;
+  String _pokeKey = 'pokeReact1';
+  MidnightFace _pokeFace = MidnightFace.worried2;
+  Timer? _pokeTimer;
+
+  @override
+  void dispose() {
+    _pokeTimer?.cancel();
+    super.dispose();
+  }
+
+  /// 예린을 탭하면 잠깐 눈을 찌푸리며 반응 — 1.6초 뒤 원래 표정/대사로.
+  void _pokeYerin() {
+    _haptic();
+    final rnd = math.Random();
+    const reactions = [
+      ('pokeReact1', MidnightFace.worried2),
+      ('pokeReact2', MidnightFace.worried1),
+      ('pokeReact3', MidnightFace.confident),
+    ];
+    final pick = reactions[rnd.nextInt(reactions.length)];
+    setState(() {
+      _poked = true;
+      _pokeKey = pick.$1;
+      _pokeFace = pick.$2;
+    });
+    _pokeTimer?.cancel();
+    _pokeTimer = Timer(const Duration(milliseconds: 1600), () {
+      if (mounted) setState(() => _poked = false);
+    });
+  }
+
   /// (v2) 기록 한 줄 — #767676 회색으로 존재감만. 최근 수순이 앞에 온다.
   Widget _recordLine() {
     final moves = _moveLog.where((e) => e.owner != null).toList();
@@ -1213,42 +1246,45 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
               ),
             ),
           ),
-          // 고양이 (정적, 투명 도트 에셋)
-          MidnightCharacter(face: _midnightFace, size: size, animate: false),
+          // 예린 (정적, 투명 PNG) — 찌르면 잠깐 표정이 바뀐다
+          MidnightCharacter(
+            face: _poked ? _pokeFace : _midnightFace,
+            size: size,
+            animate: false,
+          ),
         ],
       ),
     );
   }
 
-  /// 고양이 도발 말풍선 — 꼬리가 왼쪽(고양이)을 향하는 가로 배치용.
+  /// (v2) 예린 대사 말풍선 — 머리 위에 떠 있고 꼬리가 아래(예린)를 향한다.
   Widget _tauntBubble(String message) {
-    return Row(
+    return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        CustomPaint(size: const Size(9, 16), painter: _BubbleTailLeft()),
-        Flexible(
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 200),
-            child: Container(
-              key: ValueKey(message),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-              decoration: BoxDecoration(
-                color: _Pal.paper,
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: _Pal.frame, width: 2),
-              ),
-              child: Text(
-                message,
-                style: const TextStyle(
-                  fontFamily: _mono,
-                  fontSize: 14,
-                  height: 1.35,
-                  color: _Pal.ink,
-                ),
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 200),
+          child: Container(
+            key: ValueKey(message),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+            decoration: BoxDecoration(
+              color: _Pal.paper,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: _Pal.frame, width: 2),
+            ),
+            child: Text(
+              message,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontFamily: _mono,
+                fontSize: 14,
+                height: 1.35,
+                color: _Pal.ink,
               ),
             ),
           ),
         ),
+        CustomPaint(size: const Size(16, 9), painter: _BubbleTailDown()),
       ],
     );
   }
@@ -1476,20 +1512,30 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
             ),
           ),
           // 1) 예린 — 중앙에 크게, 가슴 아래까지 (진짜 마주 앉아 대결하는 느낌)
-          //    하반신은 테이블(top:258)에 가려진다. (v2: 더 키움)
+          //    하반신은 테이블(top:258)에 가려진다. (v2: 더 키움 + 탭 상호작용)
           Positioned(
             top: 22,
             left: 0,
             right: 0,
-            child: Center(child: _catFigure(size: 335)),
+            child: Center(
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: _pokeYerin,
+                child: _catFigure(size: 335),
+              ),
+            ),
           ),
-          // 말풍선 — 예린 얼굴 오른쪽 (v2: 폭·글자 키움)
+          // 말풍선 — (v2) 예린 머리 위 중앙, 꼬리가 아래로
           Positioned(
-            top: 68,
-            right: 4,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 172),
-              child: _tauntBubble(_midnightMessage),
+            top: 46,
+            left: 30,
+            right: 30,
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 300),
+                child:
+                    _tauntBubble(_poked ? s.get(_pokeKey) : _midnightMessage),
+              ),
             ),
           ),
           // 2) 턴 배너 — 맨 위 풀폭 (예린 위 레이어라 항상 보임)
@@ -3068,7 +3114,8 @@ class _DeskPainter extends CustomPainter {
 }
 
 /// 말풍선 꼬리(왼쪽 방향 = 고양이 쪽) — 종이색 + 프레임 테두리.
-class _BubbleTailLeft extends CustomPainter {
+/// 아래를 향하는 말풍선 꼬리 — (v2) 말풍선이 예린 머리 위에 떠 있을 때.
+class _BubbleTailDown extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final fill = Paint()..color = _Pal.paper;
@@ -3077,9 +3124,9 @@ class _BubbleTailLeft extends CustomPainter {
       ..strokeWidth = 2
       ..style = PaintingStyle.stroke;
     final path = Path()
-      ..moveTo(size.width, 0)
-      ..lineTo(0, size.height / 2)
-      ..lineTo(size.width, size.height);
+      ..moveTo(0, 0)
+      ..lineTo(size.width / 2, size.height)
+      ..lineTo(size.width, 0);
     canvas.drawPath(path, fill);
     canvas.drawPath(path, border);
   }
