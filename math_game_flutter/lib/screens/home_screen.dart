@@ -120,11 +120,11 @@ class _HomeScreenState extends State<HomeScreen>
           ),
           const Spacer(),
           // 타이틀 (픽셀 폰트, 골드 + 네이비 그림자 — 밝은 수학낙서 배경 위 가독성)
-          const Text(
-            'Math NIM',
-            style: TextStyle(
+          Text(
+            s.get('appTitle'),
+            style: const TextStyle(
               fontFamily: NimTheme.font,
-              fontSize: 44,
+              fontSize: 40,
               color: NimTheme.gold,
               letterSpacing: 2,
               shadows: [

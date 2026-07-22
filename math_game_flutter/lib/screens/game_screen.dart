@@ -4,7 +4,6 @@ import 'dart:async';
 import 'dart:math' as math;
 import '../services/app_settings.dart';
 import '../services/sfx_service.dart';
-import '../services/music_service.dart';
 import 'settings_screen.dart';
 import '../game/stage_manager.dart';
 import '../game/nim_engine.dart';
@@ -153,7 +152,6 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   // 진행 로그 / 선공자 — 로그는 (주체, 텍스트) 구조로 저장해 언어 무관하게 색상 결정
   TurnOwner? _firstMover;
   final List<_LogEntry> _moveLog = [];
-  bool _logOpen = false;
 
   void _addLog(TurnOwner? owner, String text) {
     _moveLog.add(_LogEntry(owner, text));
@@ -967,7 +965,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                   ],
                 ),
               ),
-              _statusTicker(),
+              _recordLine(),
               // 하단 상시 배너 광고
               const Center(child: BannerAdWidget()),
             ],
@@ -1037,17 +1035,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
             tooltip: s.get('rulesTitle'),
             onPressed: _showModeRules,
           ),
-          // 음소거 토글 — 배경음악+효과음 한 번에 (언제든 누를 수 있음)
-          IconButton(
-            visualDensity: VisualDensity.compact,
-            icon: Icon(
-              _isMuted ? Icons.volume_off_rounded : Icons.volume_up_rounded,
-              size: 20,
-              color: _isMuted ? _Pal.inkSoft : _Pal.cream,
-            ),
-            tooltip: s.get('muteToggle'),
-            onPressed: _toggleMute,
-          ),
+          // (v2) 음소거는 설정 안으로 — 탑바 아이콘 3개로 다이어트
           // 설정 — 게임 중 언제든 진입
           IconButton(
             visualDensity: VisualDensity.compact,
@@ -1156,49 +1144,31 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     );
   }
 
-  bool get _isMuted => !AppSettings.instance.music && !AppSettings.instance.sfx;
-
-  /// 음소거 토글: 하나라도 켜져 있으면 전부 끄고, 다 꺼져 있으면 전부 켠다.
-  Future<void> _toggleMute() async {
-    _haptic();
-    final bool mute = !_isMuted;
-    await AppSettings.instance.setMusic(!mute);
-    await AppSettings.instance.setSfx(!mute);
-    await MusicService.instance.setEnabled(!mute);
-    if (mounted) setState(() {});
-  }
-
-  /// 하단 상태 티커: 날짜/턴/모드 규칙을 흐르는 정보 바.
-  Widget _statusTicker() {
-    String status;
-    if (_phase == GamePhase.gameOver) {
-      status = _playerWon ? s.get('victory') : s.get('defeat');
-    } else if (_phase == GamePhase.turnChoice) {
-      status = s.get('whoGoesFirst');
-    } else {
-      status = _currentTurn == TurnOwner.player
-          ? s.get('myTurn')
-          : s.get('midnightTurn');
-    }
+  /// (v2) 기록 한 줄 — #767676 회색으로 존재감만. 최근 수순이 앞에 온다.
+  Widget _recordLine() {
+    final moves = _moveLog.where((e) => e.owner != null).toList();
+    final String recent =
+        moves.reversed.take(3).map((e) => e.text).join('  ←  ');
+    final String first = _firstMover == null
+        ? ''
+        : ' · ${s.get('logFirst', [_nameOf(_firstMover!)])}';
     return Container(
-      height: 26,
+      height: 22,
       decoration: const BoxDecoration(
         color: _Pal.deskBottom,
-        border: Border(top: BorderSide(color: _Pal.frame, width: 2)),
+        border: Border(top: BorderSide(color: _Pal.frame, width: 1)),
       ),
       alignment: Alignment.centerLeft,
       padding: const EdgeInsets.symmetric(horizontal: 12),
       child: Text(
-        '▸ ${s.get('caseLabel', [
-              widget.stageNumber.toString().padLeft(3, '0')
-            ])}   ·   $status',
+        '${s.get('logLabel')}$first${recent.isEmpty ? '' : '  ·  $recent'}',
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         style: const TextStyle(
           fontFamily: _mono,
-          color: _Pal.inkSoft,
-          fontSize: 11,
-          letterSpacing: 0.5,
+          color: Color(0xFF767676),
+          fontSize: 10,
+          letterSpacing: 0.3,
         ),
       ),
     );
@@ -1271,7 +1241,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                 message,
                 style: const TextStyle(
                   fontFamily: _mono,
-                  fontSize: 13,
+                  fontSize: 14,
                   height: 1.35,
                   color: _Pal.ink,
                 ),
@@ -1352,31 +1322,48 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     return Column(
       children: [
         _deskScene(
-          overlay: Row(
-            children: [
-              // "누가 먼저 할까?" 골드 도장
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
-                decoration: BoxDecoration(
-                  border: Border.all(color: _Pal.gold, width: 2.5),
-                  borderRadius: BorderRadius.circular(4),
-                  color: _Pal.gold.withOpacity(0.12),
-                ),
-                child: Text(
+          // (v2) "누가 먼저 할까?" — 풀폭 배너 (플레이 중 턴 배너와 같은 자리)
+          overlay: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+            decoration: BoxDecoration(
+              border: Border.all(color: _Pal.gold, width: 2.5),
+              borderRadius: BorderRadius.circular(6),
+              color: _Pal.deskBottom.withOpacity(0.88),
+            ),
+            child: Row(
+              children: [
+                Text(
                   s.get('whoGoesFirst'),
                   style: const TextStyle(
                     fontFamily: _mono,
-                    fontSize: 14,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
                     letterSpacing: 2,
                     color: _Pal.gold,
                   ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              _infoChips(dark: true),
-            ],
+                const Spacer(),
+                Flexible(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      _boardSummary(),
+                      style: const TextStyle(
+                        fontFamily: _mono,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w900,
+                        color: _Pal.cream,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: _infoChips(dark: true),
         ),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
@@ -1406,9 +1393,8 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     );
   }
 
-  /// 정보 칩 2개: [남은 돌 N] [한 번에 1~M개] — 게임 내내 숫자 정보 상시 노출.
+  /// (v2) 규칙 칩 한 줄: [한 번에 1~M개] [승리 조건] — 남은 돌은 턴 배너가 담당.
   Widget _infoChips({required bool dark}) {
-    final int total = _rows.fold(0, (a, b) => a + b);
     String qty;
     switch (_config.mode) {
       case GameMode.singleRow:
@@ -1452,18 +1438,19 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       mainAxisSize: MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        chip(s.get('stonesLeft', ['$total'])),
-        const SizedBox(width: 8),
         chip(qty),
         // 빼빼로 핵심 규칙은 칩으로 상시 노출 — "같은 개수 ❌"
         if (_config.mode == GameMode.pepero) ...[
           const SizedBox(width: 8),
           chip(s.get('peperoNoEqualChip')),
         ],
-        // 🧪 normal play 모드: 승리 조건이 반대이므로 칩으로 상시 노출
+        // 승리 조건 상시 노출 — normal play(마지막 돌 승리) vs misère(패배)
         if (_isNormalPlay) ...[
           const SizedBox(width: 8),
           chip(s.get('lastStoneWinChip')),
+        ] else if (_config.mode != GameMode.pepero) ...[
+          const SizedBox(width: 8),
+          chip(s.get('lastStoneLoseChip')),
         ],
       ],
     );
@@ -1489,31 +1476,24 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
             ),
           ),
           // 1) 예린 — 중앙에 크게, 가슴 아래까지 (진짜 마주 앉아 대결하는 느낌)
-          //    하반신은 테이블(top:258)에 가려진다.
+          //    하반신은 테이블(top:258)에 가려진다. (v2: 더 키움)
           Positioned(
-            top: 30,
+            top: 22,
             left: 0,
             right: 0,
-            child: Center(child: _catFigure(size: 300)),
+            child: Center(child: _catFigure(size: 335)),
           ),
-          // 말풍선 — 예린 얼굴 오른쪽
+          // 말풍선 — 예린 얼굴 오른쪽 (v2: 폭·글자 키움)
           Positioned(
-            top: 64,
-            right: 6,
+            top: 68,
+            right: 4,
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 150),
+              constraints: const BoxConstraints(maxWidth: 172),
               child: _tauntBubble(_midnightMessage),
             ),
           ),
-          // 2) 도장/칩 — 맨 위 (예린 위 레이어라 항상 보임)
-          Positioned(
-            top: 2,
-            left: 8,
-            right: 8,
-            child: Center(
-              child: FittedBox(fit: BoxFit.scaleDown, child: overlay),
-            ),
-          ),
+          // 2) 턴 배너 — 맨 위 풀폭 (예린 위 레이어라 항상 보임)
+          Positioned(top: 4, left: 10, right: 10, child: overlay),
           // 3) 테이블 — 예린 가슴 아래에서 시작 (평평, 남은 영역 꽉 채움)
           Positioned(
             top: 258,
@@ -1586,18 +1566,13 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   Widget _buildGameBoard() {
     return Column(
       children: [
-        _deskScene(
-          overlay: Row(
-            children: [
-              _turnStamp(),
-              const SizedBox(width: 8),
-              _infoChips(dark: true),
-            ],
-          ),
+        // (v2) 1순위: 턴 + 판 요약을 풀폭 배너로
+        _deskScene(overlay: _turnStamp()),
+        // (v2) 2순위: 규칙 칩 한 줄 (남은 돌은 배너로 승격됨)
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: _infoChips(dark: true),
         ),
-        // 진행 로그 / 선공 패널 — 액션 바 바로 위 (엄지 근처)
-        _logPanel(),
-        const SizedBox(height: 4),
         if (_phase == GamePhase.playing && _currentTurn == TurnOwner.player)
           _buildActionArea(),
         if (_phase == GamePhase.gameOver && !_playerWon)
@@ -1640,6 +1615,23 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     );
   }
 
+  /// (v2) 게임판 요약 — 모드마다 형태가 달라도 배너 오른쪽 한 자리를 쓴다.
+  /// 한줄="남은 돌 3", 여러줄/카일즈="3 · 5 · 7", 위토프="3 · 5", 빼빼로="막대 3개".
+  String _boardSummary() {
+    switch (_config.mode) {
+      case GameMode.pepero:
+        return s.get('sticksLeft', ['${_rows.length}']);
+      case GameMode.wythoff:
+        return _rows.map((r) => '$r').join(' · ');
+      default:
+        if (_rows.length == 1) {
+          return s.get('stonesLeft', ['${_rows.first}']);
+        }
+        return _rows.map((r) => '$r').join(' · ');
+    }
+  }
+
+  /// (v2) 턴 배너 — 1순위 정보(누구 턴 + 판 요약)를 풀폭으로 크게.
   Widget _turnStamp() {
     final bool over = _phase == GamePhase.gameOver;
     final Color c = over
@@ -1651,20 +1643,40 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
             ? s.get('myTurn')
             : s.get('midnightTurn'));
     final stamp = Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
       decoration: BoxDecoration(
         border: Border.all(color: c, width: 2.5),
-        borderRadius: BorderRadius.circular(4),
-        color: c.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(6),
+        color: _Pal.deskBottom.withOpacity(0.88),
       ),
-      child: Text(
-        label.toUpperCase(),
-        style: TextStyle(
-          fontFamily: _mono,
-          fontSize: 14,
-          letterSpacing: 2,
-          color: c == _Pal.gold ? _Pal.gold : c,
-        ),
+      child: Row(
+        children: [
+          Text(
+            label.toUpperCase(),
+            style: TextStyle(
+              fontFamily: _mono,
+              fontSize: 15,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 2,
+              color: c == _Pal.gold ? _Pal.gold : c,
+            ),
+          ),
+          const Spacer(),
+          Flexible(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                _boardSummary(),
+                style: const TextStyle(
+                  fontFamily: _mono,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
+                  color: _Pal.cream,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
     // (제안 #8) 승리 도장은 "쾅" 찍히며 등장 — 패배는 조용하게 (M3)
@@ -1681,100 +1693,6 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       );
     }
     return stamp;
-  }
-
-  /// 진행 로그 + 선공자 패널 (접었다 펴기). 세로폰 공간 절약 위해 기본 접힘.
-  Widget _logPanel() {
-    final String first = _firstMover == null ? '—' : _nameOf(_firstMover!);
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: _Pal.deskBottom,
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: _Pal.frame, width: 1.5),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          InkWell(
-            onTap: () => setState(() => _logOpen = !_logOpen),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              child: Row(
-                children: [
-                  Text(
-                    '▸ ${s.get('logLabel')}',
-                    style: const TextStyle(
-                      fontFamily: _mono,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w900,
-                      color: _Pal.gold,
-                      letterSpacing: 1,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    s.get('logFirst', [first]),
-                    style: const TextStyle(
-                      fontFamily: _mono,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: _Pal.cream,
-                    ),
-                  ),
-                  const Spacer(),
-                  Text(
-                    s.get('movesCount',
-                        ['${_moveLog.where((e) => e.owner != null).length}']),
-                    style: const TextStyle(
-                      fontFamily: _mono,
-                      fontSize: 10,
-                      color: _Pal.inkSoft,
-                    ),
-                  ),
-                  Icon(
-                    _logOpen
-                        ? Icons.expand_less_rounded
-                        : Icons.expand_more_rounded,
-                    size: 18,
-                    color: _Pal.cream,
-                  ),
-                ],
-              ),
-            ),
-          ),
-          if (_logOpen)
-            Container(
-              width: double.infinity,
-              constraints: const BoxConstraints(maxHeight: 92),
-              padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-              child: ListView(
-                reverse: true,
-                shrinkWrap: true,
-                children: _moveLog.reversed.map((e) {
-                  final Color c = e.owner == TurnOwner.midnight
-                      ? const Color(0xFFD98A6E)
-                      : (e.owner == TurnOwner.player
-                          ? _Pal.gold
-                          : _Pal.inkSoft);
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 1.5),
-                    child: Text(
-                      e.text,
-                      style: TextStyle(
-                        fontFamily: _mono,
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w600,
-                        color: c,
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-            ),
-        ],
-      ),
-    );
   }
 
   Widget _buildBoardArea() {
@@ -1847,17 +1765,19 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                   mainAxisSize: MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
+                    // (v2) 줄별 개수 라벨 — 게임판이 숫자를 직접 담당
                     if (multi)
                       Padding(
                         padding: const EdgeInsets.only(right: 8),
                         child: Text(
-                          'R${rowIdx + 1}',
+                          '$len',
                           style: TextStyle(
                             fontFamily: _mono,
-                            fontSize: 13,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w800,
                             color: isSelRow
                                 ? _Pal.gold
-                                : _Pal.cream.withOpacity(0.45),
+                                : _Pal.cream.withOpacity(0.65),
                           ),
                         ),
                       ),
@@ -1954,23 +1874,41 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
               ),
               ...List.generate(_rows.length, (rowIdx) {
                 final len = _rows[rowIdx];
+                final bool rowSel = _kSelRow == rowIdx && _kSelCount > 0;
                 return Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(len, (i) {
-                      final bool selected = _kSelRow == rowIdx &&
-                          i >= _kSelStart &&
-                          i < _kSelStart + _kSelCount;
-                      return _Stone(
-                        cell: cell,
-                        size: stone,
-                        selected: selected,
-                        leaving: _leaving && selected,
-                        onTap: () => _selectKayles(rowIdx, i),
-                      );
-                    }),
+                    children: [
+                      // (v2) 줄별 개수 라벨
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: Text(
+                          '$len',
+                          style: TextStyle(
+                            fontFamily: _mono,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w800,
+                            color: rowSel
+                                ? _Pal.gold
+                                : _Pal.cream.withOpacity(0.65),
+                          ),
+                        ),
+                      ),
+                      ...List.generate(len, (i) {
+                        final bool selected = _kSelRow == rowIdx &&
+                            i >= _kSelStart &&
+                            i < _kSelStart + _kSelCount;
+                        return _Stone(
+                          cell: cell,
+                          size: stone,
+                          selected: selected,
+                          leaving: _leaving && selected,
+                          onTap: () => _selectKayles(rowIdx, i),
+                        );
+                      }),
+                    ],
                   ),
                 );
               }),
@@ -2128,16 +2066,18 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                   mainAxisSize: MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
+                    // (v2) 줄별 개수 라벨
                     Padding(
                       padding: const EdgeInsets.only(right: 8),
                       child: Text(
-                        'R${rowIdx + 1}',
+                        '$len',
                         style: TextStyle(
                           fontFamily: _mono,
-                          fontSize: 13,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
                           color: sel > 0
                               ? _Pal.gold
-                              : _Pal.cream.withOpacity(0.45),
+                              : _Pal.cream.withOpacity(0.65),
                         ),
                       ),
                     ),
@@ -2565,34 +2505,35 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              hasSel
-                  ? (_rows.length > 1
-                      ? s.get('takeFromRow', ['${_selectedRow + 1}'])
-                      : s.get('takeCount'))
-                  : s.get('tapToSelect'),
-              style: TextStyle(
-                fontFamily: _mono,
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: hasSel ? _Pal.cream : _Pal.cream.withOpacity(0.55),
+        // (v2) 선택 전엔 CTA 버튼 하나면 충분 — 중복 안내문 제거
+        if (hasSel) ...[
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                _rows.length > 1
+                    ? s.get('takeFromRow', ['${_selectedRow + 1}'])
+                    : s.get('takeCount'),
+                style: const TextStyle(
+                  fontFamily: _mono,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: _Pal.cream,
+                ),
               ),
-            ),
-            Text(
-              hasSel ? s.get('nPieces', ['$_selectedCount']) : '—',
-              style: TextStyle(
-                fontFamily: _mono,
-                fontSize: 20,
-                fontWeight: FontWeight.w900,
-                color: hasSel ? _Pal.gold : _Pal.inkSoft,
+              Text(
+                s.get('nPieces', ['$_selectedCount']),
+                style: const TextStyle(
+                  fontFamily: _mono,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w900,
+                  color: _Pal.gold,
+                ),
               ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 10),
+            ],
+          ),
+          const SizedBox(height: 10),
+        ],
         // (제안 #7) 비활성 시 행동 유도 문구, 선택 시 살짝 커지며 강조
         AnimatedScale(
           scale: hasSel ? 1.0 : 0.97,

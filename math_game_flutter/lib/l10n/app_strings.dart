@@ -7,18 +7,18 @@ class AppStrings {
   static final Map<String, Map<String, String>> _strings = {
     // ── App-wide ──
     'appTitle': {
-      'en': 'Math NIM',
-      'ko': 'Math NIM - 수학 님 게임',
+      'en': 'After-School NIM',
+      'ko': '방과후 님게임',
     },
     'appSubtitle': {
-      'en': 'Math NIM Strategy Game with Yerin',
-      'ko': '예린이와 함께하는 수학 님 게임',
+      'en': 'Math Duel with Yerin',
+      'ko': '예린과 수학 대결',
     },
 
     // ── Home Screen ──
     'mathNimSubtitle': {
-      'en': 'Math NIM Game',
-      'ko': '수학 님 게임',
+      'en': 'Math Duel with Yerin',
+      'ko': '예린과 수학 대결',
     },
     'midnightGreeting': {
       'en': "Hi! I'm Yerin!",
@@ -361,6 +361,14 @@ class AppStrings {
     'lastStoneWinChip': {
       'en': 'Last stone WINS',
       'ko': '마지막 돌 = 승리!',
+    },
+    'lastStoneLoseChip': {
+      'en': 'Last stone LOSES',
+      'ko': '마지막 돌 잡으면 패배!',
+    },
+    'sticksLeft': {
+      'en': 'Sticks {0}',
+      'ko': '막대 {0}개',
     },
     'kaylesChip': {
       'en': 'Adjacent 1~2',
