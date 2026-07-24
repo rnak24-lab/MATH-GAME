@@ -33,10 +33,10 @@
             android:name="flutterEmbedding"
             android:value="2" />
 
-        <!-- Google AdMob APPLICATION_ID (Google 공식 테스트 ID — 출시 전 대표님 실제 ID로 교체) -->
+        <!-- Google AdMob APPLICATION_ID — 방과후 님게임 실제 앱 ID (2026-07-24 발급) -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-3940256099942544~3347511713" />
+            android:value="ca-app-pub-2700643196600577~1423000098" />
 
     </application>
     <!-- Required to query activities that can process text, see:

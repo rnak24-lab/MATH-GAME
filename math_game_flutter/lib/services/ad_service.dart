@@ -1,11 +1,10 @@
 import 'package:flutter/foundation.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
-/// 광고 ID 관리 — 테스트 ID로 배포한 뒤, 대표님이 실제 ID 주시면
-/// [_realBannerId], [_realInterstitialId] 만 교체하면 된다.
-/// `useTestIds = true` 이면 강제로 테스트 ID 사용 (현재 기본).
+/// 광고 ID 관리 — 2026-07-24 실제 AdMob ID 발급 완료 (앱: 방과후 님게임).
+/// 디버그 빌드에서 테스트하려면 `useTestIds = true` 로 잠깐 바꿀 것.
 class AdIds {
-  static const bool useTestIds = true;
+  static const bool useTestIds = false;
 
   // Google 공식 테스트 ID (Android)
   static const String _testBannerId = 'ca-app-pub-3940256099942544/6300978111';
@@ -14,12 +13,12 @@ class AdIds {
   static const String _testRewardedId =
       'ca-app-pub-3940256099942544/5224354917';
 
-  // TODO: 대표님 실제 AdMob ID 확정 시 여기만 교체
-  static const String _realBannerId = 'ca-app-pub-3940256099942544/6300978111';
+  // 실제 AdMob ID (2026-07-24 발급 — banner_main/interstitial_stageclear/rewarded_hint)
+  static const String _realBannerId = 'ca-app-pub-2700643196600577/8295264277';
   static const String _realInterstitialId =
-      'ca-app-pub-3940256099942544/1033173712';
+      'ca-app-pub-2700643196600577/1610702355';
   static const String _realRewardedId =
-      'ca-app-pub-3940256099942544/5224354917';
+      'ca-app-pub-2700643196600577/8483232460';
 
   static String get banner => useTestIds ? _testBannerId : _realBannerId;
   static String get interstitial =>
