@@ -402,8 +402,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     if (_config.mode == GameMode.pepero) {
       bool canSplit = _rows.any((p) => p >= 3);
       if (!canSplit) {
-        // 못 쪼개는 쪽(= 지금 둘 차례)이 패배 → 상대를 못 두게 만들면 승리
-        _endGame(_currentTurn == TurnOwner.player);
+        // _checkGameOver는 턴 토글 "후" 호출됨 → _currentTurn = 다음에 둘 사람.
+        // 다음 차례가 못 쪼개면 그 사람이 패배. (2026-07-24 반전 버그 수정)
+        _endGame(_currentTurn != TurnOwner.player);
         return true;
       }
     } else if (_isNormalPlay) {
@@ -706,10 +707,10 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       }
       if (!mounted || _phase != GamePhase.playing) return;
       setState(() {
+        // (대표님 7/24) 예린의 수도 제자리 분열 — 위아래로 나뉘어 추적 쉬움
         _rows.removeAt(move.rowIndex);
-        if (move.kaylesLeft > 0) _rows.add(move.kaylesLeft);
-        if (move.kaylesRight > 0) _rows.add(move.kaylesRight);
-        _rows.sort((x, y) => y.compareTo(x));
+        if (move.kaylesRight > 0) _rows.insert(move.rowIndex, move.kaylesRight);
+        if (move.kaylesLeft > 0) _rows.insert(move.rowIndex, move.kaylesLeft);
         _say('midnightTookTotal', ['${move.count}']);
       });
     } else if (move.isWythoff) {
@@ -1619,8 +1620,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
           padding: const EdgeInsets.symmetric(vertical: 4),
           child: _infoChips(dark: true),
         ),
-        if (_phase == GamePhase.playing && _currentTurn == TurnOwner.player)
-          _buildActionArea(),
+        // (대표님 7/24) 액션 바는 상대 턴에도 유지 — 책상 크기가 출렁이지 않게.
+        // 예린 턴엔 반투명+터치 차단만.
+        if (_phase == GamePhase.playing) _buildActionArea(),
         if (_phase == GamePhase.gameOver && !_playerWon)
           Padding(
             padding: const EdgeInsets.all(12),
@@ -2043,10 +2045,10 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       _addLog(TurnOwner.player, '${_nameOf(TurnOwner.player)}  −$took ✂');
       setState(() {
         _leaving = false;
+        // (대표님 7/24) 분열은 제자리에서 위아래로 — 정렬하면 줄 위치가 튀어 헷갈림
         _rows.removeAt(row);
-        if (left > 0) _rows.add(left);
-        if (right > 0) _rows.add(right);
-        _rows.sort((x, y) => y.compareTo(x));
+        if (right > 0) _rows.insert(row, right);
+        if (left > 0) _rows.insert(row, left);
         _kSelRow = -1;
         _kSelStart = -1;
         _kSelCount = 0;
@@ -2522,19 +2524,31 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildActionArea() {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-      decoration: const BoxDecoration(
-        color: _Pal.frame,
-        border: Border(top: BorderSide(color: _Pal.frameHi, width: 2)),
+    // (대표님 7/24) 예린 턴에도 같은 높이로 유지 — 반투명+터치 차단만.
+    final bool myTurn =
+        _currentTurn == TurnOwner.player && !_isAiAnimating && !_leaving;
+    return IgnorePointer(
+      ignoring: !myTurn,
+      child: Opacity(
+        opacity: myTurn ? 1.0 : 0.45,
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+          constraints: BoxConstraints(
+              minHeight: _config.mode == GameMode.pepero ? 158 : 116),
+          alignment: Alignment.center,
+          decoration: const BoxDecoration(
+            color: _Pal.frame,
+            border: Border(top: BorderSide(color: _Pal.frameHi, width: 2)),
+          ),
+          child: _config.mode == GameMode.pepero
+              ? _buildPeperoAction()
+              : _config.mode == GameMode.kayles
+                  ? _buildKaylesAction()
+                  : _config.mode == GameMode.wythoff
+                      ? _buildWythoffAction()
+                      : _buildStoneAction(),
+        ),
       ),
-      child: _config.mode == GameMode.pepero
-          ? _buildPeperoAction()
-          : _config.mode == GameMode.kayles
-              ? _buildKaylesAction()
-              : _config.mode == GameMode.wythoff
-                  ? _buildWythoffAction()
-                  : _buildStoneAction(),
     );
   }
 
@@ -2551,35 +2565,33 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // (v2) 선택 전엔 CTA 버튼 하나면 충분 — 중복 안내문 제거
-        if (hasSel) ...[
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                _rows.length > 1
-                    ? s.get('takeFromRow', ['${_selectedRow + 1}'])
-                    : s.get('takeCount'),
-                style: const TextStyle(
-                  fontFamily: _mono,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: _Pal.cream,
-                ),
+        // (대표님 7/24) 라벨 줄 항상 렌더 — 선택 여부로 높이가 출렁이지 않게
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              hasSel && _rows.length > 1
+                  ? s.get('takeFromRow', ['${_selectedRow + 1}'])
+                  : s.get('takeCount'),
+              style: const TextStyle(
+                fontFamily: _mono,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: _Pal.cream,
               ),
-              Text(
-                s.get('nPieces', ['$_selectedCount']),
-                style: const TextStyle(
-                  fontFamily: _mono,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w900,
-                  color: _Pal.gold,
-                ),
+            ),
+            Text(
+              hasSel ? s.get('nPieces', ['$_selectedCount']) : '—',
+              style: TextStyle(
+                fontFamily: _mono,
+                fontSize: 20,
+                fontWeight: FontWeight.w900,
+                color: hasSel ? _Pal.gold : _Pal.inkSoft,
               ),
-            ],
-          ),
-          const SizedBox(height: 10),
-        ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
         // (제안 #7) 비활성 시 행동 유도 문구, 선택 시 살짝 커지며 강조
         AnimatedScale(
           scale: hasSel ? 1.0 : 0.97,
