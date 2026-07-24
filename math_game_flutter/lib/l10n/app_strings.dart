@@ -41,8 +41,8 @@ class AppStrings {
       'ko': '처음부터 시작',
     },
     'clearProgress': {
-      'en': 'Clear: {0}/80 Stages',
-      'ko': 'Clear: {0}/80 Stages',
+      'en': 'Clear: {0}/140 Stages',
+      'ko': 'Clear: {0}/140 Stages',
     },
     'settings': {
       'en': 'Settings',
@@ -98,16 +98,16 @@ class AppStrings {
       'ko': '뒤뜰 토끼장',
     },
     'worldSubtitleKayles': {
-      'en': 'Kayles · TEST',
-      'ko': '카일즈 · 테스트',
+      'en': 'Kayles',
+      'ko': '카일즈 게임',
     },
     'worldSubtitleWythoff': {
-      'en': 'Wythoff · TEST',
-      'ko': '위토프 · 테스트',
+      'en': "Wythoff's Game",
+      'ko': '위토프 게임',
     },
     'worldSubtitleFibonacci': {
-      'en': 'Fibonacci NIM · TEST',
-      'ko': '피보나치 님 · 테스트',
+      'en': 'Fibonacci NIM',
+      'ko': '피보나치 님게임',
     },
     'worldSubtitleSingleRow': {
       'en': 'Single Row NIM',

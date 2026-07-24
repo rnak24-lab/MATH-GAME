@@ -73,7 +73,7 @@ const List<WorldInfo> worlds = [
     subtitleKey: 'worldSubtitlePepero',
     bgGradient: [Color(0xFF1A1F3C), Color(0xFF5C6BC0), Color(0xFFE8EAF6)],
   ),
-  // ── 🧪 테스트 월드 3종 (학교 컨셉 — 출시 편성은 검수 후 결정) ──
+  // ── 정식 월드 5~7 (2026-07-24 대표님 확정: 테스트 3종 전부 정식 편성) ──
   WorldInfo(
     id: 4,
     nameKey: 'worldGym',

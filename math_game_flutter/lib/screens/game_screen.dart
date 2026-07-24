@@ -453,7 +453,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   }
 
   void _showNextStageDialog() {
-    // 🧪 테스트 월드 포함 140까지 (정식 출시 구성은 검수 후 80으로)
+    // 정식 7월드 140스테이지 (2026-07-24 확정)
     bool hasNext = widget.stageNumber < 140;
 
     showGeneralDialog(

@@ -60,9 +60,9 @@ class StageManager extends ChangeNotifier {
   /// 20판 전부 깨는 완주는 별개의 목표로 남는다.
   static const int _unlockClearsNeeded = 3;
 
-  /// 🧪 검수용 플래그: 빼빼로(3) + 테스트 월드(카일즈4/위토프5/피보나치6) 상시 해금.
-  /// ⚠️ 출시 전 반드시 false로! (대표님 검수 편의를 위한 임시 오픈)
-  static const bool kReviewUnlockTestWorlds = true;
+  /// 🧪 검수용 플래그: 빼빼로(3) + 신규 월드(카일즈4/위토프5/피보나치6) 상시 해금.
+  /// 2026-07-24 출시 결정: 7월드 전부 정식 편성 + 순차 해금 → OFF.
+  static const bool kReviewUnlockTestWorlds = false;
 
   /// 검수 해금 시작 월드 id (3 = 빼빼로부터).
   static const int _reviewUnlockFrom = 3;
