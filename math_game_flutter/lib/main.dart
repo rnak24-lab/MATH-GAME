@@ -36,7 +36,7 @@ class _MathNimAppState extends State<MathNimApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Math NIM',
+      title: '방과후 님게임',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
@@ -129,70 +129,97 @@ class _SplashScreenState extends State<SplashScreen>
   Widget build(BuildContext context) {
     final s = widget.localeProvider.strings;
 
-    // (id=1142) 로딩화면: 대표님이 보내준 app_icon_master.png 이미지 + 하단 로딩 스피너
+    // 로딩화면 — 홈과 같은 컨셉: 크림 수학낙서 배경 + 네이비 타이틀 밴드 + 예린
     return Scaffold(
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF1A1A2E),
-              Color(0xFF16213E),
-              Color(0xFF0F3460),
-            ],
+      backgroundColor: const Color(0xFFF5F0E4),
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          Image.asset(
+            'assets/backgrounds/home.png',
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => const SizedBox.shrink(),
           ),
-        ),
-        child: AnimatedBuilder(
-          animation: _controller,
-          builder: (context, child) {
-            return Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // 앱 아이콘 마스터 이미지 (NIM GAME 로고)
-                Transform.scale(
-                  scale: _scaleAnim.value,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(32),
-                    child: Image.asset(
-                      'assets/app_icon_master.png',
-                      width: 200,
-                      height: 200,
-                      fit: BoxFit.cover,
+          SafeArea(
+            child: AnimatedBuilder(
+              animation: _controller,
+              builder: (context, child) {
+                return Column(
+                  children: [
+                    const Spacer(flex: 2),
+                    // 타이틀 밴드 (홈과 동일한 네이비+골드)
+                    Transform.scale(
+                      scale: _scaleAnim.value.clamp(0.0, 1.2),
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 36),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 20, vertical: 14),
+                        decoration: BoxDecoration(
+                          color: const Color(0xE62F2B57),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                              color: const Color(0xFFC9A24B), width: 2.5),
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              s.get('appTitle'),
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                fontFamily: 'NeoDGM',
+                                fontSize: 30,
+                                color: Color(0xFFC9A24B),
+                                letterSpacing: 1.5,
+                              ),
+                            ),
+                            const SizedBox(height: 5),
+                            Text(
+                              s.get('appSubtitle'),
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                fontFamily: 'NeoDGM',
+                                fontSize: 14,
+                                color: Color(0xFFEADFC6),
+                                letterSpacing: 1,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-                const SizedBox(height: 48),
-                // 하단 로딩 스피너 (빙글빙글)
-                Opacity(
-                  opacity: _opacityAnim.value,
-                  child: const SizedBox(
-                    width: 40,
-                    height: 40,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 3.5,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    const Spacer(),
+                    // 예린 — 아이콘 사각형 대신 캐릭터가 직접 맞이
+                    Opacity(
+                      opacity: _opacityAnim.value,
+                      child: Image.asset(
+                        'assets/yerin/happy.png',
+                        width: 240,
+                        errorBuilder: (_, __, ___) =>
+                            const SizedBox(width: 240, height: 200),
+                      ),
                     ),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Opacity(
-                  opacity: _opacityAnim.value,
-                  child: Text(
-                    s.get('appSubtitle'),
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.white.withOpacity(0.6),
-                      letterSpacing: 1.2,
+                    const Spacer(),
+                    // 골드 스피너
+                    Opacity(
+                      opacity: _opacityAnim.value,
+                      child: const SizedBox(
+                        width: 36,
+                        height: 36,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 3.5,
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(Color(0xFFC9A24B)),
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-              ],
-            );
-          },
-        ),
+                    const SizedBox(height: 56),
+                  ],
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
