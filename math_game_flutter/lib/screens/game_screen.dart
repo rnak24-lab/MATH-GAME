@@ -169,9 +169,6 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   // 플레이어 턴 시작 시 NIM 패배 상태 연속 카운트 (happy → confident 전환용)
   int _consecutiveLossTurns = 0;
 
-  // Hints
-  int _hintsLeft = 3;
-
   // Tutorial (예린 시나리오, 월드별 1라운드만 활성)
   List<TutorialStep> _tutorialSteps = const [];
   int _tutorialIndex = 0;
@@ -807,9 +804,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   }
 
   /// 힌트 버튼 → "힌트 보기!" 확인 다이얼로그 → 광고 시청 후 힌트 공개.
-  /// (광고 미준비/웹에서는 폴백으로 바로 공개)
+  /// 광고만 보면 무제한 — 남은 개수 제한 없음. (광고 미준비/웹에서는 폴백으로 바로 공개)
   void _showHint() {
-    if (_hintsLeft <= 0 || _currentTurn != TurnOwner.player) return;
+    if (_currentTurn != TurnOwner.player) return;
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -825,7 +822,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
           ),
         ),
         content: Text(
-          s.get('hintDialogBody', ['$_hintsLeft']),
+          s.get('hintDialogBody'),
           style: const TextStyle(
             fontFamily: _mono,
             fontSize: 13.5,
@@ -866,7 +863,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   }
 
   void _revealHint() {
-    if (!mounted || _hintsLeft <= 0 || _currentTurn != TurnOwner.player) {
+    if (!mounted || _currentTurn != TurnOwner.player) {
       return;
     }
 
@@ -921,8 +918,6 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
             s.get('hintMultiRow', ['${hint.count}', '${hint.rowIndex + 1}']);
       }
     }
-
-    setState(() => _hintsLeft--);
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -1017,16 +1012,14 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
               ),
             ),
           ),
+          // 힌트 — 광고 보면 무제한이라 남은 개수 표시 없음
           if (_phase == GamePhase.playing && _currentTurn == TurnOwner.player)
-            TextButton.icon(
-              onPressed: _hintsLeft > 0 ? _showHint : null,
-              icon: Icon(Icons.lightbulb_outline,
-                  size: 18, color: _hintsLeft > 0 ? _Pal.gold : _Pal.inkSoft),
-              label: Text('$_hintsLeft',
-                  style: TextStyle(
-                      fontFamily: _mono,
-                      color: _hintsLeft > 0 ? _Pal.gold : _Pal.inkSoft,
-                      fontWeight: FontWeight.w800)),
+            IconButton(
+              visualDensity: VisualDensity.compact,
+              onPressed: _showHint,
+              icon: const Icon(Icons.lightbulb_outline,
+                  size: 20, color: _Pal.gold),
+              tooltip: s.get('hintDialogTitle'),
             ),
           // ? 게임 규칙 — 언제든 현재 모드 규칙 확인
           IconButton(

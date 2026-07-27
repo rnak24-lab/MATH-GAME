@@ -409,8 +409,8 @@ class AppStrings {
       'ko': '힌트 보기!',
     },
     'hintDialogBody': {
-      'en': "Watch an ad and Yerin will whisper a move~ ✏️\n(Hints left: {0})",
-      'ko': '광고를 보면 예린이가 수를 살짝 알려줄게~ ✏️\n(남은 힌트: {0}개)',
+      'en': "Watch an ad and Yerin will whisper a move~ ✏️",
+      'ko': '광고를 보면 예린이가 수를 살짝 알려줄게~ ✏️',
     },
     'hintWatchAd': {
       'en': 'Watch ad & see hint',
