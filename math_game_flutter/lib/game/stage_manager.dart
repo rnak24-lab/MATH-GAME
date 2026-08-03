@@ -60,12 +60,12 @@ class StageManager extends ChangeNotifier {
   /// 20판 전부 깨는 완주는 별개의 목표로 남는다.
   static const int _unlockClearsNeeded = 3;
 
-  /// 🧪 검수용 플래그: 빼빼로(3) + 신규 월드(카일즈4/위토프5/피보나치6) 상시 해금.
-  /// 2026-07-24 출시 결정: 7월드 전부 정식 편성 + 순차 해금 → OFF.
-  static const bool kReviewUnlockTestWorlds = false;
+  /// 🧪 검수용 플래그: 전 월드 상시 해금 (대표님 검토용).
+  /// ⚠️ 출시(Play 제출)용 AAB를 만들 때는 반드시 false 로 되돌릴 것!
+  static const bool kReviewUnlockTestWorlds = true;
 
-  /// 검수 해금 시작 월드 id (3 = 빼빼로부터).
-  static const int _reviewUnlockFrom = 3;
+  /// 검수 해금 시작 월드 id (1 = 두 번째 월드부터 = 사실상 전부 해금).
+  static const int _reviewUnlockFrom = 1;
 
   /// 마지막 월드 id — 정식 4월드(0~3) + 테스트 3월드(4~6).
   static const int _lastWorldId = 6;
@@ -108,6 +108,8 @@ class StageManager extends ChangeNotifier {
   /// - 해당 월드가 해금되어 있고,
   /// - 월드의 첫 스테이지이거나 직전 스테이지를 클리어했을 때 (월드 내 순차 진행).
   bool isStagePlayable(int stage) {
+    // 🧪 검수 모드: 어느 스테이지든 바로 들어갈 수 있게 (출시 빌드에선 false)
+    if (kReviewUnlockTestWorlds) return true;
     int world = (stage - 1) ~/ 20;
     if (!isWorldUnlocked(world)) return false;
     int worldStart = world * 20 + 1;
