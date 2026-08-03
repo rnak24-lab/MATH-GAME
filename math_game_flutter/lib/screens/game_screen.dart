@@ -31,7 +31,8 @@ class _Pal {
   static const gold = Color(0xFFC9A24B); // 강조(현재 턴/선택)
   static const alarm = Color(0xFF9B3B2E); // 경고/패배/제거
   static const win = Color(0xFF5E7D52); // 승리/성공
-  static const sky = Color(0xFF79C6EA); // 빼빼로 선택(하늘색)
+  static const sky = Color(0xFF79C6EA); // 막대과자 선택(하늘색)
+  static const hint = Color(0xFF3D8FB8); // 힌트 강조(짙은 하늘) — 어두운 배경 위
   static const alarmHi = Color(0xFFE0574A); // 경고 밝은 버전(어두운 배경 위)
 
   // ── 교실 팔레트 (2026-07-08 대표님 원화 기준 — 손그림 파스텔) ──
@@ -598,6 +599,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   }
 
   void _playerMove() {
+    _clearHint(); // 수를 두면 힌트 하이라이트 해제
     if (_phase != GamePhase.playing ||
         _currentTurn != TurnOwner.player ||
         _isAiAnimating) return;
@@ -901,6 +903,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
           break;
       }
 
+      // 판 위에 하늘색으로 추천 수 표시 (텍스트보다 이게 본체)
+      _showHintOnBoard(hint);
+
       if (hint.isPepero) {
         hintText = s.get('hintPepero', ['${hint.splitA}', '${hint.splitB}']);
       } else if (hint.isWythoff) {
@@ -923,12 +928,70 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       SnackBar(
         content: Text(hintText,
             style: const TextStyle(fontFamily: _mono, fontSize: 14)),
-        backgroundColor: canWin ? _Pal.frame : _Pal.alarm,
+        backgroundColor: canWin ? _Pal.hint : _Pal.alarm,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
         duration: Duration(seconds: canWin ? 3 : 5),
       ),
     );
+  }
+
+  // ── 힌트 하이라이트: 추천 수를 실제 판 위에 하늘색으로 표시 ──
+  int _hintRow = -1; // 추천 줄 (-1 = 없음)
+  int _hintCount = 0; // 추천 개수 (줄 끝에서부터)
+  int _hintStart = -1; // 카일즈: 시작 인덱스
+  int _hintSplitA = 0; // 막대과자: 쪼갤 위치
+  Timer? _hintTimer;
+
+  bool _isHintStone(int rowIdx, int i, int len) {
+    if (_hintRow != rowIdx || _hintCount <= 0) return false;
+    if (_hintStart >= 0) {
+      return i >= _hintStart && i < _hintStart + _hintCount; // 카일즈
+    }
+    return i >= len - _hintCount; // 끝에서부터
+  }
+
+  void _clearHint() {
+    _hintTimer?.cancel();
+    if (_hintRow != -1 || _hintSplitA != 0) {
+      setState(() {
+        _hintRow = -1;
+        _hintCount = 0;
+        _hintStart = -1;
+        _hintSplitA = 0;
+      });
+    }
+  }
+
+  void _showHintOnBoard(NimMove hint) {
+    _hintTimer?.cancel();
+    setState(() {
+      if (hint.isPepero) {
+        _hintRow = hint.rowIndex;
+        _hintSplitA = hint.splitA;
+        _hintCount = 0;
+        _hintStart = -1;
+      } else if (hint.isWythoff) {
+        _hintRow = hint.takeA > 0 ? 0 : 1;
+        _hintCount = hint.takeA > 0 ? hint.takeA : hint.takeB;
+        _hintStart = -1;
+        _hintSplitA = 0;
+      } else if (_config.mode == GameMode.kayles) {
+        _hintRow = hint.rowIndex;
+        _hintCount = hint.count;
+        _hintStart = hint.kaylesLeft;
+        _hintSplitA = 0;
+      } else {
+        _hintRow = hint.rowIndex;
+        _hintCount = hint.count;
+        _hintStart = -1;
+        _hintSplitA = 0;
+      }
+    });
+    // 12초 뒤 자동 해제 (그 전에 수를 두면 _clearHint로 사라짐)
+    _hintTimer = Timer(const Duration(seconds: 12), () {
+      if (mounted) _clearHint();
+    });
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -1147,6 +1210,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   @override
   void dispose() {
     _pokeTimer?.cancel();
+    _hintTimer?.cancel();
     super.dispose();
   }
 
@@ -1836,6 +1900,8 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                           selected: selected,
                           leaving: _leaving && selected,
                           danger: danger,
+                          hint: _isHintStone(rowIdx, i, len),
+                          kind: snackForStage(widget.stageNumber),
                           onTap: () => _selectStone(rowIdx, i),
                         );
                       }),
@@ -1946,6 +2012,8 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                           size: stone,
                           selected: selected,
                           leaving: _leaving && selected,
+                          hint: _isHintStone(rowIdx, i, len),
+                          kind: snackForStage(widget.stageNumber),
                           onTap: () => _selectKayles(rowIdx, i),
                         );
                       }),
@@ -2131,6 +2199,8 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                           size: stone,
                           selected: selected,
                           leaving: _leaving && selected,
+                          hint: _isHintStone(rowIdx, i, len),
+                          kind: snackForStage(widget.stageNumber),
                           onTap: () => _selectWythoff(rowIdx, i),
                         );
                       }),
@@ -2862,6 +2932,234 @@ class _LogEntry {
 // ─────────────────────────────────────────────────────────────
 
 /// 책상 위 돌 = 부감(탑뷰) 칩 토큰.
+/// 월드별 간식 종류 — 단계가 바뀐 걸 한눈에 알 수 있게 모양·색이 다르다.
+enum SnackKind { candy, chocolate, cookie, jelly, macaron, donut }
+
+/// 스테이지(월드)에 맞는 간식 종류. 막대과자 월드는 별도 위젯이라 여기 없음.
+SnackKind snackForStage(int stage) {
+  const kinds = [
+    SnackKind.candy, // 등교길
+    SnackKind.chocolate, // 점심시간 옥상
+    SnackKind.cookie, // 방과후 교실
+    SnackKind.jelly, // (막대과자 월드는 별도)
+    SnackKind.macaron, // 체육관
+    SnackKind.donut, // 과학실
+    SnackKind.jelly, // 뒤뜰 토끼장
+  ];
+  final w = (worldForStage(stage).id).clamp(0, kinds.length - 1);
+  return kinds[w];
+}
+
+/// 간식 렌더러 — 종류마다 실루엣과 배색이 다르다.
+/// selected(집은 상태)면 밝게, danger(가져가면 지는 것)면 붉게.
+class _SnackPainter extends CustomPainter {
+  final SnackKind kind;
+  final bool selected;
+  final bool danger;
+  const _SnackPainter({
+    required this.kind,
+    required this.selected,
+    required this.danger,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width, h = size.height;
+    final c = Offset(w / 2, h / 2);
+    final r = w / 2;
+
+    // 공통 그림자
+    canvas.drawCircle(
+      c.translate(1, 2.5),
+      r * 0.95,
+      Paint()..color = Colors.black.withOpacity(selected ? 0.42 : 0.32),
+    );
+
+    // 배색: danger > selected > 종류 기본
+    late Color main, dark, deco;
+    if (danger) {
+      main = const Color(0xFFE8776B);
+      dark = const Color(0xFF9B3B2E);
+      deco = const Color(0xFFFFD9D2);
+    } else if (selected) {
+      main = const Color(0xFFF6DEA6);
+      dark = const Color(0xFFC9A24B);
+      deco = const Color(0xFFFFF6DF);
+    } else {
+      switch (kind) {
+        case SnackKind.candy:
+          main = const Color(0xFFF5A3C7);
+          dark = const Color(0xFFC96694);
+          deco = const Color(0xFFFFF0F6);
+          break;
+        case SnackKind.chocolate:
+          main = const Color(0xFF9A6842);
+          dark = const Color(0xFF5E3A22);
+          deco = const Color(0xFFC79366);
+          break;
+        case SnackKind.cookie:
+          main = const Color(0xFFD9A566);
+          dark = const Color(0xFF9A6E3C);
+          deco = const Color(0xFF5A3A1E);
+          break;
+        case SnackKind.jelly:
+          main = const Color(0xFF8FD98F);
+          dark = const Color(0xFF4E9E52);
+          deco = const Color(0xFFE4FBE4);
+          break;
+        case SnackKind.macaron:
+          main = const Color(0xFFC9A8E6);
+          dark = const Color(0xFF8E6BB0);
+          deco = const Color(0xFFFCEFF8);
+          break;
+        case SnackKind.donut:
+          main = const Color(0xFFF2C36B);
+          dark = const Color(0xFFB8863A);
+          deco = const Color(0xFFEF8FB4);
+          break;
+      }
+    }
+
+    final body = Paint()
+      ..shader = RadialGradient(
+        center: const Alignment(-0.35, -0.45),
+        radius: 0.95,
+        colors: [
+          Color.lerp(main, Colors.white, 0.28)!,
+          main,
+          dark,
+        ],
+        stops: const [0.0, 0.55, 1.0],
+      ).createShader(Rect.fromCircle(center: c, radius: r));
+    final edge = Paint()
+      ..color = dark
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = selected ? 2.0 : 1.5;
+    final decoP = Paint()..color = deco;
+
+    switch (kind) {
+      case SnackKind.chocolate:
+        // 네모난 초콜릿 + 격자 홈
+        final rect = RRect.fromRectAndRadius(
+          Rect.fromCenter(center: c, width: w * 0.88, height: h * 0.88),
+          const Radius.circular(3),
+        );
+        canvas.drawRRect(rect, body);
+        canvas.drawRRect(rect, edge);
+        final line = Paint()
+          ..color = dark.withOpacity(0.75)
+          ..strokeWidth = 1.2;
+        canvas.drawLine(
+            Offset(c.dx, c.dy - r * 0.8), Offset(c.dx, c.dy + r * 0.8), line);
+        canvas.drawLine(
+            Offset(c.dx - r * 0.8, c.dy), Offset(c.dx + r * 0.8, c.dy), line);
+        break;
+
+      case SnackKind.cookie:
+        // 동그란 쿠키 + 초코칩
+        canvas.drawCircle(c, r * 0.92, body);
+        canvas.drawCircle(c, r * 0.92, edge);
+        final chip = Paint()..color = deco;
+        const spots = [
+          Offset(-0.32, -0.28),
+          Offset(0.3, -0.12),
+          Offset(-0.1, 0.32),
+          Offset(0.26, 0.34),
+        ];
+        for (final s in spots) {
+          canvas.drawCircle(c.translate(s.dx * r, s.dy * r), r * 0.13, chip);
+        }
+        break;
+
+      case SnackKind.jelly:
+        // 말랑한 젤리 — 둥근 사각 + 하이라이트
+        final rect = RRect.fromRectAndRadius(
+          Rect.fromCenter(center: c, width: w * 0.84, height: h * 0.84),
+          Radius.circular(r * 0.42),
+        );
+        canvas.drawRRect(rect, body);
+        canvas.drawRRect(rect, edge);
+        canvas.drawOval(
+          Rect.fromCenter(
+              center: c.translate(-r * 0.22, -r * 0.3),
+              width: r * 0.5,
+              height: r * 0.3),
+          decoP..color = deco.withOpacity(0.85),
+        );
+        break;
+
+      case SnackKind.macaron:
+        // 마카롱 — 위아래 껍질 + 가운데 크림
+        final top =
+            Rect.fromLTWH(c.dx - r * 0.9, c.dy - r * 0.85, r * 1.8, r * 0.85);
+        final bot =
+            Rect.fromLTWH(c.dx - r * 0.9, c.dy + r * 0.12, r * 1.8, r * 0.8);
+        canvas.drawRRect(
+            RRect.fromRectAndRadius(top, Radius.circular(r * 0.45)), body);
+        canvas.drawRRect(
+            RRect.fromRectAndRadius(bot, Radius.circular(r * 0.45)), body);
+        canvas.drawRect(
+          Rect.fromCenter(
+              center: c.translate(0, r * 0.02),
+              width: r * 1.7,
+              height: r * 0.3),
+          decoP..color = deco,
+        );
+        break;
+
+      case SnackKind.donut:
+        // 도넛 — 가운데 구멍 + 분홍 글레이즈
+        canvas.drawCircle(c, r * 0.92, body);
+        canvas.drawCircle(c, r * 0.92, edge);
+        canvas.drawCircle(
+            c, r * 0.42, Paint()..color = const Color(0xFF3A332A));
+        canvas.drawCircle(
+          c,
+          r * 0.7,
+          Paint()
+            ..color = deco.withOpacity(0.9)
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = r * 0.34,
+        );
+        break;
+
+      case SnackKind.candy:
+        // 사탕 — 동그란 알 + 양쪽 포장 날개 + 소용돌이
+        final wing = Paint()..color = dark;
+        final lp = Path()
+          ..moveTo(c.dx - r * 0.72, c.dy)
+          ..lineTo(c.dx - r * 1.02, c.dy - r * 0.42)
+          ..lineTo(c.dx - r * 1.02, c.dy + r * 0.42)
+          ..close();
+        final rp = Path()
+          ..moveTo(c.dx + r * 0.72, c.dy)
+          ..lineTo(c.dx + r * 1.02, c.dy - r * 0.42)
+          ..lineTo(c.dx + r * 1.02, c.dy + r * 0.42)
+          ..close();
+        canvas.drawPath(lp, wing);
+        canvas.drawPath(rp, wing);
+        canvas.drawCircle(c, r * 0.75, body);
+        canvas.drawCircle(c, r * 0.75, edge);
+        canvas.drawArc(
+          Rect.fromCircle(center: c, radius: r * 0.42),
+          -1.2,
+          3.4,
+          false,
+          Paint()
+            ..color = deco.withOpacity(0.9)
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = r * 0.16
+            ..strokeCap = StrokeCap.round,
+        );
+        break;
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _SnackPainter old) =>
+      old.kind != kind || old.selected != selected || old.danger != danger;
+}
+
 /// selected → 내 쪽(아래)으로 살짝 내려오며 강조. leaving → 아래로 슈르륵 빠지며 사라짐.
 /// cell = 히트 영역(개수 많으면 축소), size = 시각 크기.
 class _Stone extends StatelessWidget {
@@ -2870,6 +3168,8 @@ class _Stone extends StatelessWidget {
   final bool selected;
   final bool leaving;
   final bool danger; // 가져가면 지는 돌 (스테이지1 학습용) — 빨간 돌
+  final bool hint; // 힌트 추천 — 하늘색 테두리 + 반짝임
+  final SnackKind kind; // 월드별 간식 종류
   final VoidCallback? onTap;
   const _Stone({
     this.cell = 44,
@@ -2877,44 +3177,47 @@ class _Stone extends StatelessWidget {
     required this.selected,
     required this.leaving,
     this.danger = false,
+    this.hint = false,
+    this.kind = SnackKind.candy,
     this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     final double d = size;
-    final token = AnimatedContainer(
+    Widget token = AnimatedContainer(
       duration: const Duration(milliseconds: 160),
       width: d,
       height: d,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: RadialGradient(
-          center: const Alignment(-0.4, -0.5),
-          radius: 0.95,
-          colors: selected
-              ? const [Color(0xFFF0D49A), Color(0xFFC9A24B)]
-              : danger
-                  ? const [Color(0xFFCC7261), Color(0xFF9B3B2E)]
-                  : const [Color(0xFFD9C7A0), Color(0xFF8C7A55)],
+      child: CustomPaint(
+        painter: _SnackPainter(
+          kind: kind,
+          selected: selected,
+          danger: danger,
         ),
-        border: Border.all(
-          color: selected
-              ? const Color(0xFF8A6A20)
-              : danger
-                  ? const Color(0xFF5E1F15)
-                  : const Color(0xFF5C4E33),
-          width: selected ? 2 : 1.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(selected ? 0.5 : 0.4),
-            blurRadius: selected ? 6 : 3,
-            offset: Offset(1, selected ? 4 : 2),
-          ),
-        ],
       ),
     );
+
+    // 힌트: 하늘색 링 + 은은한 글로우로 "이걸 가져가" 표시
+    if (hint) {
+      token = Container(
+        width: d + 10,
+        height: d + 10,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: _Pal.sky.withOpacity(0.28),
+          border: Border.all(color: _Pal.sky, width: 2.5),
+          boxShadow: [
+            BoxShadow(
+              color: _Pal.sky.withOpacity(0.55),
+              blurRadius: 10,
+              spreadRadius: 1,
+            ),
+          ],
+        ),
+        child: Center(child: token),
+      );
+    }
 
     // (귀여움 규칙 T1) 히트 영역은 가능한 한 44dp — 돌이 많으면 화면에 맞게 축소.
     return GestureDetector(

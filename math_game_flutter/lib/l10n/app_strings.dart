@@ -118,8 +118,8 @@ class AppStrings {
       'ko': '두 줄 님게임',
     },
     'worldSubtitlePepero': {
-      'en': 'Pepero Game',
-      'ko': '빼빼로 게임',
+      'en': 'Snack Stick Game',
+      'ko': '막대과자 게임',
     },
     'worldSubtitleTripleRow': {
       'en': 'Triple Row NIM',
@@ -157,8 +157,8 @@ class AppStrings {
       'ko': '두 줄 님게임',
     },
     'modePepero': {
-      'en': 'Pepero Game',
-      'ko': '빼빼로 게임',
+      'en': 'Snack Stick Game',
+      'ko': '막대과자 게임',
     },
     'modeTripleRow': {
       'en': 'Triple Row NIM',
@@ -194,8 +194,8 @@ class AppStrings {
     },
     'rulePepero': {
       'en':
-          "Split a pepero bundle into two.\nYou can't split into equal halves!\nThe one who can't split loses!",
-      'ko': '빼빼로 묶음을 두 개로 나눠요.\n같은 수로는 나눌 수 없어요!\n더 나눌 수 없는 사람이 져요!',
+          "Split a snack stick bundle into two.\nYou can't split into equal halves!\nThe one who can't split loses!",
+      'ko': '막대과자 묶음을 두 개로 나눠요.\n같은 수로는 나눌 수 없어요!\n더 나눌 수 없는 사람이 져요!',
     },
     'ruleTripleRow': {
       'en':
@@ -495,8 +495,8 @@ class AppStrings {
       'ko': '{0}번 줄',
     },
     'peperoBundles': {
-      'en': 'Pepero Bundles',
-      'ko': '빼빼로 묶음',
+      'en': 'Snack Stick Bundles',
+      'ko': '막대과자 묶음',
     },
     'nPieces': {
       'en': '{0} pcs',
