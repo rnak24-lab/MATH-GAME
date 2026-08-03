@@ -988,10 +988,8 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         _hintSplitA = 0;
       }
     });
-    // 12초 뒤 자동 해제 (그 전에 수를 두면 _clearHint로 사라짐)
-    _hintTimer = Timer(const Duration(seconds: 12), () {
-      if (mounted) _clearHint();
-    });
+    // 자동 해제 없음 — 광고를 보고 얻은 힌트라 수를 둘 때까지 계속 보여준다.
+    // (타이머를 쓰면 광고 재생 중에 시간이 흘러 정작 판을 볼 땐 사라져 있음)
   }
 
   // ─────────────────────────────────────────────────────────────
