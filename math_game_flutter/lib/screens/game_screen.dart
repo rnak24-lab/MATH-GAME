@@ -17,6 +17,11 @@ import '../game/tutorial_manager.dart';
 import 'world_select_screen.dart' show worldForStage, WorldInfo;
 
 /// Papers-Please풍 "심문 책상" 탑뷰 팔레트 (sepia noir).
+/// 책상 상단 y — **고정값**. 돌 개수가 바뀌어도 책상은 절대 움직이지 않는다.
+/// (개수 변화는 책상 '안'에서 셀 크기가 적응하는 방식으로 흡수)
+/// 값이 클수록 책상이 아래로 내려가 캐릭터가 더 많이 보인다.
+const double _kDeskTop = 340;
+
 class _Pal {
   static const deskTop = Color(0xFF3A332A); // 책상 상단(밝은 쪽)
   static const deskBottom = Color(0xFF241F18); // 책상 하단(어두운 쪽)
@@ -1567,17 +1572,17 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                   const CustomPaint(painter: _ClassroomPainter()),
             ),
           ),
-          // 1) 예린 — 중앙에 크게, 가슴 아래까지 (진짜 마주 앉아 대결하는 느낌)
-          //    하반신은 테이블(top:258)에 가려진다. (v2: 더 키움 + 탭 상호작용)
+          // 1) 예린 — 중앙에 크게. 책상(_kDeskTop)이 하반신만 살짝 가리도록 배치해
+          //    얼굴~가슴이 온전히 보인다. 모든 월드에서 동일한 비율.
           Positioned(
-            top: 22,
+            top: 18,
             left: 0,
             right: 0,
             child: Center(
               child: GestureDetector(
                 behavior: HitTestBehavior.opaque,
                 onTap: _pokeYerin,
-                child: _catFigure(size: 335),
+                child: _catFigure(size: 400),
               ),
             ),
           ),
@@ -1596,9 +1601,10 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
           ),
           // 2) 턴 배너 — 맨 위 풀폭 (예린 위 레이어라 항상 보임)
           Positioned(top: 4, left: 10, right: 10, child: overlay),
-          // 3) 테이블 — 예린 가슴 아래에서 시작 (평평, 남은 영역 꽉 채움)
+          // 3) 테이블 — 캐릭터 하반신만 살짝 덮도록 아래쪽에 배치.
+          //    (책상이 화면을 반 이상 먹으면 캐릭터가 얼굴만 남아 답답함)
           Positioned(
-            top: 258,
+            top: _kDeskTop,
             bottom: 0,
             left: 28,
             right: 28,
@@ -1853,17 +1859,21 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         final double avail =
             cons.maxWidth - 32 - (multi ? 34 : 0); // 패딩 + R라벨 여유
         final double cell = (avail / maxLen).clamp(24.0, 44.0);
-        final double stone = (cell - 8).clamp(16.0, 34.0);
+        // 세로도 적응 — 책상 크기는 고정이므로, 줄이 늘면 줄 높이가 줄어든다.
+        final double rowH =
+            ((cons.maxHeight - 24) / _rows.length).clamp(28.0, 52.0);
+        final double stone =
+            [cell - 8, rowH - 10, 34.0].reduce((a, b) => a < b ? a : b);
         return SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: List.generate(_rows.length, (rowIdx) {
               final len = _rows[rowIdx];
               final isSelRow = _selectedRow == rowIdx;
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8),
+              return SizedBox(
+                height: rowH,
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -1894,6 +1904,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                         final bool danger = widget.stageNumber == 1 && i == 0;
                         return _Stone(
                           cell: cell,
+                          cellH: rowH,
                           size: stone,
                           selected: selected,
                           leaving: _leaving && selected,
@@ -1957,15 +1968,19 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         final int maxLen = _rows.fold(1, (m, r) => r > m ? r : m).clamp(1, 40);
         final double avail = cons.maxWidth - 32;
         final double cell = (avail / maxLen).clamp(24.0, 44.0);
-        final double stone = (cell - 8).clamp(16.0, 34.0);
+        // 카일즈는 쪼개질수록 줄이 늘어난다 — 줄 높이를 적응시켜 책상 안에 유지
+        final double rowH =
+            ((cons.maxHeight - 46) / _rows.length).clamp(26.0, 50.0);
+        final double stone =
+            [cell - 8, rowH - 10, 34.0].reduce((a, b) => a < b ? a : b);
         return SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Padding(
-                padding: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.only(bottom: 6),
                 child: Text(
                   s.get('kaylesTapCta'),
                   textAlign: TextAlign.center,
@@ -1980,8 +1995,8 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
               ...List.generate(_rows.length, (rowIdx) {
                 final len = _rows[rowIdx];
                 final bool rowSel = _kSelRow == rowIdx && _kSelCount > 0;
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
+                return SizedBox(
+                  height: rowH,
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -2007,6 +2022,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                             i < _kSelStart + _kSelCount;
                         return _Stone(
                           cell: cell,
+                          cellH: rowH,
                           size: stone,
                           selected: selected,
                           leaving: _leaving && selected,
@@ -2158,17 +2174,20 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         final int maxLen = _rows.fold(1, (m, r) => r > m ? r : m).clamp(1, 40);
         final double avail = cons.maxWidth - 32 - 34;
         final double cell = (avail / maxLen).clamp(24.0, 44.0);
-        final double stone = (cell - 8).clamp(16.0, 34.0);
+        final double rowH =
+            ((cons.maxHeight - 24) / _rows.length).clamp(28.0, 52.0);
+        final double stone =
+            [cell - 8, rowH - 10, 34.0].reduce((a, b) => a < b ? a : b);
         return SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: List.generate(_rows.length, (rowIdx) {
               final len = _rows[rowIdx];
               final int sel = rowIdx == 0 ? _wSelA : _wSelB;
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8),
+              return SizedBox(
+                height: rowH,
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -2194,6 +2213,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                         final bool selected = i >= len - sel;
                         return _Stone(
                           cell: cell,
+                          cellH: rowH,
                           size: stone,
                           selected: selected,
                           leaving: _leaving && selected,
@@ -3162,6 +3182,7 @@ class _SnackPainter extends CustomPainter {
 /// cell = 히트 영역(개수 많으면 축소), size = 시각 크기.
 class _Stone extends StatelessWidget {
   final double cell;
+  final double cellH; // 세로 히트 영역 — 줄이 많으면 줄어든다
   final double size;
   final bool selected;
   final bool leaving;
@@ -3171,6 +3192,7 @@ class _Stone extends StatelessWidget {
   final VoidCallback? onTap;
   const _Stone({
     this.cell = 44,
+    this.cellH = 44,
     this.size = 34,
     required this.selected,
     required this.leaving,
@@ -3223,7 +3245,7 @@ class _Stone extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       child: SizedBox(
         width: cell,
-        height: 44,
+        height: cellH,
         child: Center(
           child: AnimatedSlide(
             offset: leaving
