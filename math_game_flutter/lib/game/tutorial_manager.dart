@@ -37,23 +37,46 @@ class TutorialManager {
     return 7;
   }
 
+  /// 월드(1-based) → 간식 키. game_screen 의 snackForStage 와 같은 순서.
+  static String _snackKeyForWorld(int world) {
+    const keys = [
+      'candy', // 1 등교길
+      'chocolate', // 2 점심시간 옥상
+      'cookie', // 3 방과후 교실
+      'stick', // 4 밤의 도서관 (막대과자)
+      'macaron', // 5 체육관
+      'donut', // 6 과학실
+      'jelly', // 7 뒤뜰 토끼장
+    ];
+    final i = (world - 1).clamp(0, keys.length - 1);
+    return keys[i];
+  }
+
   /// 게임 시작 시 표시할 진입 튜토리얼 스텝 리스트.
   /// 비어있으면 튜토리얼 없음 = 일반 게임 플로우.
   static List<TutorialStep> entrySteps(int stageNumber, AppStrings s) {
     if (!isTutorialStage(stageNumber)) return const [];
-    switch (worldOf(stageNumber)) {
+    // 이 월드의 간식 이름(+조사) — 문구가 "사탕을/쿠키를"로 자연스럽게 바뀐다.
+    final int w = worldOf(stageNumber);
+    final String kind = w == 4 ? 'stick' : _snackKeyForWorld(w);
+    final List<String> snk = [s.snackObj(kind)];
+    switch (w) {
       case 1:
         // (2026-07-02 대표님) 짧고 액션 지시형 4스텝 — 표정 설명 삭제(플레이하며 발견),
         // 지시대로 따라 하면(2개 집기) 스테이지 1은 무조건 승리.
         return [
           TutorialStep(text: s.get('tutW1_1')),
-          TutorialStep(text: s.get('tutW1_2'), highlightTarget: 'stones'),
-          TutorialStep(text: s.get('tutW1_3'), highlightTarget: 'last_stone'),
-          TutorialStep(text: s.get('tutW1_4'), highlightTarget: 'take_buttons'),
+          TutorialStep(text: s.get('tutW1_2', snk), highlightTarget: 'stones'),
+          TutorialStep(
+              text: s.get('tutW1_3', snk), highlightTarget: 'last_stone'),
+          TutorialStep(
+              text: s.get('tutW1_4', snk), highlightTarget: 'take_buttons'),
         ];
       case 2:
         return [
-          TutorialStep(text: s.get('tutW2_1'), highlightTarget: 'rows'),
+          TutorialStep(
+              text: s.get('tutW2_1', [s.snackSubj(_snackKeyForWorld(2))]),
+              highlightTarget: 'rows'),
           TutorialStep(text: s.get('tutW2_2')),
           TutorialStep(text: s.get('tutW2_3')),
           TutorialStep(text: s.get('tutW2_4'), highlightTarget: 'row_1'),
@@ -70,26 +93,26 @@ class TutorialManager {
         // 월드4 = 빼빼로 (네줄 삭제 후 승격) — 빼빼로 튜토리얼 사용
         return [
           TutorialStep(text: s.get('tutW5_1')),
-          TutorialStep(text: s.get('tutW5_2')),
+          TutorialStep(text: s.get('tutW5_2', snk)),
           TutorialStep(text: s.get('tutW5_3')),
         ];
       case 5: // 🧪 카일즈
         return [
-          TutorialStep(text: s.get('tutW6_1')),
-          TutorialStep(text: s.get('tutW6_2')),
+          TutorialStep(text: s.get('tutW6_1', snk)),
+          TutorialStep(text: s.get('tutW6_2', snk)),
           TutorialStep(text: s.get('tutW6_3')),
         ];
       case 6: // 🧪 위토프
         return [
           TutorialStep(text: s.get('tutW7_1')),
           TutorialStep(text: s.get('tutW7_2')),
-          TutorialStep(text: s.get('tutW7_3')),
+          TutorialStep(text: s.get('tutW7_3', snk)),
         ];
       case 7: // 🧪 피보나치
         return [
           TutorialStep(text: s.get('tutW8_1')),
           TutorialStep(text: s.get('tutW8_2')),
-          TutorialStep(text: s.get('tutW8_3')),
+          TutorialStep(text: s.get('tutW8_3', snk)),
         ];
     }
     return const [];

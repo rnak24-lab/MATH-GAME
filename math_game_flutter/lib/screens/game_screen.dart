@@ -1127,11 +1127,12 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   /// 현재 모드의 규칙 다이얼로그 — 탑바 ? 버튼.
   void _showModeRules() {
     String ruleKey;
-    List<String> ruleArgs = const [];
+    // {0} = 이 월드의 간식(+조사), {1} = 최대 개수 (한 줄 모드만 사용)
+    List<String> ruleArgs = [s.snackObj(_snackKey)];
     switch (_config.mode) {
       case GameMode.singleRow:
         ruleKey = 'ruleSingleRow';
-        ruleArgs = ['${_config.maxTake}'];
+        ruleArgs = [s.snackObj(_snackKey), '${_config.maxTake}'];
         break;
       case GameMode.doubleRow:
         ruleKey = 'ruleDoubleRow';
@@ -1544,10 +1545,10 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         // 승리 조건 상시 노출 — normal play(마지막 돌 승리) vs misère(패배)
         if (_isNormalPlay) ...[
           const SizedBox(width: 8),
-          chip(s.get('lastStoneWinChip')),
+          chip(s.get('lastStoneWinChip', [s.snack(_snackKey)])),
         ] else if (_config.mode != GameMode.pepero) ...[
           const SizedBox(width: 8),
-          chip(s.get('lastStoneLoseChip')),
+          chip(s.get('lastStoneLoseChip', [s.snack(_snackKey)])),
         ],
       ],
     );
@@ -1724,6 +1725,12 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     );
   }
 
+  /// 이 스테이지의 간식 키 — 문구에 "쿠키/사탕/…"을 넣기 위한 것.
+  /// 막대과자 월드는 전용 비주얼이라 'stick'.
+  String get _snackKey => _config.mode == GameMode.pepero
+      ? 'stick'
+      : snackForStage(widget.stageNumber).name;
+
   /// (v2) 게임판 요약 — 모드마다 형태가 달라도 배너 오른쪽 한 자리를 쓴다.
   /// 한줄="남은 돌 3", 여러줄/카일즈="3 · 5 · 7", 위토프="3 · 5", 빼빼로="막대 3개".
   String _boardSummary() {
@@ -1734,7 +1741,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         return _rows.map((r) => '$r').join(' · ');
       default:
         if (_rows.length == 1) {
-          return s.get('stonesLeft', ['${_rows.first}']);
+          return s.get('stonesLeft', ['${_rows.first}', s.snack(_snackKey)]);
         }
         return _rows.map((r) => '$r').join(' · ');
     }
@@ -1982,7 +1989,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
               Padding(
                 padding: const EdgeInsets.only(bottom: 6),
                 child: Text(
-                  s.get('kaylesTapCta'),
+                  s.get('kaylesTapCta', [s.snackObj(_snackKey)]),
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontFamily: _mono,
@@ -2086,7 +2093,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                     border: Border.all(color: _Pal.frameHi, width: 1.5),
                   ),
                   child: Text(
-                    s.get('tapToSelectCta'),
+                    s.get('tapToSelectCta', [s.snackObj(_snackKey)]),
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       fontFamily: _mono,
@@ -2278,7 +2285,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                     border: Border.all(color: _Pal.frameHi, width: 1.5),
                   ),
                   child: Text(
-                    s.get('tapToSelectCta'),
+                    s.get('tapToSelectCta', [s.snackObj(_snackKey)]),
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       fontFamily: _mono,
@@ -2683,7 +2690,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
             child: _StampButton(
               label: hasSel
                   ? s.get('takeNStones', ['$_selectedCount'])
-                  : s.get('tapToSelectCta'),
+                  : s.get('tapToSelectCta', [s.snackObj(_snackKey)]),
               color: hasSel ? _Pal.alarm : _Pal.frameHi,
               onTap: _confirmTake,
             ),

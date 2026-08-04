@@ -336,18 +336,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  /// 게임 규칙 다이얼로그 — 월드 순서(한줄→두줄→세줄→빼빼로)대로 4개 모드 규칙.
+  /// 게임 규칙 다이얼로그 — 월드 순서(한줄→두줄→세줄→막대과자)대로 전 모드 규칙.
+  /// 특정 월드가 아니므로 간식은 일반명사('과자')로 표기.
   void _showRules() {
     final s = widget.localeProvider.strings;
+    final g = s.snackObj('generic'); // 과자를 / snack
     final rules = <MapEntry<String, String>>[
-      MapEntry(s.get('modeSingleRow'), s.get('ruleSingleRow', ['2~5'])),
-      MapEntry(s.get('modeDoubleRow'), s.get('ruleDoubleRow')),
-      MapEntry(s.get('modeTripleRow'), s.get('ruleTripleRow')),
+      MapEntry(s.get('modeSingleRow'), s.get('ruleSingleRow', [g, '2~5'])),
+      MapEntry(s.get('modeDoubleRow'), s.get('ruleDoubleRow', [g])),
+      MapEntry(s.get('modeTripleRow'), s.get('ruleTripleRow', [g])),
       MapEntry(s.get('modePepero'), s.get('rulePepero')),
       // 🧪 테스트 모드 3종
-      MapEntry(s.get('modeKayles'), s.get('ruleKayles')),
-      MapEntry(s.get('modeWythoff'), s.get('ruleWythoff')),
-      MapEntry(s.get('modeFibonacci'), s.get('ruleFibonacci')),
+      MapEntry(s.get('modeKayles'), s.get('ruleKayles', [g])),
+      MapEntry(s.get('modeWythoff'), s.get('ruleWythoff', [g])),
+      MapEntry(s.get('modeFibonacci'), s.get('ruleFibonacci', [g])),
     ];
     showDialog(
       context: context,

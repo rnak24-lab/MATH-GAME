@@ -182,15 +182,15 @@ class AppStrings {
     },
 
     // ── Game Screen: Rules ──
+    // 규칙 문구 — {0} = 간식 이름(+조사), {1} = 한 번에 가져갈 수 있는 최대 개수
     'ruleSingleRow': {
-      'en':
-          'You can take 1~{0} stones.\nThe one who takes the last stone loses!',
-      'ko': '돌을 1~{0}개 가져갈 수 있어요.\n마지막 돌을 가져가는 사람이 져요!',
+      'en': 'Take 1~{1} at a time.\nWhoever takes the last {0} loses!',
+      'ko': '{0} 1~{1}개 가져갈 수 있어요.\n마지막 {0} 가져가는 사람이 져요!',
     },
     'ruleDoubleRow': {
       'en':
-          'You can only take stones from one row.\nThe one who takes the last stone loses!',
-      'ko': '한 줄에서만 돌을 가져갈 수 있어요.\n마지막 돌을 가져가는 사람이 져요!',
+          'Take from only ONE row at a time.\nWhoever takes the last {0} loses!',
+      'ko': '한 줄에서만 {0} 가져갈 수 있어요.\n마지막 {0} 가져가는 사람이 져요!',
     },
     'rulePepero': {
       'en':
@@ -199,31 +199,31 @@ class AppStrings {
     },
     'ruleTripleRow': {
       'en':
-          'You can only take stones from one row.\nThe one who takes the last stone loses!',
-      'ko': '한 줄에서만 돌을 가져갈 수 있어요.\n마지막 돌을 가져가는 사람이 져요!',
+          'Take from only ONE row at a time.\nWhoever takes the last {0} loses!',
+      'ko': '한 줄에서만 {0} 가져갈 수 있어요.\n마지막 {0} 가져가는 사람이 져요!',
     },
     'ruleQuadRow': {
       'en':
-          'Four rows of stones!\nYou can only take stones from one row.\nThe one who takes the last stone loses!',
-      'ko': '네 줄의 돌이 있어요!\n한 줄에서만 돌을 가져갈 수 있어요.\n마지막 돌을 가져가는 사람이 져요!',
+          'Four rows!\nTake from only ONE row at a time.\nWhoever takes the last {0} loses!',
+      'ko': '네 줄이 있어요!\n한 줄에서만 {0} 가져갈 수 있어요.\n마지막 {0} 가져가는 사람이 져요!',
     },
     'ruleKayles': {
       'en':
-          'Take 1 or 2 ADJACENT stones from anywhere.\nTaking from the middle splits the row in two!\nThe one who takes the LAST stone WINS!',
+          'Take 1 or 2 ADJACENT from anywhere.\nTaking from the middle splits the row in two!\nWhoever takes the last {0} WINS!',
       'ko':
-          '아무 위치에서나 붙어있는 돌을 1~2개 가져가요.\n가운데를 빼면 줄이 두 동강 나요!\n마지막 돌을 가져가는 사람이 이겨요!',
+          '아무 위치에서나 붙어있는 {0} 1~2개 가져가요.\n가운데를 빼면 줄이 두 동강 나요!\n마지막 {0} 가져가는 사람이 이겨요!',
     },
     'ruleWythoff': {
       'en':
-          'Two piles. Take any amount from ONE pile,\nor the SAME amount from BOTH.\nThe one who takes the LAST stone WINS!',
+          'Two piles. Take any amount from ONE pile,\nor the SAME amount from BOTH.\nWhoever takes the last {0} WINS!',
       'ko':
-          '무더기가 두 개! 한쪽에서 원하는 만큼 가져가거나,\n양쪽에서 똑같은 개수를 가져가요.\n마지막 돌을 가져가는 사람이 이겨요!',
+          '무더기가 두 개! 한쪽에서 원하는 만큼 가져가거나,\n양쪽에서 똑같은 개수를 가져가요.\n마지막 {0} 가져가는 사람이 이겨요!',
     },
     'ruleFibonacci': {
       'en':
-          "First move: you can't take everything.\nAfter that: up to DOUBLE what your opponent just took.\nThe one who takes the LAST stone WINS!",
+          "First move: you can't take everything.\nAfter that: up to DOUBLE what your opponent just took.\nWhoever takes the last {0} WINS!",
       'ko':
-          '첫 수엔 전부 가져가기 금지!\n그 다음부턴 상대가 방금 가져간 개수의 2배까지.\n마지막 돌을 가져가는 사람이 이겨요!',
+          '첫 수엔 전부 가져가기 금지!\n그 다음부턴 상대가 방금 가져간 개수의 2배까지.\n마지막 {0} 가져가는 사람이 이겨요!',
     },
     'initialState': {
       'en': 'Initial: {0}',
@@ -270,13 +270,14 @@ class AppStrings {
       'en': 'Number to take',
       'ko': '가져갈 개수',
     },
+    // {0} = 간식 이름(+조사). 월드마다 사탕/쿠키/… 로 바뀐다.
     'tapToSelect': {
-      'en': 'Tap stones to pick',
-      'ko': '돌을 탭해 선택',
+      'en': 'Tap {0} to pick',
+      'ko': '{0} 탭해 선택',
     },
     'tapToSelectCta': {
-      'en': 'Tap a stone to pick!',
-      'ko': '돌을 눌러 골라봐!',
+      'en': 'Tap a {0} to pick!',
+      'ko': '{0} 눌러 골라봐!',
     },
 
     // ── Game Screen: HUD 라벨 (한국어 완역, 2026-07-02) ──
@@ -322,8 +323,8 @@ class AppStrings {
     },
     // 인게임 정보 칩 — 항상 보이는 숫자 정보 (줄글 규칙 대체)
     'stonesLeft': {
-      'en': 'Stones {0}',
-      'ko': '남은 돌 {0}',
+      'en': '{1} {0}',
+      'ko': '남은 {1} {0}',
     },
     'takeRange': {
       'en': 'Take 1~{0}',
@@ -359,8 +360,8 @@ class AppStrings {
     },
     // ── 🧪 테스트 모드 칩/안내 ──
     'lastStoneWinChip': {
-      'en': 'Last stone WINS',
-      'ko': '마지막 돌 = 승리!',
+      'en': 'Last {0} WINS',
+      'ko': '마지막 {0} 가져가면 승리!',
     },
     // ── (v2) 예린 찌르기 반응 ──
     'pokeReact1': {
@@ -376,8 +377,8 @@ class AppStrings {
       'ko': '흥, 그럴 시간에 네 수나 둬~',
     },
     'lastStoneLoseChip': {
-      'en': 'Last stone LOSES',
-      'ko': '마지막 돌 잡으면 패배!',
+      'en': 'Last {0} LOSES',
+      'ko': '마지막 {0} 가져가면 패배!',
     },
     'sticksLeft': {
       'en': 'Sticks {0}',
@@ -392,8 +393,8 @@ class AppStrings {
       'ko': '한 줄 맘껏 · 양쪽 같이',
     },
     'kaylesTapCta': {
-      'en': 'Tap any stone — grab its neighbor too!',
-      'ko': '아무 돌이나 눌러봐! 옆 돌도 이어서 잡을 수 있어',
+      'en': 'Tap any {0} — grab its neighbor too!',
+      'ko': '아무 {0} 눌러봐! 옆 것도 이어서 잡을 수 있어',
     },
     'wythoffInvalid': {
       'en': 'One pile only — or BOTH equally!',
@@ -699,22 +700,23 @@ class AppStrings {
       'en': "Hi! I'm Yerin. Let's just play!",
       'ko': '안녕! 나는 예린! 바로 해보자~',
     },
+    // 튜토리얼 — {0} = 그 월드의 간식(+조사)
     'tutW1_2': {
-      'en': 'Tap a stone to grab it. Tap again to put it back.',
-      'ko': '돌을 누르면 집고, 다시 누르면 내려놔.',
+      'en': 'Tap a {0} to grab it. Tap again to put it back.',
+      'ko': '{0} 누르면 집고, 다시 누르면 내려놔.',
     },
     'tutW1_3': {
-      'en': 'Grab the LAST stone and you lose!',
-      'ko': '마지막 돌을 가져가면 지는 거야!',
+      'en': 'Grab the LAST {0} and you lose!',
+      'ko': '마지막 {0} 가져가면 지는 거야!',
     },
     'tutW1_4': {
-      'en': 'Now grab 2 stones and hit Take!',
-      'ko': '자! 돌 2개를 집고, 가져가기를 눌러봐!',
+      'en': 'Now grab 2 and hit Take!',
+      'ko': '자! {0} 2개 집고, 가져가기를 눌러봐!',
     },
     // W2: 2행 NIM
     'tutW2_1': {
-      'en': "Now it's different! The stones are in two rows.",
-      'ko': '이번엔 좀 달라! 돌이 두 줄로 나뉘어 있어.',
+      'en': "Now it's different! They're in two rows.",
+      'ko': '이번엔 좀 달라! {0} 두 줄로 나뉘어 있어.',
     },
     'tutW2_2': {
       'en': "You can only take from ONE row per turn.",
@@ -768,8 +770,8 @@ class AppStrings {
       'ko': '마지막 월드야! 여기선 규칙이 완전히 달라.',
     },
     'tutW5_2': {
-      'en': "Don't take stones — SPLIT one bundle into two UNEQUAL parts.",
-      'ko': '돌을 가져가는 게 아니야 — 한 묶음을 서로 \'다른\' 크기 둘로 쪼개!',
+      'en': "Don't take them — SPLIT one bundle into two UNEQUAL parts.",
+      'ko': '{0} 가져가는 게 아니야 — 한 묶음을 서로 \'다른\' 크기 둘로 쪼개!',
     },
     'tutW5_3': {
       'en':
@@ -778,17 +780,16 @@ class AppStrings {
     },
     // 🧪 카일즈 튜토리얼
     'tutW6_1': {
-      'en': 'The Gym! Take 1 or 2 stones from ANYWHERE in a row.',
-      'ko': '체육관이야! 이번엔 아무 위치의 돌이나 가져갈 수 있어.',
+      'en': 'The Gym! Take 1 or 2 from ANYWHERE in a row.',
+      'ko': '체육관이야! 이번엔 아무 위치의 {0} 가져갈 수 있어.',
     },
     'tutW6_2': {
-      'en':
-          'Two stones must be side by side. Take from the middle — the row SPLITS!',
+      'en': 'Two must be side by side. Take from the middle — the row SPLITS!',
       'ko': '2개를 잡으려면 붙어있어야 해. 가운데를 빼면 줄이 두 동강!',
     },
     'tutW6_3': {
-      'en': 'And here... the one who takes the LAST stone WINS!',
-      'ko': '그리고 여기선… 마지막 돌을 가져가는 사람이 이겨!',
+      'en': 'And here... whoever takes the LAST {0} WINS!',
+      'ko': '그리고 여기선… 마지막 {0} 가져가는 사람이 이겨!',
     },
     // 🧪 위토프 튜토리얼
     'tutW7_1': {
@@ -800,8 +801,8 @@ class AppStrings {
       'ko': '아니면 양쪽에서 똑같은 개수를 한번에!',
     },
     'tutW7_3': {
-      'en': 'The one who takes the LAST stone WINS. Balance carefully~',
-      'ko': '마지막 돌을 가져가면 승리야. 저울을 잘 맞춰봐~',
+      'en': 'Whoever takes the LAST {0} WINS. Balance carefully~',
+      'ko': '마지막 {0} 가져가면 승리야. 저울을 잘 맞춰봐~',
     },
     // 🧪 피보나치 튜토리얼
     'tutW8_1': {
@@ -813,12 +814,12 @@ class AppStrings {
       'ko': '그 다음부턴 내가 방금 가져간 개수의 2배까지만. 칩을 잘 봐!',
     },
     'tutW8_3': {
-      'en': 'Take the LAST stone to WIN. Hop hop~',
-      'ko': '마지막 돌을 가져가면 승리! 깡총깡총~',
+      'en': 'Take the LAST {0} to WIN. Hop hop~',
+      'ko': '마지막 {0} 가져가면 승리! 깡총깡총~',
     },
     // 2회 연속 패배 힌트
     'tutHintW1': {
-      'en': 'Hint: grab 2 stones and you win!',
+      'en': 'Hint: grab 2 and you win!',
       'ko': '힌트: 2개를 집으면 이겨!',
     },
     'tutHintW2': {
@@ -839,7 +840,7 @@ class AppStrings {
     },
     'tutHintGeneric': {
       'en': "Hint: Think about what you want to leave for your opponent.",
-      'ko': '힌트: 상대에게 남길 돌을 먼저 생각해봐.',
+      'ko': '힌트: 상대에게 남길 개수를 먼저 생각해봐.',
     },
 
     // ── Settings ──
@@ -879,5 +880,50 @@ class AppStrings {
       }
     }
     return text;
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // 간식 이름 — 월드마다 돌 대신 사탕/쿠키/… 로 부른다.
+  // 'snack' 키 하나만 넘기면 문구 전체가 그 월드의 간식으로 바뀐다.
+  // ─────────────────────────────────────────────────────────────
+  static const Map<String, Map<String, String>> _snackNames = {
+    'candy': {'en': 'candy', 'ko': '사탕'},
+    'chocolate': {'en': 'chocolate', 'ko': '초콜릿'},
+    'cookie': {'en': 'cookie', 'ko': '쿠키'},
+    'jelly': {'en': 'jelly', 'ko': '젤리'},
+    'macaron': {'en': 'macaron', 'ko': '마카롱'},
+    'donut': {'en': 'donut', 'ko': '도넛'},
+    'stick': {'en': 'snack stick', 'ko': '막대과자'},
+    // 특정 월드가 아닐 때(설정의 전체 규칙 목록 등) 쓰는 일반명사
+    'generic': {'en': 'snack', 'ko': '과자'},
+  };
+
+  /// 간식 이름 (해당 월드 기준). 모르는 키면 기본값.
+  String snack(String kind) {
+    final m = _snackNames[kind];
+    if (m == null) return locale == 'ko' ? '과자' : 'snack';
+    return m[locale] ?? m['en']!;
+  }
+
+  /// 한국어 받침 유무 — 조사(을/를, 이/가) 자동 선택용.
+  static bool _hasFinalConsonant(String word) {
+    if (word.isEmpty) return false;
+    final code = word.codeUnitAt(word.length - 1);
+    if (code < 0xAC00 || code > 0xD7A3) return false; // 한글 음절이 아님
+    return (code - 0xAC00) % 28 != 0;
+  }
+
+  /// 간식 이름 + 목적격 조사 ("쿠키를", "사탕을"). 영어는 그대로.
+  String snackObj(String kind) {
+    final w = snack(kind);
+    if (locale != 'ko') return w;
+    return _hasFinalConsonant(w) ? '$w을' : '$w를';
+  }
+
+  /// 간식 이름 + 주격 조사 ("쿠키가", "사탕이").
+  String snackSubj(String kind) {
+    final w = snack(kind);
+    if (locale != 'ko') return w;
+    return _hasFinalConsonant(w) ? '$w이' : '$w가';
   }
 }
