@@ -383,8 +383,10 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         if (midnightWins) {
           _consecutiveLossTurns = 1;
           _midnightFace = MidnightFace.happy1;
+          _losing = true; // 시작부터 지는 판 → 힌트 전구 반짝
         } else {
           _midnightFace = MidnightFace.neutral;
+          _losing = false;
         }
         _say('turnPlayerFirst');
       } else {
@@ -803,6 +805,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         _fibLimit = move.count * 2;
       }
     });
+    _refreshLosing(); // 지는 포지션이면 힌트 전구가 반짝인다
 
     if (!_checkGameOver()) {
       // 플레이어 턴 시작 시점 → NIM XOR 기반 표정 결정
@@ -948,6 +951,25 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   int _hintSplitA = 0; // 막대과자: 쪼갤 위치
   Timer? _hintTimer;
 
+  // ── 지고 있을 때 힌트 전구를 반짝이게 (광고 유도) ──
+  bool _losing = false;
+
+  /// 내 턴인데 이미 지는 포지션이면 true → 전구가 두근두근 뛴다.
+  bool get _bulbUrgent =>
+      _losing &&
+      _phase == GamePhase.playing &&
+      _currentTurn == TurnOwner.player &&
+      _hintRow == -1 &&
+      _hintSplitA == 0;
+
+  /// 턴이 바뀔 때만 호출 (매 build 계산은 낭비)
+  void _refreshLosing() {
+    final bool lose = _phase == GamePhase.playing &&
+        _currentTurn == TurnOwner.player &&
+        _calculateMidnightWinsState();
+    if (lose != _losing && mounted) setState(() => _losing = lose);
+  }
+
   bool _isHintStone(int rowIdx, int i, int len) {
     if (_hintRow != rowIdx || _hintCount <= 0) return false;
     if (_hintStart >= 0) {
@@ -1078,13 +1100,11 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
               ),
             ),
           ),
-          // 힌트 — 광고 보면 무제한이라 남은 개수 표시 없음
+          // 힌트 — 광고 보면 무제한. 지는 포지션이면 전구가 두근두근 뛴다.
           if (_phase == GamePhase.playing && _currentTurn == TurnOwner.player)
-            IconButton(
-              visualDensity: VisualDensity.compact,
-              onPressed: _showHint,
-              icon: const Icon(Icons.lightbulb_outline,
-                  size: 20, color: _Pal.gold),
+            _PulsingBulb(
+              urgent: _bulbUrgent,
+              onTap: _showHint,
               tooltip: s.get('hintDialogTitle'),
             ),
           // ? 게임 규칙 — 언제든 현재 모드 규칙 확인
@@ -2477,6 +2497,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     final bool selected = i == _selectedPile && splittable;
     final int a = _splitA.clamp(1, n > 1 ? n - 1 : 1);
     final bool equal = selected && a * 2 == n;
+    // 힌트: 이 묶음을 어디서 쪼개야 하는지 하늘색으로 (광고 보고 얻은 정보)
+    final bool hintPile = _hintRow == i && _hintSplitA > 0;
+    final int hintAt = hintPile ? _hintSplitA.clamp(1, n > 1 ? n - 1 : 1) : -1;
 
     // 막대 크기 적응 (묶음 최대 20개, 폰 폭 기준)
     final double stickW = n <= 8 ? 13 : (n <= 14 ? 10 : 8);
@@ -2486,6 +2509,10 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     final children = <Widget>[];
     for (int k = 0; k < n; k++) {
       if (selected && k == a) children.add(_splitDivider(stickH, equal));
+      // 아직 안 고른 묶음이어도 힌트 위치는 미리 보여준다
+      if (!selected && hintPile && k == hintAt) {
+        children.add(_hintDivider(stickH));
+      }
       final stick = Padding(
         padding: EdgeInsets.symmetric(horizontal: gap),
         child: _peperoStick(stickW, stickH, dim: !splittable),
@@ -2523,9 +2550,12 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
               : _Pal.deskBottom.withOpacity(0.55),
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color:
-                selected ? _Pal.sky : (splittable ? _Pal.frameHi : _Pal.frame),
-            width: selected ? 2.5 : 1.5,
+            color: selected
+                ? _Pal.sky
+                : hintPile
+                    ? _Pal.sky
+                    : (splittable ? _Pal.frameHi : _Pal.frame),
+            width: selected ? 2.5 : (hintPile ? 2.5 : 1.5),
           ),
           boxShadow: selected
               ? [
@@ -2576,6 +2606,26 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         borderRadius: BorderRadius.circular(2),
         boxShadow: [
           BoxShadow(color: c.withOpacity(0.55), blurRadius: 6, spreadRadius: 1),
+        ],
+      ),
+    );
+  }
+
+  /// 힌트가 알려주는 쪼갤 위치 — 점선 느낌의 하늘색 선.
+  Widget _hintDivider(double h) {
+    return Container(
+      width: 3.5,
+      height: h + 8,
+      margin: const EdgeInsets.symmetric(horizontal: 3.5),
+      decoration: BoxDecoration(
+        color: _Pal.sky,
+        borderRadius: BorderRadius.circular(2),
+        boxShadow: [
+          BoxShadow(
+            color: _Pal.sky.withOpacity(0.7),
+            blurRadius: 8,
+            spreadRadius: 1,
+          ),
         ],
       ),
     );
@@ -3524,6 +3574,97 @@ class _StampButton extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// 힌트 전구 — 평소엔 조용한 아웃라인, **지는 포지션이면** 노란 불이 들어오며
+/// 두근두근 커졌다 작아진다. "지금 힌트 보면 살 수 있는데?" 를 눈으로 알린다.
+class _PulsingBulb extends StatefulWidget {
+  final bool urgent;
+  final VoidCallback onTap;
+  final String tooltip;
+  const _PulsingBulb({
+    required this.urgent,
+    required this.onTap,
+    required this.tooltip,
+  });
+
+  @override
+  State<_PulsingBulb> createState() => _PulsingBulbState();
+}
+
+class _PulsingBulbState extends State<_PulsingBulb>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c;
+
+  @override
+  void initState() {
+    super.initState();
+    _c = AnimationController(
+      duration: const Duration(milliseconds: 780),
+      vsync: this,
+    );
+    if (widget.urgent) _c.repeat(reverse: true);
+  }
+
+  @override
+  void didUpdateWidget(covariant _PulsingBulb old) {
+    super.didUpdateWidget(old);
+    if (widget.urgent && !_c.isAnimating) {
+      _c.repeat(reverse: true);
+    } else if (!widget.urgent && _c.isAnimating) {
+      _c.stop();
+      _c.value = 0;
+    }
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!widget.urgent) {
+      return IconButton(
+        visualDensity: VisualDensity.compact,
+        onPressed: widget.onTap,
+        icon: const Icon(Icons.lightbulb_outline, size: 20, color: _Pal.gold),
+        tooltip: widget.tooltip,
+      );
+    }
+    return AnimatedBuilder(
+      animation: _c,
+      builder: (context, _) {
+        final double t = Curves.easeInOut.transform(_c.value);
+        return IconButton(
+          visualDensity: VisualDensity.compact,
+          onPressed: widget.onTap,
+          tooltip: widget.tooltip,
+          icon: Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: _Pal.gold.withOpacity(0.30 + 0.45 * t),
+                  blurRadius: 8 + 12 * t,
+                  spreadRadius: 1 + 3 * t,
+                ),
+              ],
+            ),
+            child: Transform.scale(
+              scale: 1.0 + 0.22 * t,
+              child: Icon(
+                Icons.lightbulb,
+                size: 20,
+                color: Color.lerp(_Pal.gold, const Color(0xFFFFF1B8), t),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
