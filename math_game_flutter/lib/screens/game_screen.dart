@@ -800,6 +800,8 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       _kSelCount = 0;
       _wSelA = 0;
       _wSelB = 0;
+      _selectedPile = -1; // 막대과자도 선택 초기화 (묶음 정렬로 인덱스가 바뀌므로)
+      _splitA = 1;
       // 피보나치: 다음(내) 턴 한도 = 한밤이가 방금 가져간 수의 2배
       if (_config.mode == GameMode.fibonacci) {
         _fibLimit = move.count * 2;
@@ -2492,16 +2494,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         child: _peperoStick(stickW, stickH, dim: !splittable),
       );
 
-      // 같은 개수가 되는 자리는 눌러보기 전에 회색 ✕ 로 막아둔다
+      // 같은 개수가 되는 자리는 흐리게만 — 탭은 막혀 있다 (아이콘은 안 그림)
       if (myTurn && splittable && wouldBeEqual && cutAt < n) {
-        stick = Stack(
-          alignment: Alignment.center,
-          children: [
-            Opacity(opacity: 0.45, child: stick),
-            Icon(Icons.close_rounded,
-                size: stickW + 6, color: _Pal.cream.withOpacity(0.55)),
-          ],
-        );
+        stick = Opacity(opacity: 0.4, child: stick);
       }
 
       children.add(canCutHere

@@ -18,11 +18,11 @@ class AppStrings {
     // ── Home Screen ──
     'mathNimSubtitle': {
       'en': 'Math Duel with Yerin',
-      'ko': '예린과 수학 대결',
+      'ko': '예린이와 수학 대결',
     },
     'midnightGreeting': {
       'en': "Hi! I'm Yerin!",
-      'ko': '안녕! 나는 예린이야 🎀',
+      'ko': '또 지러 온 거야?',
     },
     'continueGame': {
       'en': 'Continue',
@@ -253,7 +253,7 @@ class AppStrings {
     },
     'victory': {
       'en': '🎉 Victory!',
-      'ko': '🎉 승리!',
+      'ko': '승리!',
     },
     // (귀여움 규칙 L2·M3) 패배는 침울 금지 — 재도전 프레임, 조용하게.
     'defeat': {
@@ -411,7 +411,7 @@ class AppStrings {
     },
     'hintDialogBody': {
       'en': "Watch an ad and Yerin will whisper a move~ ✏️",
-      'ko': '광고를 보면 예린이가 수를 살짝 알려줄게~ ✏️',
+      'ko': '광고를 보면 수를 살짝 알려줄게~ ✏️',
     },
     'hintWatchAd': {
       'en': 'Watch ad & see hint',
@@ -550,7 +550,7 @@ class AppStrings {
     // 톤: 승/패를 직접 말하지 않음. 웃음·놀림·장난기 위주.
     'greetWin': {
       'en': "Hehe, shall we play? 😝",
-      'ko': '후후, 한판 붙어볼래? 😝',
+      'ko': '후후, 한판 붙어볼래?',
     },
     'greetConfident': {
       'en': "Ooh, today feels fun~",
@@ -572,7 +572,7 @@ class AppStrings {
     // ── Midnight Messages: 우위 상태 (놀리는/느긋한 느낌, 승패 직접 언급 X) ──
     'midnightWinLate1': {
       'en': "Hehe~ 😏",
-      'ko': '후후~ 😏',
+      'ko': '후후~ ',
     },
     'midnightWinLate2': {
       'en': "Hmm-hmm~ 🎵",
@@ -606,7 +606,7 @@ class AppStrings {
     },
     'midnightLoseLate3': {
       'en': "Hey... that's sneaky~ 💢",
-      'ko': '아 뭐야... 얄미워~ 💢',
+      'ko': '아 뭐야... 으그으.. 💢',
     },
     'midnightLoseEarly1': {
       'en': 'Hmm, tricky~',
@@ -624,15 +624,15 @@ class AppStrings {
     // ── Midnight Messages: AI moves ──
     'midnightTakeN': {
       'en': "I'll grab {0}~ ✏️",
-      'ko': '{0}개 콕~ ✏️',
+      'ko': '{0}개 콕~ ',
     },
     'midnightTakeFromRow': {
       'en': 'Row {1}, {0} pieces~ ✏️',
-      'ko': '{1}번 줄에서 {0}개~ ✏️',
+      'ko': '{1}번 줄에서 {0}개~ ',
     },
     'midnightSplit': {
       'en': "Snap~ {0} and {1}! ✂️",
-      'ko': '톡~ {0}과 {1}로! ✂️',
+      'ko': '톡~ {0}과 {1}로! ',
     },
 
     // ── Midnight Messages: AI turn animation ──
@@ -642,11 +642,11 @@ class AppStrings {
     },
     'midnightTookTotal': {
       'en': 'Took {0}~ 😝',
-      'ko': '{0}개 가져갔지롱~ 😝',
+      'ko': '{0}개 가져갔지롱~ ',
     },
     'midnightTookFromRowTotal': {
       'en': 'Row {1}, {0} pieces~ ✏️',
-      'ko': '{1}번 줄에서 {0}개~ ✏️',
+      'ko': '{1}번 줄에서 {0}개~ ',
     },
     'yourTurnNow': {
       'en': 'Your turn~ 😊',
@@ -660,7 +660,7 @@ class AppStrings {
     },
     'midnightWon': {
       'en': 'Hehe~ that was fun! 😝',
-      'ko': '후후~ 재밌었어! 😝',
+      'ko': '후후 쉽다 쉬워! 😝',
     },
     'midnightNextTime': {
       'en': "Come challenge me again~ 📚",
@@ -683,7 +683,7 @@ class AppStrings {
     // (id=1201) nimSum=0 (이미 져버린 상태)에서 누르는 힌트: 다음 판 선공/후공 추천
     'hintLosingNextChoice': {
       'en': "😥 This round is mine already! Next time, pick '{0}' to win!",
-      'ko': "😥 이번 판은 예린이가 이기는 상태야. 다시 도전할 때 '{0}'를 선택하면 이길 수 있어!",
+      'ko': "😥 이번 판은 내가 이기는 상태야. 다시 도전할 때 '{0}'를 선택하면 이길 수 있어!",
     },
 
     // ── Tutorial (예린 시나리오 W1~W5) ──
@@ -767,7 +767,7 @@ class AppStrings {
     // W5: 빼빼로(분할) — 최종 월드 (2026-07-02 월드 재배치)
     'tutW5_1': {
       'en': "Final world! The rule changes completely here.",
-      'ko': '마지막 월드야! 여기선 규칙이 완전히 달라.',
+      'ko': '여기선 규칙이 완전히 달라.',
     },
     'tutW5_2': {
       'en': "Don't take them — SPLIT one bundle into two UNEQUAL parts.",
