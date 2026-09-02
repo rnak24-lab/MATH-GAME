@@ -60,12 +60,12 @@ class StageManager extends ChangeNotifier {
   /// 20판 전부 깨는 완주는 별개의 목표로 남는다.
   static const int _unlockClearsNeeded = 3;
 
-  /// 🧪 검수용 플래그: 전 월드 상시 해금 (대표님 검토용).
-  /// ⚠️ 출시(Play 제출)용 AAB를 만들 때는 반드시 false 로 되돌릴 것!
-  static const bool kReviewUnlockTestWorlds = true;
+  /// 🧪 검수용 플래그 — 켜면 전 월드/전 스테이지가 즉시 열린다.
+  /// 출시본은 반드시 false. (대표님 검토 빌드를 만들 때만 true)
+  static const bool kReviewUnlockTestWorlds = false;
 
-  /// 검수 해금 시작 월드 id (1 = 두 번째 월드부터 = 사실상 전부 해금).
-  static const int _reviewUnlockFrom = 1;
+  /// 검수 해금 시작 월드 id.
+  static const int _reviewUnlockFrom = 3;
 
   /// 마지막 월드 id — 정식 4월드(0~3) + 테스트 3월드(4~6).
   static const int _lastWorldId = 6;
@@ -108,7 +108,7 @@ class StageManager extends ChangeNotifier {
   /// - 해당 월드가 해금되어 있고,
   /// - 월드의 첫 스테이지이거나 직전 스테이지를 클리어했을 때 (월드 내 순차 진행).
   bool isStagePlayable(int stage) {
-    // 🧪 검수 모드: 어느 스테이지든 바로 들어갈 수 있게 (출시 빌드에선 false)
+    // 🧪 검수 모드일 때만 아무 스테이지나 진입 (출시본에선 플래그가 false라 무효)
     if (kReviewUnlockTestWorlds) return true;
     int world = (stage - 1) ~/ 20;
     if (!isWorldUnlocked(world)) return false;
