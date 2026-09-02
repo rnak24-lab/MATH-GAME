@@ -2379,36 +2379,11 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     final bool myTurn = _phase == GamePhase.playing &&
         _currentTurn == TurnOwner.player &&
         !_isAiAnimating;
-    final bool hasSel = _selectedPile >= 0 &&
-        _selectedPile < _rows.length &&
-        _rows[_selectedPile] >= 3;
-
-    String guide = '';
-    if (myTurn) {
-      // 묶음 고르는 단계가 없어져서 안내도 하나로 통일.
-      // (같은 개수 자리는 판에서 회색 X로 이미 막아두므로 경고 문구가 불필요)
-      guide = hasSel ? '' : s.get('peperoTapStick');
-    }
-
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          if (guide.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Text(
-                guide,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontFamily: _mono,
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w800,
-                  color: _Pal.cream.withOpacity(0.9),
-                ),
-              ),
-            ),
           // 살아있는 묶음(쪼갤 수 있는 것)만 메인 무대에
           Wrap(
             spacing: 10,
@@ -2524,7 +2499,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
           children: [
             Opacity(opacity: 0.45, child: stick),
             Icon(Icons.close_rounded,
-                size: stickW + 4, color: _Pal.alarmHi.withOpacity(0.85)),
+                size: stickW + 6, color: _Pal.cream.withOpacity(0.55)),
           ],
         );
       }
@@ -2714,8 +2689,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         opacity: myTurn ? 1.0 : 0.45,
         child: Container(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-          constraints: BoxConstraints(
-              minHeight: _config.mode == GameMode.pepero ? 158 : 116),
+          constraints: const BoxConstraints(minHeight: 116),
           alignment: Alignment.center,
           decoration: const BoxDecoration(
             color: _Pal.frame,
