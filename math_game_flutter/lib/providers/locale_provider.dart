@@ -9,9 +9,19 @@ class LocaleProvider extends ChangeNotifier {
   static const String _prefKey = 'app_locale';
   static const String _firstLaunchKey = 'language_selected';
   static const String defaultLocale = 'en';
+  /// 지원 언어 10개. 기기 언어가 여기 있으면 첫 실행부터 그 언어로 뜬다.
+  /// 순서 = 설정 화면에 보이는 순서.
   static const List<Map<String, String>> supportedLocales = [
     {'code': 'en', 'name': 'English', 'flag': '🇺🇸'},
     {'code': 'ko', 'name': '한국어', 'flag': '🇰🇷'},
+    {'code': 'ja', 'name': '日本語', 'flag': '🇯🇵'},
+    {'code': 'zh', 'name': '简体中文', 'flag': '🇨🇳'},
+    {'code': 'es', 'name': 'Español', 'flag': '🇪🇸'},
+    {'code': 'pt', 'name': 'Português', 'flag': '🇧🇷'},
+    {'code': 'de', 'name': 'Deutsch', 'flag': '🇩🇪'},
+    {'code': 'fr', 'name': 'Français', 'flag': '🇫🇷'},
+    {'code': 'id', 'name': 'Bahasa Indonesia', 'flag': '🇮🇩'},
+    {'code': 'vi', 'name': 'Tiếng Việt', 'flag': '🇻🇳'},
   ];
 
   String _locale = defaultLocale;

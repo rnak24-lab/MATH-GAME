@@ -36,7 +36,8 @@ class _MathNimAppState extends State<MathNimApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: '방과후 님게임',
+      // 작업 전환기에 뜨는 이름 — 선택한 언어를 따라간다.
+      title: _localeProvider.strings.get('appTitle'),
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(

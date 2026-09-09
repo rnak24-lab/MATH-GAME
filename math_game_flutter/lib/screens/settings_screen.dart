@@ -54,40 +54,53 @@ class _SettingsScreenState extends State<SettingsScreen> {
           // ── 언어 ──
           _sectionTitle(s.get('languageSettings')),
           const SizedBox(height: 12),
-          ...LocaleProvider.supportedLocales.map((loc) {
-            final isSelected = widget.localeProvider.locale == loc['code'];
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: _card(
-                selected: isSelected,
-                onTap: () async {
-                  await widget.localeProvider.setLocale(loc['code']!);
-                  widget.onChanged();
-                  setState(() {});
-                },
-                child: Row(
-                  children: [
-                    Text(loc['flag']!, style: const TextStyle(fontSize: 24)),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Text(
-                        loc['name']!,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight:
-                              isSelected ? FontWeight.w700 : FontWeight.w500,
-                          color: isSelected
-                              ? const Color(0xFFC9A24B)
-                              : const Color(0xFF332817),
+          // 언어가 10개라 세로로 쌓으면 첫 화면이 전부 언어로 찬다 → 2열.
+          LayoutBuilder(builder: (context, cons) {
+            const double gap = 8;
+            final double cardW = (cons.maxWidth - gap) / 2;
+            return Wrap(
+              spacing: gap,
+              runSpacing: gap,
+              children: LocaleProvider.supportedLocales.map((loc) {
+                final isSelected = widget.localeProvider.locale == loc['code'];
+                return SizedBox(
+                  width: cardW,
+                  child: _card(
+                    selected: isSelected,
+                    dense: true,
+                    onTap: () async {
+                      await widget.localeProvider.setLocale(loc['code']!);
+                      widget.onChanged();
+                      setState(() {});
+                    },
+                    child: Row(
+                      children: [
+                        Text(loc['flag']!, style: const TextStyle(fontSize: 20)),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            loc['name']!,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: isSelected
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
+                              color: isSelected
+                                  ? const Color(0xFFC9A24B)
+                                  : const Color(0xFF332817),
+                            ),
+                          ),
                         ),
-                      ),
+                        if (isSelected)
+                          const Icon(Icons.check_circle_rounded,
+                              color: Color(0xFFC9A24B), size: 18),
+                      ],
                     ),
-                    if (isSelected)
-                      const Icon(Icons.check_circle_rounded,
-                          color: Color(0xFFC9A24B), size: 24),
-                  ],
-                ),
-              ),
+                  ),
+                );
+              }).toList(),
             );
           }),
 
@@ -464,7 +477,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _card(
-      {required Widget child, VoidCallback? onTap, bool selected = false}) {
+      {required Widget child,
+      VoidCallback? onTap,
+      bool selected = false,
+      bool dense = false}) {
     return Material(
       color: selected ? const Color(0xFFC9A24B).withOpacity(0.1) : Colors.white,
       borderRadius: BorderRadius.circular(16),
@@ -474,7 +490,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          padding: dense
+              ? const EdgeInsets.symmetric(horizontal: 12, vertical: 12)
+              : const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           child: child,
         ),
       ),
