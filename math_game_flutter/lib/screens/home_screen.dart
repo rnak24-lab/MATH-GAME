@@ -240,7 +240,8 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Widget _progressBadge(dynamic s) {
-    final int next = (widget.stageManager.maxStage + 1).clamp(1, 140);
+    // 버전2: 7월드 140 + 보드 게임 5월드 100 = 240 스테이지
+    final int next = (widget.stageManager.maxStage + 1).clamp(1, 240);
     final world = worldForStage(next);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),

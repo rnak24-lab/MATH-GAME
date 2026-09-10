@@ -98,6 +98,48 @@ const List<WorldInfo> worlds = [
     subtitleKey: 'worldSubtitleFibonacci',
     bgGradient: [Color(0xFF2A1A4A), Color(0xFF7E57C2), Color(0xFFEDE7F6)],
   ),
+  // ── 월드 8~12 (2026-09-10 버전2): "공식을 알아도 끝나지 않는" 보드 게임 5종 ──
+  //    141-160 춉 · 161-180 점과 상자 · 181-200 심 · 201-220 스프라우트 · 221-240 헥스
+  WorldInfo(
+    id: 7,
+    nameKey: 'worldSnackBar',
+    emoji: '🍫',
+    color: Color(0xFF8D6E63),
+    subtitleKey: 'modeChomp',
+    bgGradient: [Color(0xFF3E2723), Color(0xFF8D6E63), Color(0xFFEFEBE9)],
+  ),
+  WorldInfo(
+    id: 8,
+    nameKey: 'worldArtRoom',
+    emoji: '🎨',
+    color: Color(0xFFEC407A),
+    subtitleKey: 'modeDots',
+    bgGradient: [Color(0xFF560027), Color(0xFFEC407A), Color(0xFFFCE4EC)],
+  ),
+  WorldInfo(
+    id: 9,
+    nameKey: 'worldMathClub',
+    emoji: '📐',
+    color: Color(0xFF42A5F5),
+    subtitleKey: 'modeSim',
+    bgGradient: [Color(0xFF0D2B4A), Color(0xFF42A5F5), Color(0xFFE3F2FD)],
+  ),
+  WorldInfo(
+    id: 10,
+    nameKey: 'worldGreenhouse',
+    emoji: '🌱',
+    color: Color(0xFF66BB6A),
+    subtitleKey: 'modeSprouts',
+    bgGradient: [Color(0xFF1B3D1F), Color(0xFF66BB6A), Color(0xFFE8F5E9)],
+  ),
+  WorldInfo(
+    id: 11,
+    nameKey: 'worldBoardClub',
+    emoji: '⬡',
+    color: Color(0xFFFF7043),
+    subtitleKey: 'modeHex',
+    bgGradient: [Color(0xFF4E1A0A), Color(0xFFFF7043), Color(0xFFFBE9E7)],
+  ),
 ];
 
 /// (id=1141) 글로벌 스테이지 번호로 월드 배경 가져오기 (GameScreen에서 사용).

@@ -15,6 +15,8 @@ import '../l10n/app_strings.dart';
 import '../services/ad_service.dart';
 import '../game/tutorial_manager.dart';
 import 'world_select_screen.dart' show worldForStage, WorldInfo;
+import 'board_game_screen.dart' show stageScreenFor;
+import '../game/board_games.dart' show kTotalStages;
 
 /// Papers-Please풍 "심문 책상" 탑뷰 팔레트 (sepia noir).
 /// 책상 상단 y — **고정값**. 돌 개수가 바뀌어도 책상은 절대 움직이지 않는다.
@@ -459,8 +461,8 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   }
 
   void _showNextStageDialog() {
-    // 정식 7월드 140스테이지 (2026-07-24 확정)
-    bool hasNext = widget.stageNumber < 140;
+    // 7월드 140 + 버전2 보드 게임 5월드 100 = 240 (141부터는 보드 게임 화면으로 이어짐)
+    bool hasNext = widget.stageNumber < kTotalStages;
 
     showGeneralDialog(
       context: context,
@@ -551,7 +553,8 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => GameScreen(
+                            // 140 → 141 부터는 보드 게임 화면(버전2)
+                            builder: (_) => stageScreenFor(
                               stageManager: widget.stageManager,
                               stageNumber: widget.stageNumber + 1,
                               localeProvider: widget.localeProvider,

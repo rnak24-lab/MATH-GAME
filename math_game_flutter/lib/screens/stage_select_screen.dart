@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'board_game_screen.dart' show stageScreenFor; // 141+ 보드 게임 화면 라우팅
 import '../game/stage_manager.dart';
 import '../providers/locale_provider.dart';
 import '../utils/nim_theme.dart';
 import 'world_select_screen.dart';
-import 'game_screen.dart';
 import 'settings_screen.dart';
 
 class StageSelectScreen extends StatefulWidget {
@@ -126,7 +126,8 @@ class _StageSelectScreenState extends State<StageSelectScreen> {
                         await Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => GameScreen(
+                            // 141 이상은 보드 게임 화면(버전2), 그 외는 님게임 화면
+                            builder: (_) => stageScreenFor(
                               stageManager: stageManager,
                               stageNumber: stage,
                               localeProvider: localeProvider,

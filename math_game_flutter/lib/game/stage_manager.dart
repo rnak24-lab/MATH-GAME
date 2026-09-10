@@ -67,8 +67,8 @@ class StageManager extends ChangeNotifier {
   /// 검수 해금 시작 월드 id.
   static const int _reviewUnlockFrom = 3;
 
-  /// 마지막 월드 id — 정식 4월드(0~3) + 테스트 3월드(4~6).
-  static const int _lastWorldId = 6;
+  /// 마지막 월드 id — 정식 7월드(0~6) + 버전2 보드 게임 5월드(7~11).
+  static const int _lastWorldId = 11;
 
   Future<void> _recalculateWorldUnlocked() async {
     int unlocked = 0;

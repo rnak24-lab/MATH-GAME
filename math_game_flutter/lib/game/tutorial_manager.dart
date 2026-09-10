@@ -23,7 +23,13 @@ class TutorialManager {
         stageNumber == 61 ||
         stageNumber == 81 ||
         stageNumber == 101 ||
-        stageNumber == 121;
+        stageNumber == 121 ||
+        // 버전2 보드 게임 월드 8~12 의 첫 판
+        stageNumber == 141 ||
+        stageNumber == 161 ||
+        stageNumber == 181 ||
+        stageNumber == 201 ||
+        stageNumber == 221;
   }
 
   /// stageNumber → 월드 번호 (1~7)
@@ -34,7 +40,13 @@ class TutorialManager {
     if (stageNumber <= 80) return 4;
     if (stageNumber <= 100) return 5;
     if (stageNumber <= 120) return 6;
-    return 7;
+    if (stageNumber <= 140) return 7;
+    // 버전2 보드 게임 월드 8~12
+    if (stageNumber <= 160) return 8;
+    if (stageNumber <= 180) return 9;
+    if (stageNumber <= 200) return 10;
+    if (stageNumber <= 220) return 11;
+    return 12;
   }
 
   /// 월드(1-based) → 간식 키. game_screen 의 snackForStage 와 같은 순서.
@@ -114,6 +126,17 @@ class TutorialManager {
           TutorialStep(text: s.get('tutW8_2')),
           TutorialStep(text: s.get('tutW8_3', snk)),
         ];
+      // ── 버전2 보드 게임 월드 8~12 (간식 문구 없음 — 각 게임 고유 규칙) ──
+      case 8:
+        return [for (int i = 1; i <= 3; i++) TutorialStep(text: s.get('tutChomp$i'))];
+      case 9:
+        return [for (int i = 1; i <= 3; i++) TutorialStep(text: s.get('tutDots$i'))];
+      case 10:
+        return [for (int i = 1; i <= 3; i++) TutorialStep(text: s.get('tutSim$i'))];
+      case 11:
+        return [for (int i = 1; i <= 3; i++) TutorialStep(text: s.get('tutSprouts$i'))];
+      case 12:
+        return [for (int i = 1; i <= 3; i++) TutorialStep(text: s.get('tutHex$i'))];
     }
     return const [];
   }
