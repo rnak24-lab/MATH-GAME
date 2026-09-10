@@ -135,7 +135,7 @@ const List<WorldInfo> worlds = [
   WorldInfo(
     id: 11,
     nameKey: 'worldBoardClub',
-    emoji: '⬡',
+    emoji: '🎲',
     color: Color(0xFFFF7043),
     subtitleKey: 'modeHex',
     bgGradient: [Color(0xFF4E1A0A), Color(0xFFFF7043), Color(0xFFFBE9E7)],

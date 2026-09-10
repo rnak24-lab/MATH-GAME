@@ -62,10 +62,12 @@ class StageManager extends ChangeNotifier {
 
   /// 🧪 검수용 플래그 — 켜면 전 월드/전 스테이지가 즉시 열린다.
   /// 출시본은 반드시 false. (대표님 검토 빌드를 만들 때만 true)
-  static const bool kReviewUnlockTestWorlds = false;
+  // 🧪 버전2 비교 빌드: 보드 게임 월드 8~12(id 7~11)를 바로 열어둔다.
+  //    님게임 월드 1~7은 평소 규칙 그대로. ⚠️ Play 제출 전엔 반드시 false 로.
+  static const bool kReviewUnlockTestWorlds = true;
 
   /// 검수 해금 시작 월드 id.
-  static const int _reviewUnlockFrom = 3;
+  static const int _reviewUnlockFrom = 7;
 
   /// 마지막 월드 id — 정식 7월드(0~6) + 버전2 보드 게임 5월드(7~11).
   static const int _lastWorldId = 11;
