@@ -3031,6 +3031,32 @@ class AppStrings {
       'id': 'Segitiga…!',
       'vi': 'Tam giác rồi…!',
     },
+
+    // ── 월드 선택 화면의 층 라벨 (님게임 / 보드 게임) ──
+    'tierNim': {
+      'en': 'NIM GAMES',
+      'ko': '님게임',
+      'ja': 'ニムゲーム',
+      'zh': '尼姆游戏',
+      'es': 'JUEGOS NIM',
+      'pt': 'JOGOS NIM',
+      'de': 'NIM-SPIELE',
+      'fr': 'JEUX NIM',
+      'id': 'PERMAINAN NIM',
+      'vi': 'TRÒ CHƠI NIM',
+    },
+    'tierBoard': {
+      'en': 'BOARD GAMES',
+      'ko': '보드 게임',
+      'ja': 'ボードゲーム',
+      'zh': '桌面游戏',
+      'es': 'JUEGOS DE MESA',
+      'pt': 'JOGOS DE TABULEIRO',
+      'de': 'BRETTSPIELE',
+      'fr': 'JEUX DE PLATEAU',
+      'id': 'BOARD GAME',
+      'vi': 'CỜ BÀN',
+    },
   };
 
   String get(String key, [List<String>? args]) {

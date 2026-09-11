@@ -31,13 +31,10 @@ bool isBoardStage(int stage) => stage >= kBoardFirstStage;
 /// 월드 안에서의 진행도 0~19
 int _tOf(int stage) => ((stage - kBoardFirstStage) % 20).clamp(0, 19);
 
-/// 스테이지별 AI 실수 확률. 초반은 "이해하기 전에 이겨보게" 일부러 틀린다.
-/// (페르소나 분석 3순위 — 1스테이지부터 완벽한 AI 는 일반인을 전멸시킨다)
-double blunderRateForStage(int stage) {
-  final int t = _tOf(stage);
-  final double p = 0.45 - 0.035 * t;
-  return p < 0 ? 0 : p;
-}
+/// 스테이지별 AI 실수 확률.
+/// (2026-09-12 대표님) 예린은 봐주지 않는다 — 님게임 층과 똑같이 전 스테이지 최선 수.
+/// 일부러 틀리는 초반 완화는 뺐다. 값은 0 고정이지만 호출부는 그대로 둔다.
+double blunderRateForStage(int stage) => 0;
 
 /// 수 하나. 종류별 의미:
 ///   chomp: (a=행, b=열)   dots: a=변 번호   sim: a=선 번호

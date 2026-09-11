@@ -7,11 +7,15 @@ class StageManager extends ChangeNotifier {
   static const String _maxStageKey = 'max_stage';
   static const String _clearedKey = 'cleared_stages';
   static const String _worldUnlockedKey = 'world_unlocked';
+  static const String _boardUnlockedKey = 'board_world_unlocked';
   static const String _tutorialDoneKey = 'tutorial_done';
 
   /// 클리어한 최고 스테이지 (홈 화면 "이어하기" 표시용).
   int maxStage = 0;
   int worldUnlocked = 0;
+
+  /// 보드 게임 층(7~11)의 해금 상태 — 님게임 층과 독립적으로 돈다.
+  int boardWorldUnlocked = firstBoardWorld;
   bool tutorialDone = false;
 
   /// 스테이지별 클리어 기록.
@@ -22,6 +26,7 @@ class StageManager extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     maxStage = prefs.getInt(_maxStageKey) ?? 0;
     worldUnlocked = prefs.getInt(_worldUnlockedKey) ?? 0;
+    boardWorldUnlocked = prefs.getInt(_boardUnlockedKey) ?? firstBoardWorld;
     tutorialDone = prefs.getBool(_tutorialDoneKey) ?? false;
 
     _cleared.clear();
@@ -62,29 +67,43 @@ class StageManager extends ChangeNotifier {
 
   /// 🧪 검수용 플래그 — 켜면 전 월드/전 스테이지가 즉시 열린다.
   /// 출시본은 반드시 false. (대표님 검토 빌드를 만들 때만 true)
-  // 🧪 버전2 비교 빌드: 보드 게임 월드 8~12(id 7~11)를 바로 열어둔다.
-  //    님게임 월드 1~7은 평소 규칙 그대로. ⚠️ Play 제출 전엔 반드시 false 로.
-  static const bool kReviewUnlockTestWorlds = true;
+  static const bool kReviewUnlockTestWorlds = false;
 
   /// 검수 해금 시작 월드 id.
   static const int _reviewUnlockFrom = 7;
 
+  /// 보드 게임 층이 시작하는 월드 id (매점=춉). 이 월드는 항상 열려 있다.
+  static const int firstBoardWorld = 7;
+
   /// 마지막 월드 id — 정식 7월드(0~6) + 버전2 보드 게임 5월드(7~11).
   static const int _lastWorldId = 11;
 
+  /// 두 사슬을 따로 계산한다.
+  ///  - 님게임 층: 0 → 6 순차 (이전 월드 3판)
+  ///  - 보드 층: 7은 항상, 8 → 11 순차 (이전 보드 월드 3판). 님게임 진도와 무관.
   Future<void> _recalculateWorldUnlocked() async {
     int unlocked = 0;
-    for (int w = 1; w <= _lastWorldId; w++) {
+    for (int w = 1; w < firstBoardWorld; w++) {
       if (getWorldProgress(w - 1) >= _unlockClearsNeeded) {
         unlocked = w;
       } else {
         break;
       }
     }
-    if (unlocked != worldUnlocked) {
+    int board = firstBoardWorld;
+    for (int w = firstBoardWorld + 1; w <= _lastWorldId; w++) {
+      if (getWorldProgress(w - 1) >= _unlockClearsNeeded) {
+        board = w;
+      } else {
+        break;
+      }
+    }
+    if (unlocked != worldUnlocked || board != boardWorldUnlocked) {
       worldUnlocked = unlocked;
+      boardWorldUnlocked = board;
       final prefs = await SharedPreferences.getInstance();
       await prefs.setInt(_worldUnlockedKey, worldUnlocked);
+      await prefs.setInt(_boardUnlockedKey, boardWorldUnlocked);
     }
   }
 
@@ -93,10 +112,12 @@ class StageManager extends ChangeNotifier {
     _cleared.clear();
     maxStage = 0;
     worldUnlocked = 0;
+    boardWorldUnlocked = firstBoardWorld;
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_clearedKey);
     await prefs.remove(_maxStageKey);
     await prefs.remove(_worldUnlockedKey);
+    await prefs.remove(_boardUnlockedKey);
     notifyListeners();
   }
 
@@ -128,6 +149,7 @@ class StageManager extends ChangeNotifier {
         worldId <= _lastWorldId) {
       return true;
     }
+    if (worldId >= firstBoardWorld) return worldId <= boardWorldUnlocked;
     return worldId <= worldUnlocked;
   }
 

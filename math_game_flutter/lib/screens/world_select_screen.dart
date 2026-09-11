@@ -229,11 +229,20 @@ class _WorldSelectScreenState extends State<WorldSelectScreen> {
       ),
       body: Container(
         decoration: const BoxDecoration(gradient: NimTheme.bg),
+        // 두 층으로 접는다: 님게임(0~6) / 보드 게임(7~11).
+        // 아래 층은 위 층 진도와 무관하게 첫 월드가 열려 있다.
         child: ListView.builder(
           padding: const EdgeInsets.all(16),
-          itemCount: worlds.length,
+          itemCount: worlds.length + 2, // 섹션 헤더 2개
           itemBuilder: (context, index) {
-            final world = worlds[index];
+            if (index == 0) return _tierHeader(s.get('tierNim'), first: true);
+            if (index == StageManager.firstBoardWorld + 1) {
+              return _tierHeader(s.get('tierBoard'));
+            }
+            final int wi = index < StageManager.firstBoardWorld + 1
+                ? index - 1
+                : index - 2;
+            final world = worlds[wi];
             final isUnlocked = stageManager.isWorldUnlocked(world.id);
             final progress = stageManager.getWorldProgress(world.id);
 
@@ -267,6 +276,30 @@ class _WorldSelectScreenState extends State<WorldSelectScreen> {
       ),
     );
   }
+}
+
+/// 층 구분 헤더 — 게임 종류만 적는다 (세계관 이름은 카드 안 장소명이 맡는다).
+Widget _tierHeader(String label, {bool first = false}) {
+  return Padding(
+    padding: EdgeInsets.only(top: first ? 0 : 14, bottom: 10),
+    child: Row(
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontFamily: NimTheme.font,
+            fontSize: 13,
+            letterSpacing: 2,
+            color: NimTheme.gold,
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Container(height: 1, color: NimTheme.frameHi),
+        ),
+      ],
+    ),
+  );
 }
 
 class _WorldCard extends StatelessWidget {
