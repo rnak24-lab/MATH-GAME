@@ -3,8 +3,7 @@ import 'package:math_game/game/board_games.dart';
 
 void main() {
   final rng = Random(42);
-  final stages = <int>[141, 145, 150, 155, 160, 161, 170, 175, 180, 181, 190, 200,
-    201, 208, 215, 220, 221, 226, 233, 240];
+  final stages = <int>[141, 142, 143, 150, 160, 161, 162, 164, 166, 172, 175, 178, 180, 181, 200, 201, 203, 207, 212, 217, 220, 221, 223, 226, 230, 234, 240];
   int fails = 0;
   for (final st in stages) {
     final kind = boardKindForStage(st);

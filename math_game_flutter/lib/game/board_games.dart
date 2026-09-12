@@ -31,10 +31,13 @@ bool isBoardStage(int stage) => stage >= kBoardFirstStage;
 /// 월드 안에서의 진행도 0~19
 int _tOf(int stage) => ((stage - kBoardFirstStage) % 20).clamp(0, 19);
 
-/// 스테이지별 AI 실수 확률.
-/// (2026-09-12 대표님) 예린은 봐주지 않는다 — 님게임 층과 똑같이 전 스테이지 최선 수.
-/// 일부러 틀리는 초반 완화는 뺐다. 값은 0 고정이지만 호출부는 그대로 둔다.
-double blunderRateForStage(int stage) => 0;
+/// 예린의 실수 확률 (보드 게임 층 전용).
+/// (2026-09-12 대표님) 난이도 단계는 하나. 판 크기가 스테이지마다 커지는 걸로 어려워진다.
+/// 대신 **초중반에만** 이 확률로 실수하고, 종반(각 게임의 inEndgame)에 들어가면 완벽하게 둔다.
+/// → 초중반 빌드업을 잘한 사람이 이긴다. 종반만 잘 둬서 이기는 건 막는다.
+const double kBoardBlunder = 0.2;
+
+double blunderRateForStage(int stage) => kBoardBlunder;
 
 /// 수 하나. 종류별 의미:
 ///   chomp: (a=행, b=열)   dots: a=변 번호   sim: a=선 번호
@@ -81,14 +84,21 @@ abstract class BoardGame {
   /// (힌트 전구 반짝임과 예린 표정에 쓰인다 — 틀려도 게임 진행엔 영향 없음)
   bool toMoveIsLosing();
 
+  /// 종반인가? 여기부터 예린은 실수하지 않는다. 게임마다 "끝나기 n수 전"의 기준이 다르다.
+  bool inEndgame();
+
+  /// 실수로 둘 만한 수 — 최선은 아니지만 바보 같지도 않은 수. 기본은 아무 수.
+  List<BoardMove> plausibleMistakes() => legalMoves();
+
   final math.Random _rng = math.Random();
 
-  /// 실수 확률을 섞은 AI 수.
+  /// 실수 확률을 섞은 AI 수. 종반이면 무조건 최선.
   BoardMove aiMove(double blunder) {
     final moves = legalMoves();
     if (moves.isEmpty) return const BoardMove(-1);
-    if (blunder > 0 && _rng.nextDouble() < blunder) {
-      return moves[_rng.nextInt(moves.length)];
+    if (blunder > 0 && !inEndgame() && _rng.nextDouble() < blunder) {
+      final pool = plausibleMistakes();
+      if (pool.isNotEmpty) return pool[_rng.nextInt(pool.length)];
     }
     return bestMove();
   }
@@ -98,23 +108,30 @@ abstract class BoardGame {
     final int t = _tOf(stage);
     switch (boardKindForStage(stage)) {
       case BoardKind.chomp:
-        // (2x3) → (2x7) → (3x5) … 최대 5x8
-        final int r = 2 + t ~/ 5;
-        final int c = 3 + (t % 5) + t ~/ 5;
-        return ChompGame(r, c > 8 ? 8 : c);
+        // 독+1칸(1x2)부터 7x8까지. 20단계 전부 다른 크기.
+        const sizes = [
+          [1, 2], [1, 3], [2, 2], [2, 3], [2, 4], [3, 3], [3, 4], [3, 5], [4, 4], [4, 5],
+          [4, 6], [5, 5], [5, 6], [5, 7], [5, 8], [6, 6], [6, 7], [6, 8], [7, 7], [7, 8],
+        ];
+        return ChompGame(sizes[t][0], sizes[t][1]);
       case BoardKind.dotsBoxes:
-        // 무승부가 안 나게 상자 수가 홀수인 판만 쓴다: 3x3(9) → 3x5(15) → 5x5(25)
-        if (t < 10) return DotsBoxesGame(3, 3);
-        if (t < 15) return DotsBoxesGame(3, 5);
-        return DotsBoxesGame(5, 5);
+        // 점 4개(1x1 상자)부터. 홀수x홀수만 써서 무승부가 절대 안 난다.
+        const sizes = [
+          [1, 1], [1, 3], [1, 3], [1, 5], [1, 5], [3, 3], [3, 3], [3, 3], [3, 5], [3, 5],
+          [3, 5], [5, 5], [5, 5], [5, 5], [5, 7], [5, 7], [5, 7], [7, 7], [7, 7], [7, 7],
+        ];
+        return DotsBoxesGame(sizes[t][0], sizes[t][1]);
       case BoardKind.sim:
+        // 심은 점 6개가 규칙 자체라 판 크기가 없다. 20단계 동일.
         return SimGame();
       case BoardKind.sprouts:
-        final int n = t < 7 ? 3 : (t < 14 ? 4 : 5);
-        return SproutsGame.circle(n);
+        // 점 2개(선 하나면 끝)부터 6개까지
+        const ns = [2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 6, 6, 6, 6];
+        return SproutsGame.circle(ns[t]);
       case BoardKind.hex:
-        final int n = t < 5 ? 4 : (t < 12 ? 5 : (t < 17 ? 6 : 7));
-        return HexGame(n);
+        // 3x3(가운데 잡으면 끝)부터 8x8까지
+        const ns = [3, 3, 4, 4, 4, 5, 5, 5, 5, 6, 6, 6, 6, 7, 7, 7, 7, 8, 8, 8];
+        return HexGame(ns[t]);
     }
   }
 }
@@ -207,6 +224,10 @@ class ChompGame extends BoardGame {
 
   @override
   bool toMoveIsLosing() => !_win(rows);
+
+  /// 종반: 독 포함 6칸 이하
+  @override
+  bool inEndgame() => rows.fold<int>(0, (s, r) => s + r) <= 6;
 
   @override
   BoardMove bestMove() {
@@ -337,6 +358,20 @@ class DotsBoxesGame extends BoardGame {
   /// 이 변을 그으면 상대에게 3면짜리 상자를 넘겨주는가
   bool givesAway(int e) =>
       boxesOfEdge(e).any((b) => boxSides(b[0], b[1]) == 2);
+
+  /// 종반: 남은 변 12개 이하 — 사슬을 거둬들이는 구간. 여기선 완전 탐색으로 완벽하게.
+  @override
+  bool inEndgame() => legalMoves().length <= 12;
+
+  /// 실수: 먹을 상자를 놓치거나, 상대에게 3면짜리를 넘겨주는 변.
+  /// (사람이 초중반에 실제로 하는 실수 — 파리티 계산 안 하고 아무 데나 긋기)
+  @override
+  List<BoardMove> plausibleMistakes() {
+    final moves = legalMoves();
+    final give = moves.where((m) => givesAway(m.a) && !completes(m.a)).toList();
+    if (give.isNotEmpty) return give;
+    return moves.where((m) => !completes(m.a)).toList();
+  }
 
   /// 정책: ① 먹을 수 있으면 먹는다 ② 안전한 변 ③ 가장 적게 내주는 변.
   /// 남은 변이 적으면 완전 탐색.
@@ -528,6 +563,15 @@ class SimGame extends BoardGame {
   }
 
   int _remaining() => color.where((c) => c < 0).length;
+
+  /// 종반: 남은 선 9개 이하
+  @override
+  bool inEndgame() => _remaining() <= 9;
+
+  /// 실수: 최선은 아니어도 당장 내 삼각형을 만드는 자멸 수는 아님
+  @override
+  List<BoardMove> plausibleMistakes() =>
+      legalMoves().where((m) => !makesTriangle(m.a, toMove)).toList();
 
   @override
   bool toMoveIsLosing() {
@@ -738,8 +782,12 @@ class SproutsGame extends BoardGame {
   @override
   bool toMoveIsLosing() {
     _nodes = 0;
-    return _win(this, 4000) == false;
+    return _win(this, 2500) == false;
   }
+
+  /// 종반: 남은 수 6개 이하
+  @override
+  bool inEndgame() => legalMoves().length <= 6;
 
   @override
   BoardMove bestMove() {
@@ -749,7 +797,7 @@ class SproutsGame extends BoardGame {
       final n = clone() as SproutsGame;
       n.apply(m);
       _nodes = 0;
-      final r = _win(n, 2500);
+      final r = _win(n, 1500);
       if (r == false) return m;
       if (r == null) break; // 너무 깊다 → 휴리스틱으로 (예산은 폰 기준 ~50ms)
     }
@@ -874,6 +922,22 @@ class HexGame extends BoardGame {
   bool toMoveIsLosing() {
     if (isOver) return winner != toMove;
     return _winRate(cells, toMove, toMove, 120) < 0.22;
+  }
+
+  bool _hasImmediate(int side) {
+    for (final m in legalMoves()) {
+      final t = List<int>.from(cells)..[m.a] = side;
+      if (_connected(t, n, side)) return true;
+    }
+    return false;
+  }
+
+  /// 종반: 빈칸이 절반 이하이거나, 당장 이기거나 막아야 하는 수가 있을 때
+  @override
+  bool inEndgame() {
+    final empties = cells.where((c) => c < 0).length;
+    if (empties * 2 <= n * n) return true;
+    return _hasImmediate(toMove) || _hasImmediate(1 - toMove);
   }
 
   @override
