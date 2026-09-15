@@ -64,7 +64,7 @@ class _P {
 const String _mono = 'NeoDGM';
 const double _kDeskTop = 340; // game_screen 과 동일 — 캐릭터가 같은 만큼 보인다
 // 예린 크기·위치 — game_screen 과 같은 값 (얼굴이 말풍선 아래~책상 위를 채운다)
-const double _kYerinH = 660;
+const double _kYerinH = 530;
 const double _kYerinTop = 128 - _kYerinH * 0.065;
 
 class BoardGameScreen extends StatefulWidget {

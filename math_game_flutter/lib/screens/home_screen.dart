@@ -92,13 +92,15 @@ class _HomeScreenState extends State<HomeScreen>
           children: [
             // 예린 — 크게, 하단 버튼 패널 뒤로 자연스럽게 이어지는 구도
             Positioned(
-              bottom: h * 0.155,
+              // (2026-09-15 대표님) 얼굴 크게 — 타이틀 밴드 바로 아래에 머리, 다리는
+              // 하단 패널 뒤로 사라진다. 이미지 높이 460 (대표님: 중간 크기).
+              top: h * 0.075 + 118,
               left: 0,
               right: 0,
               child: const Center(
                 child: MidnightCharacter(
                   face: MidnightFace.happy1,
-                  size: 320,
+                  size: 460,
                   animate: false,
                 ),
               ),

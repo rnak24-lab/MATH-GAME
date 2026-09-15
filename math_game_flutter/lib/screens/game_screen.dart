@@ -24,9 +24,9 @@ import '../game/board_games.dart' show kTotalStages;
 const double _kDeskTop = 340;
 
 /// 예린 이미지 높이(논리 px). 원화 머리 구간(높이의 6%~36%)이 말풍선 아래~책상 위에
-/// 오도록 660. 폭은 자동(660 × 1080/1920 ≈ 371) — 폰 해상도가 달라도 논리 px 기준이라
+/// 오도록 530 (대표님: 400과 660의 중간). 폭은 자동(530 × 1080/1920 ≈ 298) — 폰 해상도가 달라도 논리 px 기준이라
 /// 얼굴 크기가 같다. 아래쪽(허리 이하)은 책상에 가려진다 — 의도.
-const double _kYerinH = 660;
+const double _kYerinH = 530;
 
 /// 예린 이미지 상단 y. 머리 꼭대기(높이의 ~6.5%)가 y≈128 에 오도록.
 const double _kYerinTop = 128 - _kYerinH * 0.065;
