@@ -128,7 +128,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     if (_msgKey == null) return '';
     String m = s.get(_msgKey!, _msgArgs);
     if (_msgAppendAutoHint) {
-      m = '$m\n\n${TutorialManager.autoHintOnConsecutiveLoss(widget.stageNumber, s)}';
+      m = '$m\n\n${TutorialManager.autoHintOnConsecutiveLoss(widget.stageNumber, s, multiple: _config.maxTake + 1)}';
     }
     return m;
   }
@@ -167,10 +167,40 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   // 플레이어 턴 시작 시 NIM 패배 상태 연속 카운트 (happy → confident 전환용)
   int _consecutiveLossTurns = 0;
 
-  // Tutorial (예린 시나리오, 월드별 1라운드만 활성)
-  List<TutorialStep> _tutorialSteps = const [];
-  int _tutorialIndex = 0;
-  bool _tutorialActive = false;
+  // ── 손으로 배우는 가이드 (월드 첫 판) — TutorialManager.nimGuide ──
+  List<GuideStep> _guide = const [];
+  int _guideIndex = 0;
+  bool get _guideActive => _guideIndex < _guide.length;
+  GuideStep? get _guideStep => _guideActive ? _guide[_guideIndex] : null;
+
+  /// "읽기" 스텝 — 책상 아래를 어둡게 하고 다음 버튼
+  bool get _guideReading => _guideStep?.kind == GuideKind.read;
+
+  /// 지금 플레이어가 둬야 하는 수 (act = 스크립트, follow = 엔진 최선). 아니면 null.
+  NimMove? get _guideRequired {
+    final st = _guideStep;
+    if (st == null || _currentTurn != TurnOwner.player) return null;
+    if (st.kind == GuideKind.act) return st.require;
+    if (st.kind == GuideKind.follow) {
+      return _engine.bestMove(_rows, _config.mode,
+          maxTake: _config.maxTake, fibLimit: _fibLimit);
+    }
+    return null;
+  }
+
+  /// 가이드 문장은 플레이어 차례(또는 읽기 스텝)에만 말풍선을 차지한다.
+  bool get _guideSpeaking =>
+      _guideActive &&
+      (_guideReading || (_currentTurn == TurnOwner.player && !_isAiAnimating));
+
+  final math.Random _rng = math.Random();
+
+  // ── 패배 되감기: "이기던 판을 지는 판으로 만든 첫 수" 를 기억한다 ──
+  List<int>? _mistakeRows;
+  NimMove? _mistakeMove;
+  NimMove? _mistakeBest;
+  int _mistakeFib = 0;
+  bool _replaying = false;
 
   // 연속 패배 추적 (2회 연속 패배 시 자동 힌트)
   int _consecutiveDefeats = 0;
@@ -186,17 +216,15 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       _fibLimit = _rows[0] - 1;
     }
 
-    // 월드별 1라운드 튜토리얼 활성화 여부 판정
-    if (TutorialManager.isTutorialStage(widget.stageNumber)) {
-      _tutorialSteps = TutorialManager.entrySteps(widget.stageNumber, s);
-      _tutorialActive = _tutorialSteps.isNotEmpty;
-    }
+    // 월드 첫 판 = 가이드 판 ("읽기" → "하기")
+    _guide = TutorialManager.nimGuide(widget.stageNumber, s);
 
     // (2026-09-15 대표님) 선공 선택 없음 — 모든 판은 플레이어가 먼저 둔다.
     // 초기 판은 NimEngine.generateStage 가 "선공 필승" 을 보장한다.
     _phase = GamePhase.playing;
     _currentTurn = TurnOwner.player;
     _losing = _calculateMidnightWinsState();
+    _applyGuideHighlight();
   }
 
   @override
@@ -215,20 +243,101 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     }
   }
 
-  /// 현재 튜토리얼 문장 — 매 build 마다 현재 언어로 다시 읽는다.
-  String get _tutorialText {
-    if (!_tutorialActive) return '';
-    final steps = TutorialManager.entrySteps(widget.stageNumber, s);
-    if (_tutorialIndex >= steps.length) return '';
-    return steps[_tutorialIndex].text;
+  /// 현재 가이드 문장 — 매 build 마다 현재 언어로 다시 읽는다.
+  String get _guideText {
+    final steps = TutorialManager.nimGuide(widget.stageNumber, s);
+    if (_guideIndex >= steps.length) return '';
+    return steps[_guideIndex].text;
   }
 
-  void _advanceTutorial() {
+  void _advanceGuide() {
     setState(() {
-      _tutorialIndex++;
-      if (_tutorialIndex >= _tutorialSteps.length) {
-        _tutorialActive = false;
-      }
+      _guideIndex++;
+      _applyGuideHighlight();
+    });
+  }
+
+  /// act/follow 스텝이면 둬야 할 수를 하늘색으로 (setState 밖에서도 호출 가능).
+  void _applyGuideHighlight() {
+    final req = _guideRequired;
+    if (req != null) _setHintFields(req);
+  }
+
+  /// 되감기·가이드용 순수 적용 — 화면 상태를 건드리지 않고 "이 수를 두면 어떤 판이 되나".
+  /// 반환: (rows, 다음 피보나치 한도)
+  (List<int>, int) _applied(List<int> rows, NimMove m) {
+    final r = List<int>.from(rows);
+    int fib = _fibLimit;
+    if (m.isPepero) {
+      r.removeAt(m.rowIndex);
+      r.add(m.splitA);
+      r.add(m.splitB);
+      r.sort((x, y) => y.compareTo(x));
+    } else if (m.isKayles) {
+      r.removeAt(m.rowIndex);
+      if (m.kaylesRight > 0) r.insert(m.rowIndex, m.kaylesRight);
+      if (m.kaylesLeft > 0) r.insert(m.rowIndex, m.kaylesLeft);
+    } else if (m.isWythoff) {
+      r[0] -= m.takeA;
+      r[1] -= m.takeB;
+    } else {
+      r[m.rowIndex] -= m.count;
+      if (_config.mode == GameMode.fibonacci) fib = m.count * 2;
+    }
+    return (r, fib);
+  }
+
+  /// 플레이어가 수를 두기 직전에 호출 — 이기던 판을 지는 판으로 만들었으면 기록.
+  void _recordPlayerMove(NimMove m) {
+    if (_mistakeMove != null) return;
+    final bool losingBefore = _engine.toMoveLoses(_rows, _config.mode,
+        maxTake: _config.maxTake, fibLimit: _fibLimit);
+    if (losingBefore) return; // 이미 지던 판 — 이 수는 실수가 아니다
+    final best = _engine.bestMove(_rows, _config.mode,
+        maxTake: _config.maxTake, fibLimit: _fibLimit);
+    final (after, fib) = _applied(_rows, m);
+    final bool aiLoses = _engine.toMoveLoses(after, _config.mode,
+        maxTake: _config.maxTake, fibLimit: fib);
+    if (!aiLoses) {
+      _mistakeRows = List<int>.from(_rows);
+      _mistakeMove = m;
+      _mistakeBest = best;
+      _mistakeFib = _fibLimit;
+    }
+  }
+
+  String _describeMove(NimMove m, bool multi) {
+    if (m.isPepero) return s.get('mvSplit', ['${m.splitA}', '${m.splitB}']);
+    if (m.isWythoff) {
+      if (m.takeA > 0 && m.takeB > 0) return s.get('mvBoth', ['${m.takeA}']);
+      return s.get('mvTakeRow',
+          ['${m.takeA > 0 ? m.takeA : m.takeB}', m.takeA > 0 ? '1' : '2']);
+    }
+    if (multi) return s.get('mvTakeRow', ['${m.count}', '${m.rowIndex + 1}']);
+    return s.get('mvTake', ['${m.count}']);
+  }
+
+  /// "왜 졌지?" — 실수한 판으로 되돌려 빨강(실수)·하늘색(정답)을 같이 보여준다.
+  void _startReplay() {
+    final m = _mistakeMove;
+    final best = _mistakeBest;
+    final rows = _mistakeRows;
+    if (m == null || best == null || rows == null) return;
+    _haptic();
+    setState(() {
+      _replaying = true;
+      _rows = List<int>.from(rows);
+      _fibLimit = _mistakeFib;
+      _selectedCount = 0;
+      _selectedPile = -1;
+      _kSelCount = 0;
+      _wSelA = 0;
+      _wSelB = 0;
+      _setHintFields(best);
+      _setWrongFields(m);
+      _midnightFace = MidnightFace.confident;
+      final bool multi = rows.length > 1;
+      _say('replayHint', [_describeMove(m, multi), _describeMove(best, multi)]);
     });
   }
 
@@ -343,7 +452,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         // 자동 힌트: 스테이지 1은 첫 패배 즉시, 그 외 튜토리얼 스테이지는 2연패 시
         final int hintAfter = widget.stageNumber == 1 ? 1 : 2;
         final bool autoHint = _consecutiveDefeats >= hintAfter &&
-            TutorialManager.isTutorialStage(widget.stageNumber);
+            TutorialManager.offsetInWorld(widget.stageNumber) <= 2;
         _say('midnightWon', const [], autoHint);
       }
     });
@@ -510,6 +619,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         _isAiAnimating) return;
 
     final int tookCount = _selectedCount;
+    _recordPlayerMove(NimMove(rowIndex: _selectedRow, count: tookCount));
 
     setState(() {
       if (_config.mode == GameMode.pepero) {
@@ -569,6 +679,24 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       case GameMode.fibonacci:
         move = _engine.fibonacciAI(_rows[0], _fibLimit);
         break;
+    }
+
+    // 가이드 판: 정해진 답수가 있으면 그대로. 없으면 초반 두 판은 "봐주기" —
+    // 종반(남은 간식 ≤ 6 / 쪼갤 묶음 ≤ 2)에는 실수하지 않는다 (대표님: 끝나기 n수 전엔 실수 X).
+    final scripted = _guideStep?.reply;
+    if (scripted != null) {
+      move = scripted;
+    } else {
+      final double br = TutorialManager.nimBlunderRate(widget.stageNumber);
+      final bool endgame = _config.mode == GameMode.pepero
+          ? _rows.where((p) => p >= 3).length <= 2
+          : _rows.fold<int>(0, (a, b) => a + b) <= 6;
+      final bool yerinWinning = !_engine.toMoveLoses(_rows, _config.mode,
+          maxTake: _config.maxTake, fibLimit: _fibLimit);
+      if (br > 0 && !endgame && yerinWinning && _rng.nextDouble() < br) {
+        move = _engine.randomMove(_rows, _config.mode,
+            maxTake: _config.maxTake, fibLimit: _fibLimit);
+      }
     }
 
     _isAiAnimating = true;
@@ -684,8 +812,11 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       if (_config.mode == GameMode.fibonacci) {
         _fibLimit = move.count * 2;
       }
+      // 가이드: act 스텝은 예린 답수까지가 한 스텝. follow 는 판이 끝날 때까지 유지.
+      if (_guideStep?.kind == GuideKind.act) _guideIndex++;
+      _applyGuideHighlight();
     });
-    _refreshLosing(); // 지는 포지션이면 힌트 전구가 반짝인다
+    _refreshLosing();
 
     if (!_checkGameOver()) {
       // 플레이어 턴 시작 시점 → NIM XOR 기반 표정 결정
@@ -861,31 +992,64 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
 
   void _showHintOnBoard(NimMove hint) {
     _hintTimer?.cancel();
-    setState(() {
-      if (hint.isPepero) {
-        _hintRow = hint.rowIndex;
-        _hintSplitA = hint.splitA;
-        _hintCount = 0;
-        _hintStart = -1;
-      } else if (hint.isWythoff) {
-        _hintRow = hint.takeA > 0 ? 0 : 1;
-        _hintCount = hint.takeA > 0 ? hint.takeA : hint.takeB;
-        _hintStart = -1;
-        _hintSplitA = 0;
-      } else if (_config.mode == GameMode.kayles) {
-        _hintRow = hint.rowIndex;
-        _hintCount = hint.count;
-        _hintStart = hint.kaylesLeft;
-        _hintSplitA = 0;
-      } else {
-        _hintRow = hint.rowIndex;
-        _hintCount = hint.count;
-        _hintStart = -1;
-        _hintSplitA = 0;
-      }
-    });
+    setState(() => _setHintFields(hint));
     // 자동 해제 없음 — 광고를 보고 얻은 힌트라 수를 둘 때까지 계속 보여준다.
-    // (타이머를 쓰면 광고 재생 중에 시간이 흘러 정작 판을 볼 땐 사라져 있음)
+  }
+
+  void _setHintFields(NimMove hint) {
+    if (hint.isPepero) {
+      _hintRow = hint.rowIndex;
+      _hintSplitA = hint.splitA;
+      _hintCount = 0;
+      _hintStart = -1;
+    } else if (hint.isWythoff) {
+      _hintRow = hint.takeA > 0 ? 0 : 1;
+      _hintCount = hint.takeA > 0 ? hint.takeA : hint.takeB;
+      _hintStart = -1;
+      _hintSplitA = 0;
+    } else if (hint.isKayles) {
+      _hintRow = hint.rowIndex;
+      _hintCount = hint.count;
+      _hintStart = hint.kaylesLeft;
+      _hintSplitA = 0;
+    } else {
+      _hintRow = hint.rowIndex;
+      _hintCount = hint.count;
+      _hintStart = -1;
+      _hintSplitA = 0;
+    }
+  }
+
+  // ── 되감기: 실수한 수를 빨갛게 ──
+  int _wrongRow = -1;
+  int _wrongCount = 0;
+  int _wrongStart = -1;
+
+  void _setWrongFields(NimMove m) {
+    if (m.isPepero) {
+      _wrongRow = -1; // 막대과자는 문장으로만
+      _wrongCount = 0;
+      _wrongStart = -1;
+    } else if (m.isWythoff) {
+      // 양쪽 동시면 첫 줄만 표시 (문장이 나머지를 설명)
+      _wrongRow = m.takeA > 0 ? 0 : 1;
+      _wrongCount = m.takeA > 0 ? m.takeA : m.takeB;
+      _wrongStart = -1;
+    } else if (m.isKayles) {
+      _wrongRow = m.rowIndex;
+      _wrongCount = m.count;
+      _wrongStart = m.kaylesLeft;
+    } else {
+      _wrongRow = m.rowIndex;
+      _wrongCount = m.count;
+      _wrongStart = -1;
+    }
+  }
+
+  bool _isWrongStone(int rowIdx, int i, int len) {
+    if (_wrongRow != rowIdx || _wrongCount <= 0) return false;
+    if (_wrongStart >= 0) return i >= _wrongStart && i < _wrongStart + _wrongCount;
+    return i >= len - _wrongCount;
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -911,7 +1075,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                 child: Stack(
                   children: [
                     _buildGameBoard(),
-                    if (_tutorialActive) _buildTutorialOverlay(),
+                    if (_guideReading) _buildGuideOverlay(),
                   ],
                 ),
               ),
@@ -1199,7 +1363,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
           MidnightCharacter(
             face: _poked
                 ? _pokeFace
-                : (_tutorialActive ? MidnightFace.happy1 : _midnightFace),
+                : (_guideReading ? MidnightFace.happy1 : _midnightFace),
             size: size,
             animate: false,
           ),
@@ -1240,25 +1404,16 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildTutorialOverlay() {
-    if (_tutorialIndex >= _tutorialSteps.length) {
-      return const SizedBox.shrink();
-    }
-    // 매 build마다 현재 언어로 재해석 — 게임 중 언어 변경 즉시 반영
-    final steps = TutorialManager.entrySteps(widget.stageNumber, s);
-    final step = steps[_tutorialIndex];
-    final bool isLast = _tutorialIndex == _tutorialSteps.length - 1;
-    assert(step.text.isNotEmpty);
-    // (2026-09-15 대표님) 화면에 예린은 한 명만. 튜토리얼 문장은 큰 예린의 말풍선에
-    // 띄우고, 이 오버레이는 책상 아래만 어둡게 + 다음 버튼만 담당한다.
-    // 어디를 눌러도 다음으로.
+  /// 읽기 스텝 오버레이 — 예린 얼굴·말풍선은 그대로, 책상 아래만 어둡게 + 다음 버튼.
+  /// (화면에 예린은 항상 한 명 — 문장은 큰 예린의 말풍선에 뜬다)
+  Widget _buildGuideOverlay() {
+    final bool isLast = _guideIndex == _guide.length - 1;
     return Positioned.fill(
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTap: _advanceTutorial,
+        onTap: _advanceGuide,
         child: Column(
           children: [
-            // 예린 얼굴·말풍선 영역은 그대로 보이게 (투명)
             const SizedBox(height: _kDeskTop + 4),
             Expanded(
               child: Container(
@@ -1271,13 +1426,13 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                     _StampButton(
                       label: isLast ? s.get('tutStart') : s.get('tutNext'),
                       color: _Pal.gold,
-                      onTap: _advanceTutorial,
+                      onTap: _advanceGuide,
                     ),
                     const SizedBox(height: 12),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(_tutorialSteps.length, (i) {
-                        final active = i == _tutorialIndex;
+                      children: List.generate(_guide.length, (i) {
+                        final active = i == _guideIndex;
                         return Container(
                           margin: const EdgeInsets.symmetric(horizontal: 4),
                           width: active ? 10 : 6,
@@ -1394,7 +1549,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                 constraints: const BoxConstraints(maxWidth: 330),
                 child: _tauntBubble(_poked
                     ? s.get(_pokeKey)
-                    : (_tutorialActive ? _tutorialText : _midnightMessage)),
+                    : (_guideSpeaking ? _guideText : _midnightMessage)),
               ),
             ),
           ),
@@ -1488,6 +1643,23 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
             padding: const EdgeInsets.all(12),
             child: Row(
               children: [
+                if (!_replaying) ...[
+                  Expanded(
+                    child: _StampButton(
+                      label: s.get('whyLost'),
+                      color: _Pal.hint,
+                      icon: Icons.replay_rounded,
+                      onTap: _mistakeMove != null
+                          ? _startReplay
+                          : () => setState(() {
+                                _replaying = true;
+                                _midnightFace = MidnightFace.neutral;
+                                _say('replayNone');
+                              }),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                ],
                 Expanded(
                   child: _StampButton(
                     label: s.get('retry'),
@@ -1532,7 +1704,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   /// (2026-09-15 정보 다이어트) 턴 배너·판 요약 삭제. 내 턴은 말풍선과 책상 테두리가,
   /// 남은 개수는 줄 옆 숫자가 말한다. 여기엔 **승리/패배 도장만** 결과 순간에 찍힌다.
   Widget _turnStamp() {
-    if (_phase != GamePhase.gameOver) return const SizedBox.shrink();
+    if (_phase != GamePhase.gameOver || _replaying) return const SizedBox.shrink();
     final Color c = _playerWon ? _Pal.win : _Pal.alarm;
     final stamp = Center(
       child: Container(
@@ -1592,6 +1764,16 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         _currentTurn != TurnOwner.player ||
         _isAiAnimating ||
         _leaving) return;
+    // 가이드 판: 어디를 눌러도 "둬야 할 수" 가 집힌다
+    final req = _guideRequired;
+    if (req != null) {
+      _haptic();
+      setState(() {
+        _selectedRow = req.rowIndex;
+        _selectedCount = req.count;
+      });
+      return;
+    }
     final len = _rows[rowIdx];
     int count;
     final bool tappedBoundary = rowIdx == _selectedRow &&
@@ -1660,7 +1842,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                   children: List.generate(len, (i) {
                     final bool selected =
                         isSelRow && i >= len - _selectedCount;
-                    const bool danger = false;
+                    final bool danger = _isWrongStone(rowIdx, i, len);
                     return _Stone(
                       cell: cell,
                       cellH: lineH,
@@ -1731,6 +1913,15 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         _isAiAnimating ||
         _leaving) return;
     _haptic();
+    final req = _guideRequired;
+    if (req != null) {
+      setState(() {
+        _kSelRow = req.rowIndex;
+        _kSelStart = req.kaylesLeft;
+        _kSelCount = req.count;
+      });
+      return;
+    }
     setState(() {
       final bool inSel = _kSelRow == rowIdx &&
           _kSelCount > 0 &&
@@ -1825,6 +2016,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                           size: stone,
                           selected: selected,
                           leaving: _leaving && selected,
+                          danger: _isWrongStone(rowIdx, i, len),
                           hint: _isHintStone(rowIdx, i, len),
                           kind: snackForStage(widget.stageNumber),
                           onTap: () => _selectKayles(rowIdx, i),
@@ -1870,6 +2062,12 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       final int row = _kSelRow;
       final int left = _kSelStart;
       final int right = _rows[row] - (_kSelStart + _kSelCount);
+      _recordPlayerMove(NimMove(
+          rowIndex: row,
+          count: _kSelCount,
+          isKayles: true,
+          kaylesLeft: left,
+          kaylesRight: right));
       setState(() {
         _leaving = false;
         // (대표님 7/24) 분열은 제자리에서 위아래로 — 정렬하면 줄 위치가 튀어 헷갈림
@@ -1895,6 +2093,15 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         _currentTurn != TurnOwner.player ||
         _isAiAnimating ||
         _leaving) return;
+    final req = _guideRequired;
+    if (req != null) {
+      _haptic();
+      setState(() {
+        _wSelA = req.takeA;
+        _wSelB = req.takeB;
+      });
+      return;
+    }
     final len = _rows[rowIdx];
     final int cur = rowIdx == 0 ? _wSelA : _wSelB;
     int count;
@@ -1969,6 +2176,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                           size: stone,
                           selected: selected,
                           leaving: _leaving && selected,
+                          danger: _isWrongStone(rowIdx, i, len),
                           hint: _isHintStone(rowIdx, i, len),
                           kind: snackForStage(widget.stageNumber),
                           onTap: () => _selectWythoff(rowIdx, i),
@@ -2035,6 +2243,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     Future.delayed(const Duration(milliseconds: 360), () {
       if (!mounted) return;
       final int a = _wSelA, b = _wSelB;
+      _recordPlayerMove(NimMove(isWythoff: true, takeA: a, takeB: b));
       setState(() {
         _leaving = false;
         _rows[0] -= a;
@@ -2180,9 +2389,15 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
           ? GestureDetector(
               onTap: () {
                 _haptic();
+                final req = _guideRequired;
                 setState(() {
-                  _selectedPile = i;
-                  _splitA = cutAt;
+                  if (req != null && req.isPepero) {
+                    _selectedPile = req.rowIndex;
+                    _splitA = req.splitA;
+                  } else {
+                    _selectedPile = i;
+                    _splitA = cutAt;
+                  }
                 });
               },
               behavior: HitTestBehavior.opaque,
@@ -2448,6 +2663,8 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         color: _Pal.alarm,
         onTap: () {
           if (a <= 0 || b <= 0 || a == b) return;
+          _recordPlayerMove(NimMove(
+              rowIndex: _selectedPile, splitA: a, splitB: b, isPepero: true));
           SfxService.instance.playTake();
           _haptic(true);
           _clearHint();

@@ -106,10 +106,22 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
   MidnightFace _pokeFace = MidnightFace.worried2;
   Timer? _pokeTimer;
 
-  // 튜토리얼
-  List<TutorialStep> _tutSteps = const [];
-  int _tutIndex = 0;
-  bool _tutActive = false;
+  // ── 가이드 (월드 첫 판): 규칙 읽기 → "하늘색 따라 두기" ──
+  List<GuideStep> _guide = const [];
+  int _guideIndex = 0;
+  bool get _guideActive => _guideIndex < _guide.length;
+  GuideStep? get _guideStep => _guideActive ? _guide[_guideIndex] : null;
+  bool get _guideReading => _guideStep?.kind == GuideKind.read;
+  bool get _guideFollow => _guideStep?.kind == GuideKind.follow;
+  bool get _guideSpeaking =>
+      _guideActive && (_guideReading || (_game.toMove == 0 && !_aiBusy));
+
+  // ── 패배 되감기 (종반 = 판정이 정확한 구간에서만 기록) ──
+  BoardGame? _mistakeGame;
+  BoardMove? _mistakeMove;
+  BoardMove? _mistakeBest;
+  BoardMove? _wrong;
+  bool _replaying = false;
 
   // 힌트 / 전구
   BoardMove? _hint;
@@ -151,10 +163,7 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
     } else {
       _say(k);
     }
-    if (TutorialManager.isTutorialStage(widget.stageNumber)) {
-      _tutSteps = TutorialManager.entrySteps(widget.stageNumber, s);
-      _tutActive = _tutSteps.isNotEmpty;
-    }
+    _guide = TutorialManager.boardGuide(widget.stageNumber, s);
     // (2026-09-15 대표님) 선공 선택 없음 — 항상 플레이어가 먼저. 심은 예린이
     // 한 줄을 미리 그어 둔 판(BoardGame.forStage)이라 그 사실을 첫 대사로 알린다.
     _game.toMove = 0;
@@ -248,18 +257,67 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
   bool get _myTurn =>
       _phase == GamePhase.playing && _game.toMove == 0 && !_aiBusy;
 
-  /// 현재 튜토리얼 문장 — 매 build 마다 현재 언어로 다시 읽는다.
-  String get _tutText {
-    if (!_tutActive) return '';
-    final steps = TutorialManager.entrySteps(widget.stageNumber, s);
-    if (_tutIndex >= steps.length) return '';
-    return steps[_tutIndex].text;
+  /// 현재 가이드 문장 — 매 build 마다 현재 언어로 다시 읽는다.
+  String get _guideText {
+    final steps = TutorialManager.boardGuide(widget.stageNumber, s);
+    if (_guideIndex >= steps.length) return '';
+    return steps[_guideIndex].text;
+  }
+
+  void _advanceGuide() {
+    setState(() {
+      _guideIndex++;
+      _applyGuideHighlight();
+    });
+  }
+
+  /// follow 스텝이면 최선 수를 하늘색으로
+  void _applyGuideHighlight() {
+    if (_guideFollow && _game.toMove == 0 && !_game.isOver) _hint = _game.bestMove();
+  }
+
+  /// 플레이어 수 직전 — 종반(판정 정확)에서 이기던 판을 지는 판으로 만들면 기록.
+  void _recordPlayerMove(BoardMove m) {
+    if (_mistakeMove != null || !_game.inEndgame()) return;
+    if (_game.toMoveIsLosing()) return;
+    final best = _game.bestMove();
+    final after = _game.clone()..apply(m);
+    if (after.isOver || after.toMove != 1) return; // 끝났거나 "한 번 더" — 판정 생략
+    if (!after.toMoveIsLosing()) {
+      _mistakeGame = _game.clone();
+      _mistakeMove = m;
+      _mistakeBest = best;
+    }
+  }
+
+  void _startReplay() {
+    final g = _mistakeGame;
+    if (g == null) {
+      setState(() {
+        _replaying = true;
+        _face = MidnightFace.neutral;
+        _say('replayNone');
+      });
+      return;
+    }
+    _haptic();
+    setState(() {
+      _replaying = true;
+      _game = g.clone();
+      _hint = _mistakeBest;
+      _wrong = _mistakeMove;
+      _selPoint = -1;
+      _face = MidnightFace.confident;
+      _say('replayHintBoard');
+    });
   }
 
   /// 판 위를 눌렀을 때 — 종류별로 "수" 로 바뀐 것이 들어온다.
   void _onBoardMove(BoardMove m) {
-    if (!_myTurn || _tutActive) return;
+    if (!_myTurn || _guideReading) return;
     if (!_game.legalMoves().contains(m)) return;
+    if (_guideFollow && _hint != null && m != _hint) return; // 가이드: 하늘색만
+    _recordPlayerMove(m);
     _haptic(true);
     SfxService.instance.playTake();
     final bool wasDots = _game is DotsBoxesGame;
@@ -279,6 +337,7 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
       setState(() {
         _say('dotsExtraTurn');
         _face = MidnightFace.worried1;
+        _applyGuideHighlight();
       });
       return;
     }
@@ -318,7 +377,10 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
       });
       return;
     }
-    setState(() => _aiBusy = false);
+    setState(() {
+      _aiBusy = false;
+      _applyGuideHighlight();
+    });
     _refreshLosing();
     _updateExpressionForPlayerTurn();
   }
@@ -638,7 +700,7 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
             Expanded(
               child: Stack(children: [
                 _gameBoard(w),
-                if (_tutActive) _tutorialOverlay(),
+                if (_guideReading) _guideOverlay(),
               ]),
             ),
           ]),
@@ -754,7 +816,7 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
 
   /// (2026-09-15 정보 다이어트) 턴 배너 삭제 — 결과 도장만 승리/패배 순간에 찍힌다.
   Widget _turnStamp() {
-    if (_phase != GamePhase.gameOver) return const SizedBox.shrink();
+    if (_phase != GamePhase.gameOver || _replaying) return const SizedBox.shrink();
     final Color c = _playerWon ? _P.win : _P.alarm;
     final stamp = Center(
       child: Container(
@@ -821,6 +883,17 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
         Padding(
           padding: const EdgeInsets.all(12),
           child: Row(children: [
+            if (!_replaying) ...[
+              Expanded(
+                child: _Stamp(
+                  label: s.get('whyLost'),
+                  color: _P.hint,
+                  icon: Icons.replay_rounded,
+                  onTap: _startReplay,
+                ),
+              ),
+              const SizedBox(width: 10),
+            ],
             Expanded(
               child: _Stamp(
                 label: s.get('retry'),
@@ -927,7 +1000,7 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
               constraints: const BoxConstraints(maxWidth: 330),
               child: _bubble(_poked
                   ? s.get(_pokeKey)
-                  : (_tutActive ? _tutText : _message)),
+                  : (_guideSpeaking ? _guideText : _message)),
             ),
           ),
         ),
@@ -957,8 +1030,9 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
                   child: _BoardView(
                     game: _game,
                     hint: _hint,
+                    wrong: _wrong,
                     selPoint: _selPoint,
-                    enabled: _myTurn && !_tutActive,
+                    enabled: _myTurn && !_guideReading,
                     onMove: _onBoardMove,
                     onSelectPoint: (i) => setState(() => _selPoint = i),
                   ),
@@ -1005,7 +1079,7 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
         MidnightCharacter(
             face: _poked
                 ? _pokeFace
-                : (_tutActive ? MidnightFace.happy1 : _face),
+                : (_guideReading ? MidnightFace.happy1 : _face),
             size: size,
             animate: false),
       ]),
@@ -1034,21 +1108,13 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
     ]);
   }
 
-  Widget _tutorialOverlay() {
-    if (_tutIndex >= _tutSteps.length) return const SizedBox.shrink();
-    final steps = TutorialManager.entrySteps(widget.stageNumber, s);
-    final step = steps[_tutIndex];
-    final bool isLast = _tutIndex == _tutSteps.length - 1;
-    void advance() => setState(() {
-          _tutIndex++;
-          if (_tutIndex >= _tutSteps.length) _tutActive = false;
-        });
-    assert(step.text.isNotEmpty);
-    // 화면에 예린은 한 명 — 문장은 큰 예린의 말풍선에, 여기선 책상 아래만 어둡게 + 버튼.
+  /// 읽기 스텝 오버레이 — 책상 아래만 어둡게 + 다음 버튼 (예린은 한 명, 문장은 말풍선에)
+  Widget _guideOverlay() {
+    final bool isLast = _guideIndex == _guide.length - 1;
     return Positioned.fill(
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTap: advance,
+        onTap: _advanceGuide,
         child: Column(children: [
           const SizedBox(height: _kDeskTop + 4),
           Expanded(
@@ -1060,12 +1126,12 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
                 _Stamp(
                     label: isLast ? s.get('tutStart') : s.get('tutNext'),
                     color: _P.gold,
-                    onTap: advance),
+                    onTap: _advanceGuide),
                 const SizedBox(height: 12),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(_tutSteps.length, (i) {
-                    final active = i == _tutIndex;
+                  children: List.generate(_guide.length, (i) {
+                    final active = i == _guideIndex;
                     return Container(
                       margin: const EdgeInsets.symmetric(horizontal: 4),
                       width: active ? 10 : 6,
@@ -1091,6 +1157,7 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
 class _BoardView extends StatelessWidget {
   final BoardGame game;
   final BoardMove? hint;
+  final BoardMove? wrong; // 되감기: 실수한 수 (빨강)
   final int selPoint;
   final bool enabled;
   final void Function(BoardMove) onMove;
@@ -1099,6 +1166,7 @@ class _BoardView extends StatelessWidget {
   const _BoardView({
     required this.game,
     required this.hint,
+    this.wrong,
     required this.selPoint,
     required this.enabled,
     required this.onMove,
@@ -1139,7 +1207,7 @@ class _BoardView extends StatelessWidget {
               },
         child: CustomPaint(
           size: size,
-          painter: _BoardPainter(game, lay, hint, selPoint),
+          painter: _BoardPainter(game, lay, hint, selPoint, wrong),
         ),
       );
     });
@@ -1325,7 +1393,10 @@ class _BoardPainter extends CustomPainter {
   final _Layout lay;
   final BoardMove? hint;
   final int selPoint;
-  _BoardPainter(this.g, this.lay, this.hint, this.selPoint);
+  final BoardMove? wrong;
+  _BoardPainter(this.g, this.lay, this.hint, this.selPoint, [this.wrong]);
+
+  bool _isWrong(int a, [int b = 0]) => wrong != null && wrong!.a == a && wrong!.b == b;
 
   static const Color _me = _P.gold;
   static const Color _ai = _P.alarmHi;
@@ -1377,6 +1448,14 @@ class _BoardPainter extends CustomPainter {
                 ..style = PaintingStyle.stroke
                 ..strokeWidth = 4);
         }
+        if (_isWrong(r, col)) {
+          c.drawRRect(
+              rr.inflate(2),
+              Paint()
+                ..color = _P.alarmHi
+                ..style = PaintingStyle.stroke
+                ..strokeWidth = 4);
+        }
       }
     }
   }
@@ -1398,12 +1477,15 @@ class _BoardPainter extends CustomPainter {
     for (int e = 0; e < d.edgeCount; e++) {
       final ends = lay.edgeEnds(e);
       final isHint = hint != null && hint!.a == e;
+      final isWrong = _isWrong(e);
       final paint = Paint()
         ..strokeCap = StrokeCap.round
-        ..strokeWidth = d.drawn[e] ? 4 : (isHint ? 4 : 2)
+        ..strokeWidth = d.drawn[e] ? 4 : ((isHint || isWrong) ? 4 : 2)
         ..color = d.drawn[e]
             ? _P.ink
-            : (isHint ? _P.sky : _P.deskWoodDark.withOpacity(0.35));
+            : isWrong
+                ? _P.alarmHi
+                : (isHint ? _P.sky : _P.deskWoodDark.withOpacity(0.35));
       c.drawLine(ends[0], ends[1], paint);
     }
     // 점
@@ -1438,6 +1520,7 @@ class _BoardPainter extends CustomPainter {
       final p1 = lay.simPt(a[0]), p2 = lay.simPt(a[1]);
       final col = sg.color[e];
       final isHint = hint != null && hint!.a == e;
+      final isWrong = _isWrong(e);
       if (tri.contains(e)) {
         c.drawLine(p1, p2, Paint()
           ..color = _P.alarmHi.withOpacity(0.45)
@@ -1449,12 +1532,14 @@ class _BoardPainter extends CustomPainter {
           p2,
           Paint()
             ..strokeCap = StrokeCap.round
-            ..strokeWidth = col >= 0 ? 4.5 : (isHint ? 4 : 2)
+            ..strokeWidth = col >= 0 ? 4.5 : ((isHint || isWrong) ? 4 : 2)
             ..color = col == 0
                 ? _me
                 : col == 1
                     ? _ai
-                    : (isHint ? _P.sky : _P.deskWoodDark.withOpacity(0.45)));
+                    : isWrong
+                        ? _P.alarmHi
+                        : (isHint ? _P.sky : _P.deskWoodDark.withOpacity(0.45)));
     }
     for (int i = 0; i < 6; i++) {
       c.drawCircle(lay.simPt(i), 8, Paint()..color = _P.ink);
@@ -1510,6 +1595,11 @@ class _BoardPainter extends CustomPainter {
         ..color = _P.sky.withOpacity(0.7)
         ..strokeWidth = 3);
     }
+    if (wrong != null) {
+      c.drawLine(lay.sproutPt(wrong!.a), lay.sproutPt(wrong!.b), Paint()
+        ..color = _P.alarmHi.withOpacity(0.7)
+        ..strokeWidth = 3);
+    }
   }
 
   void _hex(Canvas c) {
@@ -1540,6 +1630,12 @@ class _BoardPainter extends CustomPainter {
       if (hint != null && hint!.a == i) {
         c.drawPath(path, Paint()
           ..color = _P.sky
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 3.5);
+      }
+      if (_isWrong(i)) {
+        c.drawPath(path, Paint()
+          ..color = _P.alarmHi
           ..style = PaintingStyle.stroke
           ..strokeWidth = 3.5);
       }

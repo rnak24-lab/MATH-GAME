@@ -1,56 +1,54 @@
 import '../l10n/app_strings.dart';
+import 'nim_engine.dart';
 
-/// 월드별 튜토리얼 스텝 — 예린 시나리오(NIM_월드별_튜토리얼_시나리오.md) 기반.
-/// 각 월드의 1라운드(Stage 1, 21, 41, 61, 81)에서만 활성화된다.
-class TutorialStep {
-  /// 말풍선에 표시할 텍스트
+/// ─────────────────────────────────────────────────────────────────────────
+/// (2026-09-15 대표님) 튜토리얼은 "읽기" 에서 "**하기**" 로.
+///
+/// 월드 첫 판(1, 21, 41, …, 221)은 **가이드 판**이다:
+///  - `read` 스텝: 예린이 말풍선으로 한 문장. 아무 데나 누르면 다음.
+///  - `act` 스텝: 둬야 할 수가 하늘색으로 빛난다. 그 수만 둘 수 있다.
+///    예린의 답수는 정해져 있거나(스크립트) AI 가 둔다.
+///  - `follow` 스텝: 판이 끝날 때까지 "하늘색을 따라 두기". 규칙이 복잡한 변형·보드 게임용.
+///
+/// 글 4문장을 읽히고 손을 놓던 예전 방식(entrySteps)은 폐기했다.
+/// ─────────────────────────────────────────────────────────────────────────
+
+enum GuideKind { read, act, follow }
+
+class GuideStep {
+  final GuideKind kind;
+
+  /// 말풍선 문장 (act/follow 는 플레이어 차례에만 표시)
   final String text;
 
-  /// 하이라이트 대상 (선택적, UI 구현에 따라 확장 가능)
-  /// 현재는 말풍선 + 다음 버튼만 구현 (최소 MVP).
-  final String? highlightTarget;
+  /// act: 플레이어가 둬야 하는 수
+  final NimMove? require;
 
-  const TutorialStep({required this.text, this.highlightTarget});
+  /// act: 예린의 정해진 답수 (null 이면 AI)
+  final NimMove? reply;
+
+  const GuideStep.read(this.text)
+      : kind = GuideKind.read,
+        require = null,
+        reply = null;
+  const GuideStep.act(this.text, this.require, {this.reply})
+      : kind = GuideKind.act;
+  const GuideStep.follow(this.text)
+      : kind = GuideKind.follow,
+        require = null,
+        reply = null;
 }
 
 class TutorialManager {
-  /// 특정 stageNumber가 월드별 튜토리얼 1라운드인가?
-  /// 월드 1=1, 2=21, 3=41, 4(빼빼로)=61, 🧪 5(카일즈)=81, 6(위토프)=101, 7(피보나치)=121
-  static bool isTutorialStage(int stageNumber) {
-    return stageNumber == 1 ||
-        stageNumber == 21 ||
-        stageNumber == 41 ||
-        stageNumber == 61 ||
-        stageNumber == 81 ||
-        stageNumber == 101 ||
-        stageNumber == 121 ||
-        // 버전2 보드 게임 월드 8~12 의 첫 판
-        stageNumber == 141 ||
-        stageNumber == 161 ||
-        stageNumber == 181 ||
-        stageNumber == 201 ||
-        stageNumber == 221;
-  }
+  /// 월드 첫 판인가? (님게임 7월드 + 보드 5월드)
+  static bool isTutorialStage(int stageNumber) =>
+      stageNumber >= 1 && (stageNumber - 1) % 20 == 0;
 
-  /// stageNumber → 월드 번호 (1~7)
-  static int worldOf(int stageNumber) {
-    if (stageNumber <= 20) return 1;
-    if (stageNumber <= 40) return 2;
-    if (stageNumber <= 60) return 3;
-    if (stageNumber <= 80) return 4;
-    if (stageNumber <= 100) return 5;
-    if (stageNumber <= 120) return 6;
-    if (stageNumber <= 140) return 7;
-    // 버전2 보드 게임 월드 8~12
-    if (stageNumber <= 160) return 8;
-    if (stageNumber <= 180) return 9;
-    if (stageNumber <= 200) return 10;
-    if (stageNumber <= 220) return 11;
-    return 12;
-  }
+  /// stageNumber → 월드 번호 (1~12)
+  static int worldOf(int stageNumber) => ((stageNumber - 1) ~/ 20) + 1;
 
   /// 월드(1-based) → 간식 키. game_screen 의 snackForStage 와 같은 순서.
-  static String _snackKeyForWorld(int world) {
+  static String snackKeyForWorld(int world) {
     const keys = [
       'candy', // 1 등교길
       'chocolate', // 2 점심시간 옥상
@@ -64,95 +62,111 @@ class TutorialManager {
     return keys[i];
   }
 
-  /// 게임 시작 시 표시할 진입 튜토리얼 스텝 리스트.
-  /// 비어있으면 튜토리얼 없음 = 일반 게임 플로우.
-  static List<TutorialStep> entrySteps(int stageNumber, AppStrings s) {
-    if (!isTutorialStage(stageNumber)) return const [];
-    // 이 월드의 간식 이름(+조사) — 문구가 "사탕을/쿠키를"로 자연스럽게 바뀐다.
-    final int w = worldOf(stageNumber);
-    final String kind = w == 4 ? 'stick' : _snackKeyForWorld(w);
-    final List<String> snk = [s.snackObj(kind)];
-    switch (w) {
+  /// 월드 안에서 몇 번째 판인가 (0 = 가이드 판)
+  static int offsetInWorld(int stageNumber) => (stageNumber - 1) % 20;
+
+  /// 예린의 "봐주기" 확률 — 님게임 층 전용. (보드 층은 board_games.kBoardBlunder)
+  /// 가이드 판 다음 두 판은 예린이 일부러 흔들린다: 2판째 50%, 3판째 25%. 그 뒤론 완벽.
+  /// (D6 조언: 첫 세션 3분 안에 승리 2번이 나와야 한다)
+  static double nimBlunderRate(int stageNumber) {
+    switch (offsetInWorld(stageNumber)) {
       case 1:
-        // (2026-07-02 대표님) 짧고 액션 지시형 4스텝 — 표정 설명 삭제(플레이하며 발견),
-        // 지시대로 따라 하면(2개 집기) 스테이지 1은 무조건 승리.
-        return [
-          TutorialStep(text: s.get('tutW1_1')),
-          TutorialStep(text: s.get('tutW1_2', snk), highlightTarget: 'stones'),
-          TutorialStep(
-              text: s.get('tutW1_3', snk), highlightTarget: 'last_stone'),
-          TutorialStep(
-              text: s.get('tutW1_4', snk), highlightTarget: 'take_buttons'),
-        ];
+        return 0.5;
       case 2:
+        return 0.25;
+    }
+    return 0.0;
+  }
+
+  /// 님게임 층 가이드 스크립트. 스테이지 설정(초기 판)은 NimEngine.generateStage 가 정한다:
+  ///   1: [4] 1~2개     21: [3,5]     41: [2,3,5]     61: 막대 6개
+  ///   81 카일즈 / 101 위토프 / 121 피보나치: 규칙만 읽고 "하늘색 따라 두기"
+  static List<GuideStep> nimGuide(int stageNumber, AppStrings s) {
+    if (!isTutorialStage(stageNumber)) return const [];
+    final int w = worldOf(stageNumber);
+    final String snk = s.snackObj(snackKeyForWorld(w));
+    final String snkSubj = s.snackSubj(snackKeyForWorld(w));
+    switch (w) {
+      case 1: // [4], 1~2개. 1개 → 예린 1개 → 2개 다 가져가면 승리.
         return [
-          TutorialStep(
-              text: s.get('tutW2_1', [s.snackSubj(_snackKeyForWorld(2))]),
-              highlightTarget: 'rows'),
-          TutorialStep(text: s.get('tutW2_2')),
-          TutorialStep(text: s.get('tutW2_3')),
-          TutorialStep(text: s.get('tutW2_4'), highlightTarget: 'row_1'),
+          GuideStep.read(s.get('g1_1', [snk])),
+          GuideStep.act(s.get('g1_2'), NimMove(rowIndex: 0, count: 1),
+              reply: NimMove(rowIndex: 0, count: 1)),
+          GuideStep.act(s.get('g1_3'), NimMove(rowIndex: 0, count: 2)),
         ];
-      case 3:
+      case 2: // [3,5] → 거울 전략. 아래 2 → [3,3]; 예린 위 2 → [1,3]; 아래 2 → [1,1]; 예린 1 → [0,1]; 마지막.
         return [
-          TutorialStep(
-              text: s.get('tutW3_1'), highlightTarget: 'maxtake_badge'),
-          TutorialStep(text: s.get('tutW3_2')),
-          TutorialStep(text: s.get('tutW3_3')),
-          TutorialStep(text: s.get('tutW3_4')),
+          GuideStep.read(s.get('g2_1', [snkSubj])),
+          GuideStep.act(s.get('g2_2'), NimMove(rowIndex: 1, count: 2),
+              reply: NimMove(rowIndex: 0, count: 2)),
+          GuideStep.act(s.get('g2_3'), NimMove(rowIndex: 1, count: 2),
+              reply: NimMove(rowIndex: 0, count: 1)),
+          GuideStep.act(s.get('g2_4'), NimMove(rowIndex: 1, count: 1)),
         ];
-      case 4:
-        // 월드4 = 빼빼로 (네줄 삭제 후 승격) — 빼빼로 튜토리얼 사용
+      case 3: // [2,3,5] → 아래 4 → [2,3,1]; 예린 가운데 3 → [2,0,1]; 위 1 → [1,0,1]; 예린 위 1 → [0,0,1]; 마지막.
         return [
-          TutorialStep(text: s.get('tutW5_1')),
-          TutorialStep(text: s.get('tutW5_2', snk)),
-          TutorialStep(text: s.get('tutW5_3')),
+          GuideStep.read(s.get('g3_1')),
+          GuideStep.act(s.get('g3_2'), NimMove(rowIndex: 2, count: 4),
+              reply: NimMove(rowIndex: 1, count: 3)),
+          GuideStep.act(s.get('g3_3'), NimMove(rowIndex: 0, count: 1),
+              reply: NimMove(rowIndex: 0, count: 1)),
+          GuideStep.act(s.get('g3_4'), NimMove(rowIndex: 2, count: 1)),
         ];
-      case 5: // 🧪 카일즈
+      case 4: // 막대 6 → 2+4 → [4,2]; 예린 4 → 1+3 → [3,2,1]; 3 → 1+2 → 예린 못 쪼갬.
         return [
-          TutorialStep(text: s.get('tutW6_1', snk)),
-          TutorialStep(text: s.get('tutW6_2', snk)),
-          TutorialStep(text: s.get('tutW6_3')),
+          GuideStep.read(s.get('g4_1')),
+          GuideStep.act(
+              s.get('g4_2'), NimMove(rowIndex: 0, splitA: 2, splitB: 4, isPepero: true),
+              reply: NimMove(rowIndex: 0, splitA: 1, splitB: 3, isPepero: true)),
+          GuideStep.act(
+              s.get('g4_3'), NimMove(rowIndex: 0, splitA: 1, splitB: 2, isPepero: true)),
         ];
-      case 6: // 🧪 위토프
+      case 5: // 카일즈
         return [
-          TutorialStep(text: s.get('tutW7_1')),
-          TutorialStep(text: s.get('tutW7_2')),
-          TutorialStep(text: s.get('tutW7_3', snk)),
+          GuideStep.read(s.get('tutW6_1', [snk])),
+          GuideStep.read(s.get('tutW6_2', [snk])),
+          GuideStep.follow(s.get('gFollow', [snk])),
         ];
-      case 7: // 🧪 피보나치
+      case 6: // 위토프
         return [
-          TutorialStep(text: s.get('tutW8_1')),
-          TutorialStep(text: s.get('tutW8_2')),
-          TutorialStep(text: s.get('tutW8_3', snk)),
+          GuideStep.read(s.get('tutW7_1')),
+          GuideStep.read(s.get('tutW7_2')),
+          GuideStep.follow(s.get('gFollow', [snk])),
         ];
-      // ── 버전2 보드 게임 월드 8~12 (간식 문구 없음 — 각 게임 고유 규칙) ──
-      case 8:
-        return [for (int i = 1; i <= 3; i++) TutorialStep(text: s.get('tutChomp$i'))];
-      case 9:
-        return [for (int i = 1; i <= 3; i++) TutorialStep(text: s.get('tutDots$i'))];
-      case 10:
-        return [for (int i = 1; i <= 3; i++) TutorialStep(text: s.get('tutSim$i'))];
-      case 11:
-        return [for (int i = 1; i <= 3; i++) TutorialStep(text: s.get('tutSprouts$i'))];
-      case 12:
-        return [for (int i = 1; i <= 3; i++) TutorialStep(text: s.get('tutHex$i'))];
+      case 7: // 피보나치
+        return [
+          GuideStep.read(s.get('tutW8_1')),
+          GuideStep.read(s.get('tutW8_2')),
+          GuideStep.follow(s.get('gFollow', [snk])),
+        ];
     }
     return const [];
   }
 
-  /// 2회 연속 패배 시 자동 힌트 텍스트 (예린 정책).
-  /// 현재는 월드 1/2만 차별화된 힌트 제공, 나머지는 공통.
-  static String autoHintOnConsecutiveLoss(int stageNumber, AppStrings s) {
+  /// 보드 게임 층(월드 8~12) 가이드: 규칙 3문장 읽기 → 하늘색 따라 두기.
+  static List<GuideStep> boardGuide(int stageNumber, AppStrings s) {
+    if (!isTutorialStage(stageNumber)) return const [];
+    const prefixes = {8: 'tutChomp', 9: 'tutDots', 10: 'tutSim', 11: 'tutSprouts', 12: 'tutHex'};
+    final p = prefixes[worldOf(stageNumber)];
+    if (p == null) return const [];
+    return [
+      for (int i = 1; i <= 3; i++) GuideStep.read(s.get('$p$i')),
+      GuideStep.follow(s.get('gFollowBoard')),
+    ];
+  }
+
+  /// 2회 연속 패배 시 자동 힌트 텍스트. [multiple] = 한 줄 님게임의 (maxTake+1).
+  static String autoHintOnConsecutiveLoss(int stageNumber, AppStrings s,
+      {int multiple = 0}) {
     switch (worldOf(stageNumber)) {
       case 1:
-        return s.get('tutHintW1');
+        return s.get('tutHintW1', ['$multiple']);
       case 2:
         return s.get('tutHintW2');
       case 3:
         return s.get('tutHintW3');
       case 4:
-        return s.get('tutHintW5'); // 빼빼로 힌트
+        return s.get('tutHintW5'); // 막대과자 힌트
     }
     return s.get('tutHintGeneric');
   }

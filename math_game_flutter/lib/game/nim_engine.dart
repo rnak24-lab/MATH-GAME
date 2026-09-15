@@ -391,6 +391,98 @@ class NimEngine {
           {int maxTake = 3, int fibLimit = 0}) =>
       toMoveLoses(rows, mode, maxTake: maxTake, fibLimit: fibLimit);
 
+  /// 모드별 최선 수 — 힌트·가이드("하늘색 따라 두기")·되감기가 같은 함수를 쓴다.
+  NimMove bestMove(List<int> rows, GameMode mode,
+      {int maxTake = 3, int fibLimit = 0}) {
+    switch (mode) {
+      case GameMode.singleRow:
+        return singleRowAI(rows[0], maxTake);
+      case GameMode.pepero:
+        return peperoAI(rows);
+      case GameMode.kayles:
+        return kaylesAI(rows);
+      case GameMode.wythoff:
+        return wythoffAI(rows);
+      case GameMode.fibonacci:
+        return fibonacciAI(rows[0], fibLimit);
+      case GameMode.doubleRow:
+      case GameMode.tripleRow:
+      case GameMode.quadRow:
+        return multiRowAI(rows);
+    }
+  }
+
+  /// 아무 합법 수 하나 — 예린의 "봐주기"(초반 두 판) 용. 즉시 이기는 수(전부 가져가기)는 피한다.
+  NimMove randomMove(List<int> rows, GameMode mode,
+      {int maxTake = 3, int fibLimit = 0}) {
+    switch (mode) {
+      case GameMode.singleRow:
+      case GameMode.fibonacci:
+        final int n = rows[0];
+        if (n <= 0) return NimMove(count: 0);
+        final int lim = mode == GameMode.fibonacci ? fibLimit : maxTake;
+        int m = lim < n ? lim : n;
+        if (m >= n && n > 1) m = n - 1; // 전부 가져가면 승리 수라 봐주기가 아님
+        if (m < 1) m = 1;
+        return NimMove(count: 1 + _rng.nextInt(m));
+      case GameMode.pepero:
+        final splittable = <int>[
+          for (int i = 0; i < rows.length; i++)
+            if (rows[i] >= 3) i
+        ];
+        if (splittable.isEmpty) return NimMove(isPepero: true);
+        final int pi = splittable[_rng.nextInt(splittable.length)];
+        final int n = rows[pi];
+        int a;
+        do {
+          a = 1 + _rng.nextInt(n - 1);
+        } while (a == n - a);
+        final int b = n - a;
+        return NimMove(
+            rowIndex: pi, splitA: a < b ? a : b, splitB: a < b ? b : a, isPepero: true);
+      case GameMode.kayles:
+        final valid = <NimMove>[];
+        for (int i = 0; i < rows.length; i++) {
+          final n = rows[i];
+          for (int t = 1; t <= 2 && t <= n; t++) {
+            for (int left = 0; left <= n - t; left++) {
+              valid.add(NimMove(
+                  rowIndex: i, count: t, isKayles: true, kaylesLeft: left, kaylesRight: n - t - left));
+            }
+          }
+        }
+        return valid.isEmpty ? NimMove(count: 0) : valid[_rng.nextInt(valid.length)];
+      case GameMode.wythoff:
+        final int a = rows[0], b = rows.length > 1 ? rows[1] : 0;
+        final valid = <NimMove>[];
+        for (int t = 1; t <= a; t++) {
+          if (!(a - t == 0 && b == 0)) valid.add(NimMove(isWythoff: true, takeA: t, takeB: 0));
+        }
+        for (int t = 1; t <= b; t++) {
+          if (!(a == 0 && b - t == 0)) valid.add(NimMove(isWythoff: true, takeA: 0, takeB: t));
+        }
+        final int mn = a < b ? a : b;
+        for (int t = 1; t <= mn; t++) {
+          if (!(a - t == 0 && b - t == 0)) valid.add(NimMove(isWythoff: true, takeA: t, takeB: t));
+        }
+        return valid.isEmpty
+            ? NimMove(isWythoff: true, takeA: a, takeB: b == a ? b : 0)
+            : valid[_rng.nextInt(valid.length)];
+      case GameMode.doubleRow:
+      case GameMode.tripleRow:
+      case GameMode.quadRow:
+        final nonEmpty = <int>[
+          for (int i = 0; i < rows.length; i++)
+            if (rows[i] > 0) i
+        ];
+        if (nonEmpty.isEmpty) return NimMove(count: 0);
+        final int ri = nonEmpty[_rng.nextInt(nonEmpty.length)];
+        int m = rows[ri];
+        if (nonEmpty.length == 1 && m > 1) m -= 1; // 마지막 줄을 싹 비우면 승리 수
+        return NimMove(rowIndex: ri, count: 1 + _rng.nextInt(m));
+    }
+  }
+
   /// 초기 판에서 선공(= 항상 플레이어)이 완벽하게 두면 이기는가.
   /// (2026-09-15 대표님) 선공 선택을 없애고 항상 플레이어가 먼저 두므로,
   /// 모든 스테이지는 이 값이 true 여야 한다. [generateStage] 가 보장한다.
