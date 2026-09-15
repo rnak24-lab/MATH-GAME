@@ -23,6 +23,14 @@ import '../game/board_games.dart' show kTotalStages;
 /// 값이 클수록 책상이 아래로 내려가 캐릭터가 더 많이 보인다.
 const double _kDeskTop = 340;
 
+/// 예린 이미지 높이(논리 px). 원화 머리 구간(높이의 6%~36%)이 말풍선 아래~책상 위에
+/// 오도록 660. 폭은 자동(660 × 1080/1920 ≈ 371) — 폰 해상도가 달라도 논리 px 기준이라
+/// 얼굴 크기가 같다. 아래쪽(허리 이하)은 책상에 가려진다 — 의도.
+const double _kYerinH = 660;
+
+/// 예린 이미지 상단 y. 머리 꼭대기(높이의 ~6.5%)가 y≈128 에 오도록.
+const double _kYerinTop = 128 - _kYerinH * 0.065;
+
 class _Pal {
   static const deskTop = Color(0xFF3A332A); // 책상 상단(밝은 쪽)
   static const deskBottom = Color(0xFF241F18); // 책상 하단(어두운 쪽)
@@ -226,6 +234,14 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     ]) {
       precacheImage(AssetImage('assets/midnight/$f.png'), context);
     }
+  }
+
+  /// 현재 튜토리얼 문장 — 매 build 마다 현재 언어로 다시 읽는다.
+  String get _tutorialText {
+    if (!_tutorialActive) return '';
+    final steps = TutorialManager.entrySteps(widget.stageNumber, s);
+    if (_tutorialIndex >= steps.length) return '';
+    return steps[_tutorialIndex].text;
   }
 
   void _advanceTutorial() {
@@ -466,7 +482,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     showGeneralDialog(
       context: context,
       barrierDismissible: false,
-      barrierColor: Colors.black54,
+      barrierColor: Colors.black38, // 뒤의 예린 얼굴이 비치게 살짝만
       transitionDuration: const Duration(milliseconds: 400),
       transitionBuilder: (context, a1, a2, child) {
         return Transform.scale(
@@ -475,7 +491,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         );
       },
       pageBuilder: (context, _, __) {
-        return Center(
+        // 팝업은 아래쪽(책상 자리)에 — 위쪽 예린 얼굴을 가리지 않는다
+        return Align(
+          alignment: const Alignment(0, 0.62),
           child: Container(
             margin: const EdgeInsets.symmetric(horizontal: 32),
             padding: const EdgeInsets.all(24),
@@ -523,13 +541,8 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                     decoration: TextDecoration.none,
                   ),
                 ),
+                // (2026-09-15 대표님) 클리어 팝업엔 예린 그림 없음 — 뒤의 큰 예린이 보이게.
                 const SizedBox(height: 6),
-                MidnightCharacter(
-                  face: MidnightFace.worried1,
-                  size: 76,
-                  animate: false,
-                ),
-                const SizedBox(height: 4),
                 Text(
                   s.get('midnightNextTime'),
                   style: const TextStyle(
@@ -1330,9 +1343,11 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
               ),
             ),
           ),
-          // 예린 (정적, 투명 PNG) — 찌르면 잠깐 표정이 바뀐다
+          // 예린 (정적, 투명 PNG) — 찌르면 잠깐 표정이 바뀐다. 튜토리얼 중엔 밝은 표정.
           MidnightCharacter(
-            face: _poked ? _pokeFace : _midnightFace,
+            face: _poked
+                ? _pokeFace
+                : (_tutorialActive ? MidnightFace.happy1 : _midnightFace),
             size: size,
             animate: false,
           ),
@@ -1381,47 +1396,54 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     final steps = TutorialManager.entrySteps(widget.stageNumber, s);
     final step = steps[_tutorialIndex];
     final bool isLast = _tutorialIndex == _tutorialSteps.length - 1;
+    assert(step.text.isNotEmpty);
+    // (2026-09-15 대표님) 화면에 예린은 한 명만. 튜토리얼 문장은 큰 예린의 말풍선에
+    // 띄우고, 이 오버레이는 책상 아래만 어둡게 + 다음 버튼만 담당한다.
+    // 어디를 눌러도 다음으로.
     return Positioned.fill(
       child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: _advanceTutorial,
-        child: Container(
-          color: Colors.black.withOpacity(0.66),
-          alignment: Alignment.center,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                MidnightWithBubble(
-                  face: isLast ? MidnightFace.confident : MidnightFace.happy1,
-                  message: step.text,
-                  size: 140,
+        child: Column(
+          children: [
+            // 예린 얼굴·말풍선 영역은 그대로 보이게 (투명)
+            const SizedBox(height: _kDeskTop + 4),
+            Expanded(
+              child: Container(
+                color: Colors.black.withOpacity(0.66),
+                alignment: Alignment.center,
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _StampButton(
+                      label: isLast ? s.get('tutStart') : s.get('tutNext'),
+                      color: _Pal.gold,
+                      onTap: _advanceTutorial,
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(_tutorialSteps.length, (i) {
+                        final active = i == _tutorialIndex;
+                        return Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 4),
+                          width: active ? 10 : 6,
+                          height: active ? 10 : 6,
+                          decoration: BoxDecoration(
+                            color: active
+                                ? _Pal.gold
+                                : _Pal.cream.withOpacity(0.4),
+                            shape: BoxShape.circle,
+                          ),
+                        );
+                      }),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 20),
-                _StampButton(
-                  label: isLast ? s.get('tutStart') : s.get('tutNext'),
-                  color: _Pal.gold,
-                  onTap: _advanceTutorial,
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(_tutorialSteps.length, (i) {
-                    final active = i == _tutorialIndex;
-                    return Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 4),
-                      width: active ? 10 : 6,
-                      height: active ? 10 : 6,
-                      decoration: BoxDecoration(
-                        color: active ? _Pal.gold : _Pal.cream.withOpacity(0.4),
-                        shape: BoxShape.circle,
-                      ),
-                    );
-                  }),
-                ),
-              ],
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );
@@ -1595,30 +1617,33 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                   const CustomPaint(painter: _ClassroomPainter()),
             ),
           ),
-          // 1) 예린 — 중앙에 크게. 책상(_kDeskTop)이 하반신만 살짝 가리도록 배치해
-          //    얼굴~가슴이 온전히 보인다. 모든 월드에서 동일한 비율.
+          // 1) 예린 — (2026-09-15 대표님) 얼굴이 크게 보이는 게 최우선. 아래쪽은 책상에
+          //    잘려도 된다. 원화(1080x1920)의 머리는 위에서 ~6%~36% 구간이라, 이미지
+          //    높이 _kYerinH 로 두면 머리가 말풍선 아래(~128)부터 책상 위(~330)까지 찬다.
           Positioned(
-            top: 18,
+            top: _kYerinTop,
             left: 0,
             right: 0,
             child: Center(
               child: GestureDetector(
                 behavior: HitTestBehavior.opaque,
                 onTap: _pokeYerin,
-                child: _catFigure(size: 400),
+                child: _catFigure(size: _kYerinH),
               ),
             ),
           ),
-          // 말풍선 — (v2) 예린 머리 위 중앙, 꼬리가 아래로
+          // 말풍선 — 예린 머리 위 중앙, 꼬리가 아래로. 튜토리얼 중엔 튜토리얼 문장이
+          // 여기 뜬다 (예린이 직접 설명하는 연출 — 화면에 예린은 항상 한 명).
           Positioned(
             top: 46,
-            left: 30,
-            right: 30,
+            left: 24,
+            right: 24,
             child: Center(
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 300),
-                child:
-                    _tauntBubble(_poked ? s.get(_pokeKey) : _midnightMessage),
+                constraints: const BoxConstraints(maxWidth: 330),
+                child: _tauntBubble(_poked
+                    ? s.get(_pokeKey)
+                    : (_tutorialActive ? _tutorialText : _midnightMessage)),
               ),
             ),
           ),
@@ -1879,20 +1904,30 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     });
   }
 
+  /// (2026-09-15 대표님) 간식이 많아지면 한 줄에 억지로 욱여넣어 콩알만 해지던 것 →
+  /// 한 줄이 perLine 개를 넘으면 **쟁반처럼 줄바꿈**한다. 셀은 최소 36px 를 지킨다.
+  /// 여러 줄(님게임 2~3줄)일 땐 줄마다 테두리 쟁반 + 개수 라벨로 줄을 구분한다.
+  /// 선택 규칙(끝에서부터 N개)은 읽는 순서 그대로라 줄바꿈해도 바뀌지 않는다.
   Widget _buildStonesBoard() {
     final bool multi = _rows.length > 1;
     return Center(
       child: LayoutBuilder(builder: (context, cons) {
-        // (폰 스케일) 돌이 절대 줄바꿈되지 않도록 — 가장 긴 줄 기준으로 셀 크기 적응.
-        final int maxLen = _rows.fold(1, (m, r) => r > m ? r : m).clamp(1, 40);
         final double avail =
-            cons.maxWidth - 32 - (multi ? 34 : 0); // 패딩 + R라벨 여유
-        final double cell = (avail / maxLen).clamp(24.0, 44.0);
-        // 세로도 적응 — 책상 크기는 고정이므로, 줄이 늘면 줄 높이가 줄어든다.
-        final double rowH =
-            ((cons.maxHeight - 24) / _rows.length).clamp(28.0, 52.0);
+            cons.maxWidth - 32 - (multi ? 40 : 0); // 패딩 + 개수 라벨 여유
+        final int maxLen = _rows.fold(1, (m, r) => r > m ? r : m).clamp(1, 60);
+        // 한 줄에 놓을 최대 개수 — 셀 36px 기준. 그보다 많으면 줄바꿈.
+        final int perLine = (avail / 36).floor().clamp(6, 12);
+        final int cols = maxLen <= perLine ? maxLen : perLine;
+        final double cell = (avail / cols).clamp(30.0, 46.0);
+        int linesOf(int len) => len <= 0 ? 1 : ((len - 1) ~/ perLine) + 1;
+        final int totalLines = _rows.fold(0, (s, r) => s + linesOf(r));
+        final double trayPad = multi ? 12.0 : 0.0;
+        final double lineH = ((cons.maxHeight - 24 - _rows.length * trayPad) /
+                totalLines)
+            .clamp(28.0, 52.0);
         final double stone =
-            [cell - 8, rowH - 10, 34.0].reduce((a, b) => a < b ? a : b);
+            [cell - 8, lineH - 8, 36.0].reduce((a, b) => a < b ? a : b);
+
         return SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           child: Column(
@@ -1901,48 +1936,71 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
             children: List.generate(_rows.length, (rowIdx) {
               final len = _rows[rowIdx];
               final isSelRow = _selectedRow == rowIdx;
-              return SizedBox(
-                height: rowH,
+              final int lines = linesOf(len);
+              final int rowCols = len <= perLine ? len : perLine;
+
+              final Widget stones = SizedBox(
+                width: rowCols * cell,
+                height: lines * lineH,
+                child: Wrap(
+                  alignment: WrapAlignment.center,
+                  children: List.generate(len, (i) {
+                    final bool selected =
+                        isSelRow && i >= len - _selectedCount;
+                    // (스테이지1 튜토리얼) 마지막에 남는 돌 = 가져가면 지는 돌.
+                    final bool danger = widget.stageNumber == 1 && i == 0;
+                    return _Stone(
+                      cell: cell,
+                      cellH: lineH,
+                      size: stone,
+                      selected: selected,
+                      leaving: _leaving && selected,
+                      danger: danger,
+                      hint: _isHintStone(rowIdx, i, len),
+                      kind: snackForStage(widget.stageNumber),
+                      onTap: () => _selectStone(rowIdx, i),
+                    );
+                  }),
+                ),
+              );
+
+              if (!multi) return stones;
+
+              // 여러 줄: 쟁반 테두리 + 개수 라벨로 줄 구분
+              return Padding(
+                padding: EdgeInsets.only(bottom: trayPad),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    // (v2) 줄별 개수 라벨 — 게임판이 숫자를 직접 담당
-                    if (multi)
-                      Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: Text(
-                          '$len',
-                          style: TextStyle(
-                            fontFamily: _mono,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w800,
-                            color: isSelRow
-                                ? _Pal.gold
-                                : _Pal.cream.withOpacity(0.65),
-                          ),
+                    SizedBox(
+                      width: 30,
+                      child: Text(
+                        '$len',
+                        textAlign: TextAlign.right,
+                        style: TextStyle(
+                          fontFamily: _mono,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          color: isSelRow
+                              ? _Pal.gold
+                              : _Pal.cream.withOpacity(0.65),
                         ),
                       ),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: List.generate(len, (i) {
-                        final bool selected =
-                            isSelRow && i >= len - _selectedCount;
-                        // (스테이지1 튜토리얼) 마지막에 남는 돌 = 가져가면 지는 돌.
-                        // 빨간 돌로 표시해 "저건 상대에게 남겨야 한다"를 눈으로 배우게.
-                        final bool danger = widget.stageNumber == 1 && i == 0;
-                        return _Stone(
-                          cell: cell,
-                          cellH: rowH,
-                          size: stone,
-                          selected: selected,
-                          leaving: _leaving && selected,
-                          danger: danger,
-                          hint: _isHintStone(rowIdx, i, len),
-                          kind: snackForStage(widget.stageNumber),
-                          onTap: () => _selectStone(rowIdx, i),
-                        );
-                      }),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: isSelRow
+                              ? _Pal.gold.withOpacity(0.8)
+                              : _Pal.deskWoodDark.withOpacity(0.55),
+                          width: 1.5,
+                        ),
+                      ),
+                      child: stones,
                     ),
                   ],
                 ),

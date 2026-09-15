@@ -63,6 +63,9 @@ class _P {
 
 const String _mono = 'NeoDGM';
 const double _kDeskTop = 340; // game_screen 과 동일 — 캐릭터가 같은 만큼 보인다
+// 예린 크기·위치 — game_screen 과 같은 값 (얼굴이 말풍선 아래~책상 위를 채운다)
+const double _kYerinH = 660;
+const double _kYerinTop = 128 - _kYerinH * 0.065;
 
 class BoardGameScreen extends StatefulWidget {
   final StageManager stageManager;
@@ -245,6 +248,14 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
   bool get _myTurn =>
       _phase == GamePhase.playing && _game.toMove == 0 && !_aiBusy;
 
+  /// 현재 튜토리얼 문장 — 매 build 마다 현재 언어로 다시 읽는다.
+  String get _tutText {
+    if (!_tutActive) return '';
+    final steps = TutorialManager.entrySteps(widget.stageNumber, s);
+    if (_tutIndex >= steps.length) return '';
+    return steps[_tutIndex].text;
+  }
+
   void _chooseTurn(TurnOwner first) {
     setState(() {
       _game.toMove = first == TurnOwner.player ? 0 : 1;
@@ -414,13 +425,15 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
     showGeneralDialog(
       context: context,
       barrierDismissible: false,
-      barrierColor: Colors.black54,
+      barrierColor: Colors.black38, // 뒤의 예린 얼굴이 비치게
       transitionDuration: const Duration(milliseconds: 400),
       transitionBuilder: (context, a1, a2, child) => Transform.scale(
         scale: Curves.elasticOut.transform(a1.value),
         child: Opacity(opacity: a1.value, child: child),
       ),
-      pageBuilder: (context, _, __) => Center(
+      // 팝업은 아래쪽(책상 자리) — 위쪽 예린 얼굴을 가리지 않는다
+      pageBuilder: (context, _, __) => Align(
+        alignment: const Alignment(0, 0.62),
         child: Container(
           margin: const EdgeInsets.symmetric(horizontal: 32),
           padding: const EdgeInsets.all(24),
@@ -465,10 +478,8 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
                   decoration: TextDecoration.none,
                 ),
               ),
+              // 클리어 팝업엔 예린 그림 없음 — 뒤의 큰 예린이 보이게
               const SizedBox(height: 6),
-              MidnightCharacter(
-                  face: MidnightFace.worried1, size: 76, animate: false),
-              const SizedBox(height: 4),
               Text(
                 s.get('midnightNextTime'),
                 style: const TextStyle(
@@ -944,26 +955,30 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
             ),
           ),
         ),
+        // 예린 — 얼굴이 크게. 아래는 책상에 잘려도 됨 (game_screen 과 동일 규칙)
         Positioned(
-          top: 18,
+          top: _kYerinTop,
           left: 0,
           right: 0,
           child: Center(
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
               onTap: _pokeYerin,
-              child: _catFigure(size: 400),
+              child: _catFigure(size: _kYerinH),
             ),
           ),
         ),
+        // 말풍선 — 튜토리얼 중엔 튜토리얼 문장 (화면에 예린은 한 명)
         Positioned(
           top: 46,
-          left: 30,
-          right: 30,
+          left: 24,
+          right: 24,
           child: Center(
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 300),
-              child: _bubble(_poked ? s.get(_pokeKey) : _message),
+              constraints: const BoxConstraints(maxWidth: 330),
+              child: _bubble(_poked
+                  ? s.get(_pokeKey)
+                  : (_tutActive ? _tutText : _message)),
             ),
           ),
         ),
@@ -1039,7 +1054,11 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
           ),
         ),
         MidnightCharacter(
-            face: _poked ? _pokeFace : _face, size: size, animate: false),
+            face: _poked
+                ? _pokeFace
+                : (_tutActive ? MidnightFace.happy1 : _face),
+            size: size,
+            animate: false),
       ]),
     );
   }
@@ -1102,42 +1121,43 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
           _tutIndex++;
           if (_tutIndex >= _tutSteps.length) _tutActive = false;
         });
+    assert(step.text.isNotEmpty);
+    // 화면에 예린은 한 명 — 문장은 큰 예린의 말풍선에, 여기선 책상 아래만 어둡게 + 버튼.
     return Positioned.fill(
       child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: advance,
-        child: Container(
-          color: Colors.black.withOpacity(0.66),
-          alignment: Alignment.center,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Column(mainAxisSize: MainAxisSize.min, children: [
-              MidnightWithBubble(
-                  face: isLast ? MidnightFace.confident : MidnightFace.happy1,
-                  message: step.text,
-                  size: 140),
-              const SizedBox(height: 20),
-              _Stamp(
-                  label: isLast ? s.get('tutStart') : s.get('tutNext'),
-                  color: _P.gold,
-                  onTap: advance),
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(_tutSteps.length, (i) {
-                  final active = i == _tutIndex;
-                  return Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 4),
-                    width: active ? 10 : 6,
-                    height: active ? 10 : 6,
-                    decoration: BoxDecoration(
-                        color: active ? _P.gold : _P.cream.withOpacity(0.4),
-                        shape: BoxShape.circle),
-                  );
-                }),
-              ),
-            ]),
+        child: Column(children: [
+          const SizedBox(height: _kDeskTop + 4),
+          Expanded(
+            child: Container(
+              color: Colors.black.withOpacity(0.66),
+              alignment: Alignment.center,
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                _Stamp(
+                    label: isLast ? s.get('tutStart') : s.get('tutNext'),
+                    color: _P.gold,
+                    onTap: advance),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(_tutSteps.length, (i) {
+                    final active = i == _tutIndex;
+                    return Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                      width: active ? 10 : 6,
+                      height: active ? 10 : 6,
+                      decoration: BoxDecoration(
+                          color: active ? _P.gold : _P.cream.withOpacity(0.4),
+                          shape: BoxShape.circle),
+                    );
+                  }),
+                ),
+              ]),
+            ),
           ),
-        ),
+        ]),
       ),
     );
   }
