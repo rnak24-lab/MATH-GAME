@@ -28,8 +28,8 @@ const double _kDeskTop = 340;
 /// 얼굴 크기가 같다. 아래쪽(허리 이하)은 책상에 가려진다 — 의도.
 const double _kYerinH = 530;
 
-/// 예린 이미지 상단 y. 머리 꼭대기(높이의 ~6.5%)가 y≈128 에 오도록.
-const double _kYerinTop = 128 - _kYerinH * 0.065;
+/// 예린 이미지 상단 y. 머리 꼭대기(높이의 ~6.5%)가 y≈83 에 오도록 (말풍선 바로 아래).
+const double _kYerinTop = 83 - _kYerinH * 0.065; // 대표님: 가슴팍까지 보이게 위로
 
 class _Pal {
   static const deskTop = Color(0xFF3A332A); // 책상 상단(밝은 쪽)
@@ -1915,8 +1915,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         final double avail =
             cons.maxWidth - 32 - (multi ? 40 : 0); // 패딩 + 개수 라벨 여유
         final int maxLen = _rows.fold(1, (m, r) => r > m ? r : m).clamp(1, 60);
-        // 한 줄에 놓을 최대 개수 — 셀 36px 기준. 그보다 많으면 줄바꿈.
-        final int perLine = (avail / 36).floor().clamp(6, 12);
+        // 한 줄에 놓을 최대 개수 — 셀 30px 까지는 한 줄에 둔다 (세 줄 님게임의 8개가
+        // 7+1 로 어색하게 갈라지지 않게). 그보다 많아야 줄바꿈.
+        final int perLine = (avail / 30).floor().clamp(6, 12);
         final int cols = maxLen <= perLine ? maxLen : perLine;
         final double cell = (avail / cols).clamp(30.0, 46.0);
         int linesOf(int len) => len <= 0 ? 1 : ((len - 1) ~/ perLine) + 1;
@@ -1937,13 +1938,14 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
               final len = _rows[rowIdx];
               final isSelRow = _selectedRow == rowIdx;
               final int lines = linesOf(len);
-              final int rowCols = len <= perLine ? len : perLine;
 
+              // 쟁반 너비는 모든 줄 동일(cols*cell) — 줄마다 들쭉날쭉하지 않게.
+              // 여러 줄이면 왼쪽 정렬해서 "5 · 6 · 8" 차이가 눈에 보인다.
               final Widget stones = SizedBox(
-                width: rowCols * cell,
+                width: cols * cell,
                 height: lines * lineH,
                 child: Wrap(
-                  alignment: WrapAlignment.center,
+                  alignment: multi ? WrapAlignment.start : WrapAlignment.center,
                   children: List.generate(len, (i) {
                     final bool selected =
                         isSelRow && i >= len - _selectedCount;
