@@ -894,16 +894,16 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
     final Color c = _playerWon ? _P.win : _P.alarm;
     final stamp = Center(
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
         decoration: BoxDecoration(
-          border: Border.all(color: c, width: 3),
+          border: Border.all(color: c, width: 2.5),
           borderRadius: BorderRadius.circular(6),
           color: _P.deskBottom.withOpacity(0.88),
         ),
         child: Text((_playerWon ? s.get('victory') : s.get('defeat')).toUpperCase(),
             style: TextStyle(
                 fontFamily: _mono,
-                fontSize: 20,
+                fontSize: 15,
                 fontWeight: FontWeight.w900,
                 letterSpacing: 3,
                 color: c)),

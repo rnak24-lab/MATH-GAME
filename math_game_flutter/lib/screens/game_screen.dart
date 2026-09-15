@@ -357,6 +357,10 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   }
 
   void _sayGreeting() {
+    if (widget.isDaily) {
+      _say('dailyGreet');
+      return;
+    }
     List<String> greetingKeys = [
       'greetReady',
       'greetWin',
@@ -1823,9 +1827,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     final Color c = _playerWon ? _Pal.win : _Pal.alarm;
     final stamp = Center(
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
         decoration: BoxDecoration(
-          border: Border.all(color: c, width: 3),
+          border: Border.all(color: c, width: 2.5),
           borderRadius: BorderRadius.circular(6),
           color: _Pal.deskBottom.withOpacity(0.88),
         ),
@@ -1833,7 +1837,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
           (_playerWon ? s.get('victory') : s.get('defeat')).toUpperCase(),
           style: TextStyle(
             fontFamily: _mono,
-            fontSize: 20,
+            fontSize: 15,
             fontWeight: FontWeight.w900,
             letterSpacing: 3,
             color: c,
@@ -1921,7 +1925,8 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     final bool multi = _rows.length > 1;
     return Center(
       child: LayoutBuilder(builder: (context, cons) {
-        final double avail = cons.maxWidth - 32 - 40; // 패딩 + 개수 라벨 여유
+        final double avail =
+            cons.maxWidth - 32 - (multi ? 40 : 0); // 패딩 + 개수 라벨 여유
         final int maxLen = _rows.fold(1, (m, r) => r > m ? r : m).clamp(1, 60);
         // 한 줄에 놓을 최대 개수 — 셀 30px 까지는 한 줄에 둔다 (세 줄 님게임의 8개가
         // 7+1 로 어색하게 갈라지지 않게). 그보다 많아야 줄바꿈.
@@ -1973,7 +1978,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                 ),
               );
 
-              // 개수 라벨은 항상(한 줄도) — 쟁반 테두리는 여러 줄일 때만
+              if (!multi) return stones;
+
+              // 여러 줄: 쟁반 테두리 + 개수 라벨로 줄 구분
               return Padding(
                 padding: EdgeInsets.only(bottom: trayPad),
                 child: Row(
@@ -1991,7 +1998,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                           fontWeight: FontWeight.w800,
                           color: isSelRow
                               ? _Pal.gold
-                              : _Pal.cream.withOpacity(0.65),
+                              : _Pal.ink.withOpacity(0.7),
                         ),
                       ),
                     ),

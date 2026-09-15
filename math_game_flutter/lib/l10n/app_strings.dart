@@ -4845,6 +4845,18 @@ class AppStrings {
       'id': 'Kalau rekor beruntunmu putus, aku bakal ngambek.',
       'vi': 'Nếu làm đứt chuỗi liên tiếp, tớ sẽ giận dỗi đấy.',
     },
+    'dailyGreet': {
+      'en': 'Today\'s match. Same board for everyone in the world!',
+      'ko': '오늘의 한 판이야. 전 세계가 같은 판!',
+      'ja': '今日の一局。世界中みんな同じ盤面だよ！',
+      'zh': '今日一局。全世界都是同一个棋盘！',
+      'es': 'La partida de hoy. ¡El mismo tablero para todo el mundo!',
+      'pt': 'A partida de hoje. O mesmo tabuleiro para o mundo inteiro!',
+      'de': 'Die Partie des Tages. Dasselbe Brett für die ganze Welt!',
+      'fr': 'La partie du jour. Le même plateau pour le monde entier !',
+      'id': 'Pertandingan hari ini. Papan yang sama untuk seluruh dunia!',
+      'vi': 'Ván hôm nay. Cả thế giới cùng một bàn cờ!',
+    },
   };
 
   String get(String key, [List<String>? args]) {
