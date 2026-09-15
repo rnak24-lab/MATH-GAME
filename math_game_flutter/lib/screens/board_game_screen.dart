@@ -8,7 +8,7 @@ import '../game/board_games.dart';
 import '../game/stage_manager.dart';
 import '../game/tutorial_manager.dart';
 import '../l10n/app_strings.dart';
-import '../models/game_state.dart' show TurnOwner, GamePhase;
+import '../models/game_state.dart' show GamePhase;
 import '../providers/locale_provider.dart';
 import '../services/ad_service.dart';
 import '../services/app_settings.dart';
@@ -88,7 +88,7 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
   AppStrings get s => widget.localeProvider.strings;
   BoardKind get kind => _game.kind;
 
-  GamePhase _phase = GamePhase.turnChoice;
+  GamePhase _phase = GamePhase.playing;
   bool _playerWon = false;
   int _turnCount = 0;
   bool _aiBusy = false;
@@ -111,9 +111,7 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
   int _tutIndex = 0;
   bool _tutActive = false;
 
-  // 기록 / 힌트 / 전구
-  final List<String> _log = [];
-  TurnOwner? _firstMover;
+  // 힌트 / 전구
   BoardMove? _hint;
   bool _losing = false;
 
@@ -142,9 +140,6 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
     strong ? HapticFeedback.mediumImpact() : HapticFeedback.selectionClick();
   }
 
-  String _nameOf(TurnOwner o) =>
-      o == TurnOwner.player ? s.get('nameYou') : s.get('nameMidnight');
-
   @override
   void initState() {
     super.initState();
@@ -160,6 +155,11 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
       _tutSteps = TutorialManager.entrySteps(widget.stageNumber, s);
       _tutActive = _tutSteps.isNotEmpty;
     }
+    // (2026-09-15 대표님) 선공 선택 없음 — 항상 플레이어가 먼저. 심은 예린이
+    // 한 줄을 미리 그어 둔 판(BoardGame.forStage)이라 그 사실을 첫 대사로 알린다.
+    _game.toMove = 0;
+    if (kind == BoardKind.sim) _say('simOpening');
+    _losing = _game.toMoveIsLosing();
   }
 
   @override
@@ -256,30 +256,6 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
     return steps[_tutIndex].text;
   }
 
-  void _chooseTurn(TurnOwner first) {
-    setState(() {
-      _game.toMove = first == TurnOwner.player ? 0 : 1;
-      _phase = GamePhase.playing;
-      _firstMover = first;
-      _lossTurns = 0;
-      _log.clear();
-      _log.add(s.get('logStart', [_nameOf(first)]));
-      if (first == TurnOwner.player) {
-        final lose = _game.toMoveIsLosing();
-        _losing = lose;
-        _face = lose ? MidnightFace.happy1 : MidnightFace.neutral;
-        if (lose) _lossTurns = 1;
-        _say('turnPlayerFirst');
-      } else {
-        _face = MidnightFace.thinking;
-        _say('turnMidnightFirst');
-      }
-    });
-    if (first == TurnOwner.midnight) {
-      Future.delayed(const Duration(milliseconds: 800), _aiPlay);
-    }
-  }
-
   /// 판 위를 눌렀을 때 — 종류별로 "수" 로 바뀐 것이 들어온다.
   void _onBoardMove(BoardMove m) {
     if (!_myTurn || _tutActive) return;
@@ -293,7 +269,6 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
       _selPoint = -1;
       _game.apply(m);
       _turnCount++;
-      _log.add('${_nameOf(TurnOwner.player)}  ${_moveLabel(m)}');
     });
     if (_game.isOver) {
       _endGame(_game.winner == 0);
@@ -314,20 +289,6 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
     Future.delayed(const Duration(milliseconds: 900), _aiPlay);
   }
 
-  String _moveLabel(BoardMove m) {
-    switch (kind) {
-      case BoardKind.chomp:
-        return '(${m.a + 1},${m.b + 1})';
-      case BoardKind.sprouts:
-        return '${m.a + 1}–${m.b + 1}';
-      case BoardKind.hex:
-        final n = (_game as HexGame).n;
-        return '(${m.a ~/ n + 1},${m.a % n + 1})';
-      default:
-        return '#${m.a + 1}';
-    }
-  }
-
   void _aiPlay() {
     if (!mounted || _phase != GamePhase.playing || _game.toMove != 1) return;
     setState(() => _aiBusy = true);
@@ -340,7 +301,6 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
     setState(() {
       _game.apply(m);
       _turnCount++;
-      _log.add('${_nameOf(TurnOwner.midnight)}  ${_moveLabel(m)}');
     });
     if (_game.isOver) {
       setState(() => _aiBusy = false);
@@ -586,11 +546,7 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
     final bool losing = _game.toMoveIsLosing();
     String text;
     if (losing) {
-      // 처음부터 다시 할 때 선공/후공 어느 쪽이 유리한지
-      final fresh = BoardGame.forStage(widget.stageNumber);
-      final firstWins = !fresh.toMoveIsLosing();
-      text = s.get('hintLosingNextChoice',
-          [firstWins ? s.get('meFirst') : s.get('midnightFirst')]);
+      text = s.get('hintLosingRetry');
     } else {
       final m = _game.bestMove();
       setState(() => _hint = m);
@@ -678,21 +634,21 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
         ),
         child: SafeArea(
           child: Column(children: [
-            _topBar(w.bgGradient.first),
+            _topBar(),
             Expanded(
               child: Stack(children: [
-                _phase == GamePhase.turnChoice ? _turnChoice(w) : _gameBoard(w),
+                _gameBoard(w),
                 if (_tutActive) _tutorialOverlay(),
               ]),
             ),
-            _recordLine(),
           ]),
         ),
       ),
     );
   }
 
-  Widget _topBar(Color accent) {
+  /// 상단 바 — (2026-09-15 정보 다이어트) 뒤로 / 스테이지 번호 / 힌트 전구 / 메뉴.
+  Widget _topBar() {
     return Container(
       height: 44,
       decoration: const BoxDecoration(
@@ -704,129 +660,120 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
           icon: const Icon(Icons.arrow_back_ios_rounded, color: _P.cream, size: 18),
           onPressed: () => Navigator.pop(context),
         ),
-        Container(width: 10, height: 10, color: accent),
-        const SizedBox(width: 8),
         Text(s.get('stageLabel', ['${widget.stageNumber}']),
             style: const TextStyle(
                 fontFamily: _mono,
                 color: _P.cream,
                 fontWeight: FontWeight.w800,
-                fontSize: 15,
+                fontSize: 14,
                 letterSpacing: 1.5)),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Text('· $_modeTitle',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                  fontFamily: _mono,
-                  color: _P.gold,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600)),
-        ),
+        const Spacer(),
         if (_phase == GamePhase.playing && _game.toMove == 0)
-          _Bulb(
-              urgent: _losing && _hint == null,
-              onTap: _showHint,
-              tooltip: s.get('hintDialogTitle')),
-        IconButton(
-          visualDensity: VisualDensity.compact,
-          icon: const Icon(Icons.help_outline_rounded, size: 20, color: _P.cream),
-          tooltip: s.get('rulesTitle'),
-          onPressed: _showModeRules,
-        ),
+          _Bulb(urgent: false, onTap: _showHint, tooltip: s.get('hintDialogTitle')),
         IconButton(
           visualDensity: VisualDensity.compact,
           padding: const EdgeInsets.only(right: 10),
-          icon: const Icon(Icons.settings_rounded, size: 20, color: _P.gold),
-          tooltip: s.get('settings'),
-          onPressed: () async {
-            await Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => SettingsScreen(
-                  localeProvider: widget.localeProvider,
-                  onChanged: () {
-                    if (mounted) setState(() {});
-                  },
-                  stageManager: widget.stageManager,
-                ),
-              ),
-            );
-            if (mounted) setState(() {});
-          },
+          icon: const Icon(Icons.menu_rounded, size: 22, color: _P.cream),
+          tooltip: s.get('menuTitle'),
+          onPressed: _showMenu,
         ),
       ]),
     );
   }
 
-  Widget _banner({required Color color, required String label}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-      decoration: BoxDecoration(
-        border: Border.all(color: color, width: 2.5),
-        borderRadius: BorderRadius.circular(6),
-        color: _P.deskBottom.withOpacity(0.88),
-      ),
-      child: Row(children: [
-        Text(label,
-            style: TextStyle(
-                fontFamily: _mono,
-                fontSize: 15,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 2,
-                color: color)),
-        const Spacer(),
-        Flexible(
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(_summary(),
-                style: const TextStyle(
-                    fontFamily: _mono,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w900,
-                    color: _P.cream)),
+  /// 게임 중 메뉴 — 규칙 / 설정 / 스테이지 선택으로.
+  void _showMenu() {
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        backgroundColor: _P.paper,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+          side: const BorderSide(color: _P.frame, width: 3),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _Stamp(
+                label: s.get('rulesTitle'),
+                icon: Icons.help_outline_rounded,
+                color: _P.frameHi,
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _showModeRules();
+                },
+              ),
+              const SizedBox(height: 10),
+              _Stamp(
+                label: s.get('settings'),
+                icon: Icons.settings_rounded,
+                color: _P.frameHi,
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => SettingsScreen(
+                        localeProvider: widget.localeProvider,
+                        onChanged: () {
+                          if (mounted) setState(() {});
+                        },
+                        stageManager: widget.stageManager,
+                      ),
+                    ),
+                  );
+                  if (mounted) setState(() {});
+                },
+              ),
+              const SizedBox(height: 10),
+              _Stamp(
+                label: s.get('backToStageSelect'),
+                icon: Icons.grid_view_rounded,
+                color: _P.frame,
+                onTap: () {
+                  Navigator.pop(ctx);
+                  Navigator.pop(context);
+                },
+              ),
+              const SizedBox(height: 6),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text(s.get('menuResume'),
+                    style: const TextStyle(
+                        fontFamily: _mono, color: _P.inkSoft, fontSize: 14)),
+              ),
+            ],
           ),
         ),
-      ]),
+      ),
     );
   }
 
-  Widget _turnChoice(WorldInfo w) {
-    return Column(children: [
-      _deskScene(w, overlay: _banner(color: _P.gold, label: s.get('whoGoesFirst'))),
-      Padding(padding: const EdgeInsets.only(top: 4), child: _chips()),
-      Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-        child: Row(children: [
-          Expanded(
-              child: _Stamp(
-                  label: s.get('meFirst'),
-                  color: _P.frameHi,
-                  icon: Icons.person,
-                  onTap: () => _chooseTurn(TurnOwner.player))),
-          const SizedBox(width: 12),
-          Expanded(
-              child: _Stamp(
-                  label: s.get('midnightFirst'),
-                  color: _P.alarm,
-                  icon: Icons.pets,
-                  onTap: () => _chooseTurn(TurnOwner.midnight))),
-        ]),
-      ),
-    ]);
-  }
-
+  /// (2026-09-15 정보 다이어트) 턴 배너 삭제 — 결과 도장만 승리/패배 순간에 찍힌다.
   Widget _turnStamp() {
-    final bool over = _phase == GamePhase.gameOver;
-    final Color c = over
-        ? (_playerWon ? _P.win : _P.alarm)
-        : (_game.toMove == 0 ? _P.gold : _P.alarm);
-    final String label = over
-        ? (_playerWon ? s.get('victory') : s.get('defeat'))
-        : (_game.toMove == 0 ? s.get('myTurn') : s.get('midnightTurn'));
-    final stamp = _banner(color: c, label: label.toUpperCase());
-    if (over && _playerWon) {
+    if (_phase != GamePhase.gameOver) return const SizedBox.shrink();
+    final Color c = _playerWon ? _P.win : _P.alarm;
+    final stamp = Center(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 8),
+        decoration: BoxDecoration(
+          border: Border.all(color: c, width: 3),
+          borderRadius: BorderRadius.circular(6),
+          color: _P.deskBottom.withOpacity(0.88),
+        ),
+        child: Text((_playerWon ? s.get('victory') : s.get('defeat')).toUpperCase(),
+            style: TextStyle(
+                fontFamily: _mono,
+                fontSize: 20,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 3,
+                color: c)),
+      ),
+    );
+    if (_playerWon) {
       return TweenAnimationBuilder<double>(
         tween: Tween(begin: 0, end: 1),
         duration: const Duration(milliseconds: 500),
@@ -840,26 +787,28 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
     return stamp;
   }
 
+  /// (2026-09-15 정보 다이어트) 규칙 칩 하나. 점과 상자는 점수(나 : 예린)를 덧붙인다.
   Widget _chips() {
-    Widget chip(String t) => Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          decoration: BoxDecoration(
-            color: _P.deskBottom,
-            borderRadius: BorderRadius.circular(4),
-            border: Border.all(color: _P.frameHi, width: 1.5),
-          ),
-          child: Text(t,
-              style: const TextStyle(
-                  fontFamily: _mono,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: _P.cream)),
-        );
     final keys = _chipKeys;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [chip(s.get(keys[0])), const SizedBox(width: 8), chip(s.get(keys[1]))],
+    String text = '${s.get(keys[0])} · ${s.get(keys[1])}';
+    if (_game is DotsBoxesGame) text = '$text · ${_summary()}';
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+      decoration: BoxDecoration(
+        color: _P.deskBottom,
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: _P.frameHi, width: 1.5),
+      ),
+      child: Text(text,
+          textAlign: TextAlign.center,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+              fontFamily: _mono,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: _P.cream)),
     );
   }
 
@@ -1083,33 +1032,6 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
       ),
       CustomPaint(size: const Size(16, 9), painter: _TailDown()),
     ]);
-  }
-
-  Widget _recordLine() {
-    final moves = _log.skip(1).toList();
-    final recent = moves.reversed.take(3).join('  ←  ');
-    final first = _firstMover == null
-        ? ''
-        : ' · ${s.get('logFirst', [_nameOf(_firstMover!)])}';
-    return Container(
-      height: 22,
-      decoration: const BoxDecoration(
-        color: _P.deskBottom,
-        border: Border(top: BorderSide(color: _P.frame, width: 1)),
-      ),
-      alignment: Alignment.centerLeft,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      child: Text(
-        '${s.get('logLabel')}$first${recent.isEmpty ? '' : '  ·  $recent'}',
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: const TextStyle(
-            fontFamily: _mono,
-            color: Color(0xFF767676),
-            fontSize: 10,
-            letterSpacing: 0.3),
-      ),
-    );
   }
 
   Widget _tutorialOverlay() {

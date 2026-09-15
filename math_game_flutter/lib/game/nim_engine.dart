@@ -45,13 +45,14 @@ class NimEngine {
   final Map<String, int> _grundyCache = {};
   final Random _rng = Random();
 
-  /// 한 줄 님게임 AI
+  /// 한 줄 님게임 AI — (2026-09-15) 노멀 플레이: 마지막 간식을 가져가는 사람이 **이긴다**.
+  /// 남은 수 n 이 (maxTake+1) 의 배수면 둘 차례가 진다. 아니면 n % (maxTake+1) 개를 가져가
+  /// 상대에게 배수를 남긴다.
   NimMove singleRowAI(int stones, int maxTake) {
     // EC-01 가드: 게임 종료 상태 (돌이 0 이하)
     if (stones <= 0) return NimMove(count: 0);
 
-    // (n-1) % (maxTake+1) == 0 이면 지는 포지션
-    int target = (stones - 1) % (maxTake + 1);
+    int target = stones % (maxTake + 1);
     if (target == 0) {
       // 지는 포지션 -> 랜덤한 개수(1 ~ min(maxTake, stones))로 가져가 변수를 줌
       int maxC = maxTake < stones ? maxTake : stones;
@@ -60,7 +61,7 @@ class NimEngine {
     return NimMove(count: target);
   }
 
-  /// 다중 줄 님게임 AI (XOR 전략)
+  /// 다중 줄 님게임 AI (XOR 전략) — 노멀 플레이라 미제르 종반 예외가 없다.
   NimMove multiRowAI(List<int> rows) {
     // EC-02 가드: 모든 줄이 0이면 게임 종료 상태
     if (rows.isEmpty || rows.every((r) => r == 0)) {
@@ -72,33 +73,8 @@ class NimEngine {
       nimSum ^= r;
     }
 
-    // 엔드게임: 남은 줄이 모두 1 이하
-    if (rows.every((r) => r <= 1)) {
-      // 홀수개 줄이 남아있으면 1개 가져감
-      for (int i = 0; i < rows.length; i++) {
-        if (rows[i] == 1) {
-          return NimMove(rowIndex: i, count: 1);
-        }
-      }
-    }
-
-    // 1보다 큰 줄이 정확히 1개
-    int bigRowCount = rows.where((r) => r > 1).length;
-    int oneRowCount = rows.where((r) => r == 1).length;
-
-    if (bigRowCount == 1) {
-      int bigIdx = rows.indexWhere((r) => r > 1);
-      // 1인 줄의 개수가 짝수면 -> bigRow를 0으로
-      // 1인 줄의 개수가 홀수면 -> bigRow를 1로
-      int target = (oneRowCount % 2 == 0) ? 0 : 1;
-      int take = rows[bigIdx] - target;
-      if (take > 0) {
-        return NimMove(rowIndex: bigIdx, count: take);
-      }
-    }
-
     if (nimSum != 0) {
-      // 이기는 수 찾기
+      // 이기는 수 찾기: 어떤 줄을 rows[i] ^ nimSum 으로 줄이면 XOR 이 0
       for (int i = 0; i < rows.length; i++) {
         if (rows[i] > 0) {
           int target = rows[i] ^ nimSum;
@@ -369,43 +345,59 @@ class NimEngine {
     return NimMove(count: 1 + _rng.nextInt(safeMax));
   }
 
+  /// 지금 둘 차례가 "이미 진 포지션" 인가 (완벽한 상대 기준).
+  /// 모든 모드는 노멀 플레이(마지막을 가져가면 승리 / 못 두면 패배).
+  ///  - singleRow: n % (maxTake+1) == 0
+  ///  - double/triple: XOR == 0
+  ///  - pepero: 쪼갤 게 없거나 그런디 XOR == 0
+  ///  - kayles / wythoff: 각 그런디·냉 포지션
+  ///  - fibonacci: 제켄도르프 최소항 > 이번 턴 한도
+  bool toMoveLoses(List<int> rows, GameMode mode,
+      {int maxTake = 3, int fibLimit = 0}) {
+    switch (mode) {
+      case GameMode.singleRow:
+        if (rows.isEmpty || rows[0] <= 0) return false;
+        return rows[0] % (maxTake + 1) == 0;
+      case GameMode.fibonacci:
+        return fibonacciLosing(rows[0], fibLimit);
+      case GameMode.pepero:
+        if (rows.every((p) => p < 3)) return true;
+        int g = 0;
+        for (int p in rows) {
+          g ^= _grundy(p);
+        }
+        return g == 0;
+      case GameMode.kayles:
+        int x = 0;
+        for (final r in rows) {
+          x ^= _kaylesGrundy(r);
+        }
+        return x == 0;
+      case GameMode.wythoff:
+        return wythoffCold(rows[0], rows.length > 1 ? rows[1] : 0);
+      case GameMode.doubleRow:
+      case GameMode.tripleRow:
+      case GameMode.quadRow:
+        int nimSum = 0;
+        for (int r in rows) {
+          nimSum ^= r;
+        }
+        return nimSum == 0;
+    }
+  }
+
   /// AI가 유리한 포지션인지 (= 다음에 둘 사람이 지는 포지션인지)
-  bool isAIWinning(List<int> rows, GameMode mode) {
-    if (mode == GameMode.pepero) {
-      int totalGrundy = 0;
-      for (int p in rows) {
-        totalGrundy ^= _grundy(p);
-      }
-      // grundy == 0이면 방금 둔 쪽이 유리 (상대가 불리)
-      return totalGrundy == 0;
-    }
+  bool isAIWinning(List<int> rows, GameMode mode,
+          {int maxTake = 3, int fibLimit = 0}) =>
+      toMoveLoses(rows, mode, maxTake: maxTake, fibLimit: fibLimit);
 
-    if (mode == GameMode.kayles) {
-      int x = 0;
-      for (final r in rows) {
-        x ^= _kaylesGrundy(r);
-      }
-      return x == 0;
-    }
-
-    if (mode == GameMode.wythoff) {
-      return wythoffCold(rows[0], rows.length > 1 ? rows[1] : 0);
-    }
-
-    if (mode == GameMode.fibonacci) {
-      return true; // fibonacci는 maxAllowed 필요 → fibonacciLosing 사용
-    }
-
-    if (mode == GameMode.singleRow) {
-      return true; // singleRow는 별도 maxTake 필요
-    }
-
-    // doubleRow / tripleRow / quadRow: 일반 NIM XOR
-    int nimSum = 0;
-    for (int r in rows) {
-      nimSum ^= r;
-    }
-    return nimSum == 0;
+  /// 초기 판에서 선공(= 항상 플레이어)이 완벽하게 두면 이기는가.
+  /// (2026-09-15 대표님) 선공 선택을 없애고 항상 플레이어가 먼저 두므로,
+  /// 모든 스테이지는 이 값이 true 여야 한다. [generateStage] 가 보장한다.
+  bool firstMoverWins(StageConfig c) {
+    final int fibLimit = c.mode == GameMode.fibonacci ? c.rows[0] - 1 : 0;
+    return !toMoveLoses(c.rows, c.mode,
+        maxTake: c.maxTake, fibLimit: fibLimit);
   }
 
   /// 스테이지 설정 생성.
@@ -439,9 +431,11 @@ class NimEngine {
         // (2026-07-02) 스테이지 1 = 튜토리얼 전용: 돌 3개, 1~2개 선택.
         // "2개를 집어봐!" 지시대로 하면 한밤이가 마지막 돌을 강제로 가져가 무조건 승리
         // → 첫 판에서 규칙(마지막 돌=패배)과 승리 감각을 동시에 학습.
+        // (2026-09-15) 노멀 플레이 튜토리얼: 4개, 1~2개 선택. "1개 가져가 봐" → 예린이
+        // 1~2개 → "남은 거 다 가져가!" 로 마지막 간식 = 승리를 손으로 배운다.
         if (stageNumber == 1) {
           maxTake = 2;
-          rows = [3];
+          rows = [4];
           break;
         }
         // 기본 최저 난이도 상승: 1~1 제한 폐지, 최소 1~2 선택.
@@ -467,10 +461,12 @@ class NimEngine {
         rows = [3, 4, 5, 6];
         break;
       case GameMode.pepero:
-        // 61-80: 최종 월드. 6개 → 20개(상한)까지 확대.
-        int size = 6 + (stageNumber - 61);
-        if (size > 20) size = 20;
-        rows = [size];
+        // 61-80: 그런디 값이 0인 크기(7·10·20·23·26)는 선공이 지므로 표에서 뺐다.
+        const sizes = [
+          6, 8, 9, 11, 12, 13, 14, 15, 16, 17,
+          18, 19, 21, 22, 24, 25, 27, 28, 29, 30,
+        ];
+        rows = [sizes[(stageNumber - 61).clamp(0, 19)]];
         break;
       case GameMode.kayles:
         // 81-100: 한 줄 → 두 줄 → 세 줄로 점점 복잡하게 (인접 1~2개 제거)
@@ -504,11 +500,26 @@ class NimEngine {
         break;
     }
 
-    return StageConfig(
+    // ── 선수 필승 보장 가드 (2026-09-15) ──
+    // 플레이어가 항상 먼저 두므로, 초기 판이 "둘 차례 패배" 면 크기를 1씩 키워
+    // 선공 승 판으로 옮긴다. (한 줄 4·6·8, 카일즈 95·96 등이 여기서 교정된다)
+    StageConfig cfg = StageConfig(
       stageNumber: stageNumber,
       mode: mode,
       rows: rows,
       maxTake: maxTake,
     );
+    int guard = 0;
+    while (!firstMoverWins(cfg) && guard++ < 8) {
+      final bumped = List<int>.from(cfg.rows);
+      bumped[bumped.length - 1] += 1;
+      cfg = StageConfig(
+        stageNumber: stageNumber,
+        mode: mode,
+        rows: bumped,
+        maxTake: maxTake,
+      );
+    }
+    return cfg;
   }
 }

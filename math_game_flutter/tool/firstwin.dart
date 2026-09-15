@@ -8,17 +8,7 @@ void main() {
   int firstWins = 0, secondWins = 0;
   for (int st = 1; st <= 140; st++) {
     final c = e.generateStage(st);
-    bool fw;
-    switch (c.mode) {
-      case GameMode.singleRow:
-        fw = (c.rows[0] - 1) % (c.maxTake + 1) != 0; break;
-      case GameMode.fibonacci:
-        fw = !e.fibonacciLosing(c.rows[0], c.rows[0] - 1); break;
-      case GameMode.pepero:
-        fw = c.rows.any((p) => p >= 3) && !e.isAIWinning(c.rows, c.mode); break;
-      default:
-        fw = !e.isAIWinning(c.rows, c.mode);
-    }
+    final bool fw = e.firstMoverWins(c);
     if (fw) firstWins++; else secondWins++;
     buf.writeln('$st\t${c.mode.name}\t${c.rows}\tmax=${c.maxTake}\t${fw ? "FIRST" : "second"}');
   }
