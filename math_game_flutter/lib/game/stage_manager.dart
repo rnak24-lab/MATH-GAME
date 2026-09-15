@@ -9,7 +9,6 @@ class StageManager extends ChangeNotifier {
   static const String _worldUnlockedKey = 'world_unlocked';
   static const String _boardUnlockedKey = 'board_world_unlocked';
   static const String _tutorialDoneKey = 'tutorial_done';
-  static const String _scenesSeenKey = 'scenes_seen';
   static const String _dailyWinsKey = 'daily_wins';
   static const String _dailyDoneKey = 'daily_done_date';
   static const String _dailyStreakKey = 'daily_streak';
@@ -27,53 +26,15 @@ class StageManager extends ChangeNotifier {
   /// 월드 조기 오픈(빠른 패스)으로 순차 진행이 깨질 수 있어 셋으로 관리.
   final Set<int> _cleared = <int>{};
 
-  // ── (2026-09-15 대표님) "클리어할 이유" — 예린 호감도 ──
-  // 별 등급은 승패가 확실한 게임이라 성립하지 않는다. 대신 **클리어 수 + 오늘의 한 판 승리**가
-  // 호감도 점수. 단계가 오를 때마다 미연시식 장면(Dialogue.scene)이 열린다.
-  final Set<int> _scenesSeen = <int>{};
+  // ── (2026-09-16 대표님) "클리어할 이유" — 수업(월드)별 이야기 ──
+  // 호감도 게이지 없음. 한 수업에서 5·15판 = 짧은 이야기, 10판 = 큰 이야기, 20판 = 긴 이야기.
+  // 열림 여부는 월드 클리어 수로만 결정되므로 "본 기록"이 필요 없다 (노트에서 언제든 다시 봄).
   int dailyWins = 0;
   String dailyDoneDate = ''; // yyyyMMdd — 오늘 이미 이겼으면 오늘 날짜
   int dailyStreak = 0;
   String _dailyLastDate = '';
 
-  /// 호감도 단계 문턱 (누적 점수). 인덱스 = 레벨-1. 레벨 1은 0점.
-  static const List<int> affinityThresholds = [0, 3, 8, 15, 25, 40, 60, 85, 115, 150];
-  static int get maxAffinityLevel => affinityThresholds.length;
-
   int get clearCount => _cleared.length;
-  int get affinityPoints => clearCount + dailyWins;
-
-  int get affinityLevel {
-    int lv = 1;
-    for (int i = 0; i < affinityThresholds.length; i++) {
-      if (affinityPoints >= affinityThresholds[i]) lv = i + 1;
-    }
-    return lv;
-  }
-
-  /// 다음 단계까지 남은 점수. 최고 단계면 0.
-  int get pointsToNextLevel {
-    final lv = affinityLevel;
-    if (lv >= maxAffinityLevel) return 0;
-    return affinityThresholds[lv] - affinityPoints;
-  }
-
-  /// 아직 안 본 장면 중 가장 낮은 레벨 (2 이상). 없으면 null.
-  int? get pendingScene {
-    for (int lv = 2; lv <= affinityLevel; lv++) {
-      if (!_scenesSeen.contains(lv)) return lv;
-    }
-    return null;
-  }
-
-  bool sceneSeen(int level) => _scenesSeen.contains(level);
-
-  Future<void> markSceneSeen(int level) async {
-    if (!_scenesSeen.add(level)) return;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList(_scenesSeenKey, _scenesSeen.map((e) => '$e').toList());
-    notifyListeners();
-  }
 
   /// 이 월드에서 지금까지 클리어한 판 수 (클리어 한마디 로테이션용)
   int worldClears(int stageNumber) => getWorldProgress((stageNumber - 1) ~/ 20);
@@ -110,9 +71,6 @@ class StageManager extends ChangeNotifier {
     worldUnlocked = prefs.getInt(_worldUnlockedKey) ?? 0;
     boardWorldUnlocked = prefs.getInt(_boardUnlockedKey) ?? firstBoardWorld;
     tutorialDone = prefs.getBool(_tutorialDoneKey) ?? false;
-    _scenesSeen
-      ..clear()
-      ..addAll((prefs.getStringList(_scenesSeenKey) ?? const []).map(int.parse));
     dailyWins = prefs.getInt(_dailyWinsKey) ?? 0;
     dailyDoneDate = prefs.getString(_dailyDoneKey) ?? '';
     dailyStreak = prefs.getInt(_dailyStreakKey) ?? 0;
@@ -202,7 +160,6 @@ class StageManager extends ChangeNotifier {
     maxStage = 0;
     worldUnlocked = 0;
     boardWorldUnlocked = firstBoardWorld;
-    _scenesSeen.clear();
     dailyWins = 0;
     dailyDoneDate = '';
     dailyStreak = 0;
@@ -212,7 +169,6 @@ class StageManager extends ChangeNotifier {
     await prefs.remove(_maxStageKey);
     await prefs.remove(_worldUnlockedKey);
     await prefs.remove(_boardUnlockedKey);
-    await prefs.remove(_scenesSeenKey);
     await prefs.remove(_dailyWinsKey);
     await prefs.remove(_dailyDoneKey);
     await prefs.remove(_dailyStreakKey);

@@ -214,8 +214,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   // ── 클리어 뒤 미연시식 대화 (한마디 + 호감도 장면) ──
   List<DialogueLine>? _dialogue;
   String? _dialogueTitle;
-  int? _dialogueScene; // 장면 레벨 (본 것으로 기록용)
-  bool _levelUp = false;
+  int? _dialogueScene; // 지금 보여주는 이야기 문턱 (5/10/15/20) — 대화 상자 key 용
 
   // 연속 패배 추적 (2회 연속 패배 시 자동 힌트)
   int _consecutiveDefeats = 0;
@@ -477,36 +476,30 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     });
 
     if (playerWins) {
-      final int levelBefore = widget.stageManager.affinityLevel;
       final int nth = widget.stageManager.worldClears(widget.stageNumber);
       if (widget.isDaily) {
-        widget.stageManager.recordDailyWin().then((_) {
-          if (!mounted) return;
-          _levelUp = widget.stageManager.affinityLevel > levelBefore;
-        });
+        widget.stageManager.recordDailyWin();
       } else {
-        widget.stageManager.clearStage(widget.stageNumber).then((_) {
-          if (!mounted) return;
-          _levelUp = widget.stageManager.affinityLevel > levelBefore;
-        });
+        widget.stageManager.clearStage(widget.stageNumber);
       }
       // 전면 광고: 3 스테이지 클리어마다 1회 (AdService 내부 카운터)
       AdService.instance.maybeShowInterstitialOnStageClear();
       Future.delayed(const Duration(milliseconds: 1100), () {
         if (!mounted) return;
-        // 클리어 한마디 → (호감도 장면) → 다음 스테이지 팝업
+        // 클리어 한마디 → (이 수업 5/10/15/20판째면 이야기) → 다음 스테이지 팝업
         final lines = <DialogueLine>[
           widget.isDaily
               ? DialogueLine(MidnightFace.happy2,
                   s.get('daily_win_${(widget.stageManager.dailyStreak % 3) + 1}'))
               : Dialogue.afterClear(widget.stageNumber, nth, s)
         ];
-        final int? scene = widget.stageManager.pendingScene;
+        // clearStage 뒤의 진행도. 이미 깬 판을 다시 깬 거면 수가 안 늘어 이야기도 없다.
+        final int after = widget.stageManager.worldClears(widget.stageNumber);
         setState(() {
           _dialogue = lines;
           _dialogueTitle = null;
           _dialogueScene = null;
-          _pendingScene = scene;
+          _pendingScene = (widget.isDaily || after == nth) ? null : Dialogue.thresholdFor(after);
         });
       });
     }
@@ -514,17 +507,15 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
 
   int? _pendingScene;
 
-  /// 대화 상자가 끝났을 때: 장면이 남았으면 장면 → 아니면 팝업.
+  /// 대화 상자가 끝났을 때: 이야기가 남았으면 이야기 → 아니면 팝업.
   void _onDialogueDone() {
-    final int? scene = _pendingScene;
-    if (_dialogueScene != null) {
-      widget.stageManager.markSceneSeen(_dialogueScene!);
-    }
-    if (scene != null && _dialogueScene == null) {
+    final int? t = _pendingScene;
+    if (t != null && _dialogueScene == null) {
+      final int w = Dialogue.worldOf(widget.stageNumber);
       setState(() {
-        _dialogue = Dialogue.scene(scene, s);
-        _dialogueTitle = Dialogue.sceneTitle(scene, s);
-        _dialogueScene = scene;
+        _dialogue = Dialogue.worldScene(w, t, s);
+        _dialogueTitle = Dialogue.sceneTitle(w, t, s);
+        _dialogueScene = t;
         _pendingScene = null;
       });
       return;
@@ -607,7 +598,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                 ),
                 // (2026-09-15 대표님) 클리어 팝업엔 예린 그림 없음 — 뒤의 큰 예린이 보이게.
                 const SizedBox(height: 8),
-                _affinityLine(),
+                _storyLine(),
                 const SizedBox(height: 20),
                 if (hasNext) ...[
                   SizedBox(
@@ -658,38 +649,20 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     );
   }
 
-  /// 팝업 안 호감도 줄 — "♥ 예린 호감도 Lv.3 · 다음 이야기까지 4판"
-  Widget _affinityLine() {
-    final sm = widget.stageManager;
-    final String next = sm.pointsToNextLevel > 0
-        ? s.get('affinityNext', ['${sm.pointsToNextLevel}'])
-        : s.get('affinityMax');
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (_levelUp)
-          Text(
-            s.get('affinityUp'),
-            style: const TextStyle(
-              fontFamily: _mono,
-              fontSize: 14,
-              fontWeight: FontWeight.w900,
-              color: _Pal.alarm,
-              decoration: TextDecoration.none,
-            ),
-          ),
-        Text(
-          '♥ ${s.get('affinityLabel')} ${s.get('affinityLevel', ['${sm.affinityLevel}'])} · $next',
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-            fontFamily: _mono,
-            fontSize: 12,
-            color: _Pal.inkSoft,
-            fontWeight: FontWeight.w700,
-            decoration: TextDecoration.none,
-          ),
-        ),
-      ],
+  /// 팝업 안 이야기 줄 — "다음 이야기까지 4판" (이 수업 기준)
+  Widget _storyLine() {
+    if (widget.isDaily) return const SizedBox.shrink();
+    final int left = Dialogue.untilNext(widget.stageManager.worldClears(widget.stageNumber));
+    return Text(
+      left > 0 ? s.get('storyNext', ['$left']) : s.get('storyWorldDone'),
+      textAlign: TextAlign.center,
+      style: const TextStyle(
+        fontFamily: _mono,
+        fontSize: 12,
+        color: _Pal.inkSoft,
+        fontWeight: FontWeight.w700,
+        decoration: TextDecoration.none,
+      ),
     );
   }
 

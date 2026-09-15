@@ -168,60 +168,61 @@ class _NoteScreenState extends State<NoteScreen> {
     );
   }
 
-  // ── 이야기 (호감도 장면) ──
+  // ── 이야기 — 수업마다 5/10/15/20판 ──
   Widget _stories(dynamic s) {
     final sm = widget.stageManager;
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-      itemCount: StageManager.maxAffinityLevel - 1,
+      itemCount: worlds.length,
       itemBuilder: (_, i) {
-        final int lv = i + 2;
-        final bool seen = sm.sceneSeen(lv);
+        final w = worlds[i];
+        final int n = i + 1;
+        final int progress = sm.getWorldProgress(w.id);
         return Padding(
-          padding: const EdgeInsets.only(bottom: 10),
-          child: Material(
-            color: seen ? NimTheme.paperLight : NimTheme.deskBoard,
-            borderRadius: BorderRadius.circular(8),
-            child: InkWell(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
+            decoration: BoxDecoration(
+              color: progress >= 5 ? NimTheme.paperLight : NimTheme.deskBoard,
               borderRadius: BorderRadius.circular(8),
-              onTap: seen ? () => _replayScene(lv, s) : null,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: seen ? NimTheme.gold : NimTheme.frameHi, width: 2),
-                ),
-                child: Row(
+              border: Border.all(color: progress >= 5 ? NimTheme.gold : NimTheme.frameHi, width: 2),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
                   children: [
-                    Icon(
-                      seen ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                      color: seen ? NimTheme.alarm : NimTheme.cream.withOpacity(0.4),
-                      size: 18,
-                    ),
-                    const SizedBox(width: 10),
+                    Text(w.emoji, style: const TextStyle(fontSize: 18)),
+                    const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        seen
-                            ? Dialogue.sceneTitle(lv, s)
-                            : s.get('storyLockedAt', ['$lv', '${StageManager.affinityThresholds[lv - 1]}']),
+                        w.name(s),
                         style: TextStyle(
                           fontFamily: NimTheme.font,
-                          fontSize: 15,
-                          color: seen ? NimTheme.ink : NimTheme.cream.withOpacity(0.7),
+                          fontSize: 16,
+                          color: progress >= 5 ? NimTheme.ink : NimTheme.cream,
                         ),
                       ),
                     ),
                     Text(
-                      s.get('affinityLevel', ['$lv']),
+                      '$progress/20',
                       style: TextStyle(
                         fontFamily: NimTheme.font,
                         fontSize: 12,
-                        color: seen ? NimTheme.inkSoft : NimTheme.cream.withOpacity(0.5),
+                        color: progress >= 5 ? NimTheme.inkSoft : NimTheme.cream.withOpacity(0.6),
                       ),
                     ),
                   ],
                 ),
-              ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    for (final t in Dialogue.thresholds) _storyChip(n, t, progress >= t, s),
+                  ],
+                ),
+              ],
             ),
           ),
         );
@@ -229,14 +230,51 @@ class _NoteScreenState extends State<NoteScreen> {
     );
   }
 
-  /// 본 장면 다시 보기 — 예린 + 대화 상자만 있는 전체 화면
-  void _replayScene(int lv, dynamic s) {
+  Widget _storyChip(int world, int threshold, bool open, dynamic s) {
+    final String label = open
+        ? '${Dialogue.kindLabel(threshold, s)} · ${Dialogue.sceneTitle(world, threshold, s)}'
+        : '${Dialogue.kindLabel(threshold, s)} · ${s.get('storyLockedAt', ['$threshold'])}';
+    return Material(
+      color: open ? NimTheme.gold : Colors.transparent,
+      borderRadius: BorderRadius.circular(6),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(6),
+        onTap: open ? () => _replayScene(world, threshold, s) : null,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(color: open ? NimTheme.gold : NimTheme.frameHi, width: 1.5),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(open ? Icons.menu_book_rounded : Icons.lock_outline_rounded,
+                  size: 14, color: open ? NimTheme.deskBottom : NimTheme.cream.withOpacity(0.5)),
+              const SizedBox(width: 5),
+              Text(
+                label,
+                style: TextStyle(
+                  fontFamily: NimTheme.font,
+                  fontSize: 12,
+                  color: open ? NimTheme.deskBottom : NimTheme.cream.withOpacity(0.6),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 본 이야기 다시 보기 — 예린 + 대화 상자만 있는 전체 화면
+  void _replayScene(int world, int threshold, dynamic s) {
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => _SceneReplay(
-          lines: Dialogue.scene(lv, s),
-          title: Dialogue.sceneTitle(lv, s),
+          lines: Dialogue.worldScene(world, threshold, s),
+          title: Dialogue.sceneTitle(world, threshold, s),
           speaker: s.get('nameMidnight'),
         ),
       ),

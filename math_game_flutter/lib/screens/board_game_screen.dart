@@ -130,7 +130,6 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
   String? _dialogueTitle;
   int? _dialogueScene;
   int? _pendingScene;
-  bool _levelUp = false;
 
   // 힌트 / 전구
   BoardMove? _hint;
@@ -443,33 +442,30 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
       }
     });
     if (playerWins) {
-      final int levelBefore = widget.stageManager.affinityLevel;
       final int nth = widget.stageManager.worldClears(widget.stageNumber);
-      widget.stageManager.clearStage(widget.stageNumber).then((_) {
-        if (!mounted) return;
-        _levelUp = widget.stageManager.affinityLevel > levelBefore;
-      });
+      widget.stageManager.clearStage(widget.stageNumber);
       AdService.instance.maybeShowInterstitialOnStageClear();
       Future.delayed(const Duration(milliseconds: 1100), () {
         if (!mounted) return;
+        final int after = widget.stageManager.worldClears(widget.stageNumber);
         setState(() {
           _dialogue = [Dialogue.afterClear(widget.stageNumber, nth, s)];
           _dialogueTitle = null;
           _dialogueScene = null;
-          _pendingScene = widget.stageManager.pendingScene;
+          _pendingScene = after == nth ? null : Dialogue.thresholdFor(after);
         });
       });
     }
   }
 
   void _onDialogueDone() {
-    final int? scene = _pendingScene;
-    if (_dialogueScene != null) widget.stageManager.markSceneSeen(_dialogueScene!);
-    if (scene != null && _dialogueScene == null) {
+    final int? t = _pendingScene;
+    if (t != null && _dialogueScene == null) {
+      final int w = Dialogue.worldOf(widget.stageNumber);
       setState(() {
-        _dialogue = Dialogue.scene(scene, s);
-        _dialogueTitle = Dialogue.sceneTitle(scene, s);
-        _dialogueScene = scene;
+        _dialogue = Dialogue.worldScene(w, t, s);
+        _dialogueTitle = Dialogue.sceneTitle(w, t, s);
+        _dialogueScene = t;
         _pendingScene = null;
       });
       return;
@@ -482,31 +478,18 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
     _showNextStageDialog();
   }
 
-  Widget _affinityLine() {
-    final sm = widget.stageManager;
-    final String next = sm.pointsToNextLevel > 0
-        ? s.get('affinityNext', ['${sm.pointsToNextLevel}'])
-        : s.get('affinityMax');
-    return Column(mainAxisSize: MainAxisSize.min, children: [
-      if (_levelUp)
-        Text(s.get('affinityUp'),
-            style: const TextStyle(
-                fontFamily: _mono,
-                fontSize: 14,
-                fontWeight: FontWeight.w900,
-                color: _P.alarm,
-                decoration: TextDecoration.none)),
-      Text(
-        '♥ ${s.get('affinityLabel')} ${s.get('affinityLevel', ['${sm.affinityLevel}'])} · $next',
-        textAlign: TextAlign.center,
-        style: const TextStyle(
-            fontFamily: _mono,
-            fontSize: 12,
-            color: _P.inkSoft,
-            fontWeight: FontWeight.w700,
-            decoration: TextDecoration.none),
-      ),
-    ]);
+  Widget _storyLine() {
+    final int left = Dialogue.untilNext(widget.stageManager.worldClears(widget.stageNumber));
+    return Text(
+      left > 0 ? s.get('storyNext', ['$left']) : s.get('storyWorldDone'),
+      textAlign: TextAlign.center,
+      style: const TextStyle(
+          fontFamily: _mono,
+          fontSize: 12,
+          color: _P.inkSoft,
+          fontWeight: FontWeight.w700,
+          decoration: TextDecoration.none),
+    );
   }
 
   void _showNextStageDialog() {
@@ -569,7 +552,7 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
               ),
               // 클리어 팝업엔 예린 그림 없음 — 뒤의 큰 예린이 보이게
               const SizedBox(height: 8),
-              _affinityLine(),
+              _storyLine(),
               const SizedBox(height: 20),
               if (hasNext) ...[
                 SizedBox(

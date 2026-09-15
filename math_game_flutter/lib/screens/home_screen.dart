@@ -201,8 +201,6 @@ class _HomeScreenState extends State<HomeScreen>
                   ),
                   const SizedBox(height: 12),
                   if (_hasProgress) _progressBadge(s),
-                  if (_hasProgress) const SizedBox(height: 8),
-                  _affinityBadge(s),
                   const SizedBox(height: 12),
                   AnimatedOpacity(
                     opacity: _showButtons ? 1.0 : 0.0,
@@ -251,58 +249,6 @@ class _HomeScreenState extends State<HomeScreen>
           ],
         );
       }),
-    );
-  }
-
-  /// 예린 호감도 — ♥ 게이지 + "다음 이야기까지 n판". 클리어할 이유가 홈에서 보인다.
-  Widget _affinityBadge(dynamic s) {
-    final sm = widget.stageManager;
-    final int lv = sm.affinityLevel;
-    final int max = StageManager.maxAffinityLevel;
-    final String next = sm.pointsToNextLevel > 0
-        ? s.get('affinityNext', ['${sm.pointsToNextLevel}'])
-        : s.get('affinityMax');
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-      decoration: BoxDecoration(
-        color: NimTheme.deskBoard,
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: NimTheme.frameHi, width: 1.5),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              for (int i = 1; i <= max; i++)
-                Icon(
-                  i <= lv ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                  size: 12,
-                  color: i <= lv ? NimTheme.alarm : NimTheme.cream.withOpacity(0.35),
-                ),
-              const SizedBox(width: 8),
-              Text(
-                s.get('affinityLevel', ['$lv']),
-                style: const TextStyle(
-                  fontFamily: NimTheme.font,
-                  fontSize: 12,
-                  color: NimTheme.gold,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 2),
-          Text(
-            next,
-            style: const TextStyle(
-              fontFamily: NimTheme.font,
-              fontSize: 12,
-              color: NimTheme.cream,
-            ),
-          ),
-        ],
-      ),
     );
   }
 
