@@ -492,6 +492,35 @@ class NimEngine {
         maxTake: c.maxTake, fibLimit: fibLimit);
   }
 
+  /// 오늘의 한 판 — 날짜 시드로 전 세계 같은 판. 플레이어가 아는 모드 안에서 낸다.
+  /// [nimWorldUnlocked] 0 = 한 줄만, 1 = 두 줄까지, 2+ = 세 줄까지. 선수 필승 보장.
+  StageConfig dailyStage(int seed, int nimWorldUnlocked) {
+    final r = Random(seed);
+    final int pick = r.nextInt(nimWorldUnlocked.clamp(0, 2) + 1);
+    GameMode mode;
+    List<int> rows;
+    int maxTake = 3;
+    if (pick == 0) {
+      mode = GameMode.singleRow;
+      maxTake = 2 + r.nextInt(3); // 2~4
+      rows = [12 + r.nextInt(17)]; // 12~28
+    } else if (pick == 1) {
+      mode = GameMode.doubleRow;
+      rows = [4 + r.nextInt(9), 4 + r.nextInt(9)];
+    } else {
+      mode = GameMode.tripleRow;
+      rows = [2 + r.nextInt(6), 3 + r.nextInt(6), 4 + r.nextInt(6)];
+    }
+    StageConfig cfg = StageConfig(stageNumber: 0, mode: mode, rows: rows, maxTake: maxTake);
+    int guard = 0;
+    while (!firstMoverWins(cfg) && guard++ < 8) {
+      final b = List<int>.from(cfg.rows);
+      b[b.length - 1] += 1;
+      cfg = StageConfig(stageNumber: 0, mode: mode, rows: b, maxTake: maxTake);
+    }
+    return cfg;
+  }
+
   /// 스테이지 설정 생성.
   ///
   /// 월드 순서 (2026-07-07): 한줄 → 두줄 → 세줄 → 빼빼로(최종)

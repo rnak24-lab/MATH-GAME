@@ -7,6 +7,8 @@ import 'package:flutter/services.dart';
 import '../game/board_games.dart';
 import '../game/stage_manager.dart';
 import '../game/tutorial_manager.dart';
+import '../l10n/dialogue.dart';
+import '../widgets/dialogue_box.dart';
 import '../l10n/app_strings.dart';
 import '../models/game_state.dart' show GamePhase;
 import '../providers/locale_provider.dart';
@@ -122,6 +124,13 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
   BoardMove? _mistakeBest;
   BoardMove? _wrong;
   bool _replaying = false;
+
+  // ── 클리어 뒤 미연시식 대화 ──
+  List<DialogueLine>? _dialogue;
+  String? _dialogueTitle;
+  int? _dialogueScene;
+  int? _pendingScene;
+  bool _levelUp = false;
 
   // 힌트 / 전구
   BoardMove? _hint;
@@ -434,12 +443,70 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
       }
     });
     if (playerWins) {
-      widget.stageManager.clearStage(widget.stageNumber);
+      final int levelBefore = widget.stageManager.affinityLevel;
+      final int nth = widget.stageManager.worldClears(widget.stageNumber);
+      widget.stageManager.clearStage(widget.stageNumber).then((_) {
+        if (!mounted) return;
+        _levelUp = widget.stageManager.affinityLevel > levelBefore;
+      });
       AdService.instance.maybeShowInterstitialOnStageClear();
-      Future.delayed(const Duration(milliseconds: 1200), () {
-        if (mounted) _showNextStageDialog();
+      Future.delayed(const Duration(milliseconds: 1100), () {
+        if (!mounted) return;
+        setState(() {
+          _dialogue = [Dialogue.afterClear(widget.stageNumber, nth, s)];
+          _dialogueTitle = null;
+          _dialogueScene = null;
+          _pendingScene = widget.stageManager.pendingScene;
+        });
       });
     }
+  }
+
+  void _onDialogueDone() {
+    final int? scene = _pendingScene;
+    if (_dialogueScene != null) widget.stageManager.markSceneSeen(_dialogueScene!);
+    if (scene != null && _dialogueScene == null) {
+      setState(() {
+        _dialogue = Dialogue.scene(scene, s);
+        _dialogueTitle = Dialogue.sceneTitle(scene, s);
+        _dialogueScene = scene;
+        _pendingScene = null;
+      });
+      return;
+    }
+    setState(() {
+      _dialogue = null;
+      _dialogueTitle = null;
+      _dialogueScene = null;
+    });
+    _showNextStageDialog();
+  }
+
+  Widget _affinityLine() {
+    final sm = widget.stageManager;
+    final String next = sm.pointsToNextLevel > 0
+        ? s.get('affinityNext', ['${sm.pointsToNextLevel}'])
+        : s.get('affinityMax');
+    return Column(mainAxisSize: MainAxisSize.min, children: [
+      if (_levelUp)
+        Text(s.get('affinityUp'),
+            style: const TextStyle(
+                fontFamily: _mono,
+                fontSize: 14,
+                fontWeight: FontWeight.w900,
+                color: _P.alarm,
+                decoration: TextDecoration.none)),
+      Text(
+        '♥ ${s.get('affinityLabel')} ${s.get('affinityLevel', ['${sm.affinityLevel}'])} · $next',
+        textAlign: TextAlign.center,
+        style: const TextStyle(
+            fontFamily: _mono,
+            fontSize: 12,
+            color: _P.inkSoft,
+            fontWeight: FontWeight.w700,
+            decoration: TextDecoration.none),
+      ),
+    ]);
   }
 
   void _showNextStageDialog() {
@@ -501,17 +568,8 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
                 ),
               ),
               // 클리어 팝업엔 예린 그림 없음 — 뒤의 큰 예린이 보이게
-              const SizedBox(height: 6),
-              Text(
-                s.get('midnightNextTime'),
-                style: const TextStyle(
-                  fontFamily: _mono,
-                  fontSize: 12,
-                  color: _P.inkSoft,
-                  fontStyle: FontStyle.italic,
-                  decoration: TextDecoration.none,
-                ),
-              ),
+              const SizedBox(height: 8),
+              _affinityLine(),
               const SizedBox(height: 20),
               if (hasNext) ...[
                 SizedBox(
@@ -701,6 +759,20 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
               child: Stack(children: [
                 _gameBoard(w),
                 if (_guideReading) _guideOverlay(),
+                if (_dialogue != null)
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    child: DialogueBox(
+                      key: ValueKey(_dialogueScene ?? -1),
+                      lines: _dialogue!,
+                      speaker: s.get('nameMidnight'),
+                      title: _dialogueTitle,
+                      onFace: (f) => setState(() => _face = f),
+                      onDone: _onDialogueDone,
+                    ),
+                  ),
               ]),
             ),
           ]),
@@ -816,7 +888,9 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
 
   /// (2026-09-15 정보 다이어트) 턴 배너 삭제 — 결과 도장만 승리/패배 순간에 찍힌다.
   Widget _turnStamp() {
-    if (_phase != GamePhase.gameOver || _replaying) return const SizedBox.shrink();
+    if (_phase != GamePhase.gameOver || _replaying || _dialogue != null) {
+      return const SizedBox.shrink();
+    }
     final Color c = _playerWon ? _P.win : _P.alarm;
     final stamp = Center(
       child: Container(
@@ -998,9 +1072,11 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
           child: Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 330),
-              child: _bubble(_poked
-                  ? s.get(_pokeKey)
-                  : (_guideSpeaking ? _guideText : _message)),
+              child: _dialogue != null
+                  ? const SizedBox.shrink()
+                  : _bubble(_poked
+                      ? s.get(_pokeKey)
+                      : (_guideSpeaking ? _guideText : _message)),
             ),
           ),
         ),

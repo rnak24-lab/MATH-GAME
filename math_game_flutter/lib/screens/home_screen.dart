@@ -5,6 +5,9 @@ import '../providers/locale_provider.dart';
 import '../utils/nim_theme.dart';
 import 'world_select_screen.dart';
 import 'settings_screen.dart';
+import 'note_screen.dart';
+import 'game_screen.dart';
+import '../game/nim_engine.dart';
 
 /// 홈 — 세피아 노와르 통일 (2026-07-02 UX 개편 #1·#2).
 /// 큰 한밤이 + 스포트라이트, 진행 배지, 이어하기(주)/처음부터(보조).
@@ -198,6 +201,8 @@ class _HomeScreenState extends State<HomeScreen>
                   ),
                   const SizedBox(height: 12),
                   if (_hasProgress) _progressBadge(s),
+                  if (_hasProgress) const SizedBox(height: 8),
+                  _affinityBadge(s),
                   const SizedBox(height: 12),
                   AnimatedOpacity(
                     opacity: _showButtons ? 1.0 : 0.0,
@@ -213,16 +218,29 @@ class _HomeScreenState extends State<HomeScreen>
                           textColor: NimTheme.deskBottom,
                           onTap: _goToWorldSelect,
                         ),
-                        if (_hasProgress) ...[
-                          const SizedBox(height: 10),
-                          _stampButton(
-                            label: s.get('selectStage'),
-                            icon: Icons.grid_view_rounded,
-                            color: NimTheme.frame,
-                            textColor: NimTheme.cream,
-                            onTap: _goToWorldSelect,
+                        const SizedBox(height: 10),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 44),
+                          child: Row(
+                            children: [
+                              Expanded(child: _smallButton(
+                                label: widget.stageManager.dailyDoneToday
+                                    ? s.get('dailyDone', ['${widget.stageManager.dailyStreak}'])
+                                    : s.get('dailyButton'),
+                                icon: widget.stageManager.dailyDoneToday
+                                    ? Icons.check_circle_rounded
+                                    : Icons.today_rounded,
+                                onTap: _startDaily,
+                              )),
+                              const SizedBox(width: 10),
+                              Expanded(child: _smallButton(
+                                label: s.get('noteButton'),
+                                icon: Icons.menu_book_rounded,
+                                onTap: _openNote,
+                              )),
+                            ],
                           ),
-                        ],
+                        ),
                       ],
                     ),
                   ),
@@ -233,6 +251,58 @@ class _HomeScreenState extends State<HomeScreen>
           ],
         );
       }),
+    );
+  }
+
+  /// 예린 호감도 — ♥ 게이지 + "다음 이야기까지 n판". 클리어할 이유가 홈에서 보인다.
+  Widget _affinityBadge(dynamic s) {
+    final sm = widget.stageManager;
+    final int lv = sm.affinityLevel;
+    final int max = StageManager.maxAffinityLevel;
+    final String next = sm.pointsToNextLevel > 0
+        ? s.get('affinityNext', ['${sm.pointsToNextLevel}'])
+        : s.get('affinityMax');
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+      decoration: BoxDecoration(
+        color: NimTheme.deskBoard,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: NimTheme.frameHi, width: 1.5),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (int i = 1; i <= max; i++)
+                Icon(
+                  i <= lv ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                  size: 12,
+                  color: i <= lv ? NimTheme.alarm : NimTheme.cream.withOpacity(0.35),
+                ),
+              const SizedBox(width: 8),
+              Text(
+                s.get('affinityLevel', ['$lv']),
+                style: const TextStyle(
+                  fontFamily: NimTheme.font,
+                  fontSize: 12,
+                  color: NimTheme.gold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 2),
+          Text(
+            next,
+            style: const TextStyle(
+              fontFamily: NimTheme.font,
+              fontSize: 12,
+              color: NimTheme.cream,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -308,6 +378,91 @@ class _HomeScreenState extends State<HomeScreen>
         ),
       ),
     );
+  }
+
+  /// 보조 버튼 — 오늘의 한 판 / 예린의 노트 (반폭)
+  Widget _smallButton({
+    required String label,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: NimTheme.frame,
+      borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.black.withOpacity(0.35), width: 2),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: NimTheme.cream, size: 18),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontFamily: NimTheme.font,
+                    fontSize: 14,
+                    color: NimTheme.cream,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 오늘의 한 판 — 날짜 시드, 아는 모드 안에서. 이미 이겼으면 안내만.
+  void _startDaily() {
+    final sm = widget.stageManager;
+    if (sm.dailyDoneToday) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(widget.localeProvider.strings.get('dailyDoneHint'),
+            style: const TextStyle(fontFamily: NimTheme.font)),
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 2),
+      ));
+      return;
+    }
+    final cfg = NimEngine().dailyStage(
+        int.parse(StageManager.todayKey()), sm.worldUnlocked);
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => GameScreen(
+          stageManager: sm,
+          stageNumber: 0,
+          localeProvider: widget.localeProvider,
+          dailyConfig: cfg,
+        ),
+      ),
+    ).then((_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  void _openNote() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => NoteScreen(
+          stageManager: widget.stageManager,
+          localeProvider: widget.localeProvider,
+        ),
+      ),
+    ).then((_) {
+      if (mounted) setState(() {});
+    });
   }
 
   void _goToWorldSelect() {

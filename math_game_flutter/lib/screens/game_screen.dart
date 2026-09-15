@@ -13,6 +13,8 @@ import '../providers/locale_provider.dart';
 import '../l10n/app_strings.dart';
 import '../services/ad_service.dart';
 import '../game/tutorial_manager.dart';
+import '../l10n/dialogue.dart';
+import '../widgets/dialogue_box.dart';
 import 'world_select_screen.dart' show worldForStage;
 import 'board_game_screen.dart' show stageScreenFor;
 import '../game/board_games.dart' show kTotalStages;
@@ -70,12 +72,19 @@ class GameScreen extends StatefulWidget {
   final int stageNumber;
   final LocaleProvider localeProvider;
 
+  /// 오늘의 한 판이면 그 판 설정 (stageNumber 는 0). 클리어는 진행도가 아니라
+  /// 호감도(dailyWins)·연속 출석으로 기록된다.
+  final StageConfig? dailyConfig;
+
   const GameScreen({
     super.key,
     required this.stageManager,
     required this.stageNumber,
     required this.localeProvider,
+    this.dailyConfig,
   });
+
+  bool get isDaily => dailyConfig != null;
 
   @override
   State<GameScreen> createState() => _GameScreenState();
@@ -202,13 +211,19 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   int _mistakeFib = 0;
   bool _replaying = false;
 
+  // ── 클리어 뒤 미연시식 대화 (한마디 + 호감도 장면) ──
+  List<DialogueLine>? _dialogue;
+  String? _dialogueTitle;
+  int? _dialogueScene; // 장면 레벨 (본 것으로 기록용)
+  bool _levelUp = false;
+
   // 연속 패배 추적 (2회 연속 패배 시 자동 힌트)
   int _consecutiveDefeats = 0;
 
   @override
   void initState() {
     super.initState();
-    _config = _engine.generateStage(widget.stageNumber);
+    _config = widget.dailyConfig ?? _engine.generateStage(widget.stageNumber);
     _rows = List.from(_config.rows);
     _sayGreeting();
     // 피보나치: 첫 수는 "전부 빼기 금지" → 최대 n-1
@@ -458,18 +473,69 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     });
 
     if (playerWins) {
-      widget.stageManager.clearStage(widget.stageNumber);
+      final int levelBefore = widget.stageManager.affinityLevel;
+      final int nth = widget.stageManager.worldClears(widget.stageNumber);
+      if (widget.isDaily) {
+        widget.stageManager.recordDailyWin().then((_) {
+          if (!mounted) return;
+          _levelUp = widget.stageManager.affinityLevel > levelBefore;
+        });
+      } else {
+        widget.stageManager.clearStage(widget.stageNumber).then((_) {
+          if (!mounted) return;
+          _levelUp = widget.stageManager.affinityLevel > levelBefore;
+        });
+      }
       // 전면 광고: 3 스테이지 클리어마다 1회 (AdService 내부 카운터)
       AdService.instance.maybeShowInterstitialOnStageClear();
-      Future.delayed(const Duration(milliseconds: 1200), () {
-        if (mounted) _showNextStageDialog();
+      Future.delayed(const Duration(milliseconds: 1100), () {
+        if (!mounted) return;
+        // 클리어 한마디 → (호감도 장면) → 다음 스테이지 팝업
+        final lines = <DialogueLine>[
+          widget.isDaily
+              ? DialogueLine(MidnightFace.happy2,
+                  s.get('daily_win_${(widget.stageManager.dailyStreak % 3) + 1}'))
+              : Dialogue.afterClear(widget.stageNumber, nth, s)
+        ];
+        final int? scene = widget.stageManager.pendingScene;
+        setState(() {
+          _dialogue = lines;
+          _dialogueTitle = null;
+          _dialogueScene = null;
+          _pendingScene = scene;
+        });
       });
     }
   }
 
+  int? _pendingScene;
+
+  /// 대화 상자가 끝났을 때: 장면이 남았으면 장면 → 아니면 팝업.
+  void _onDialogueDone() {
+    final int? scene = _pendingScene;
+    if (_dialogueScene != null) {
+      widget.stageManager.markSceneSeen(_dialogueScene!);
+    }
+    if (scene != null && _dialogueScene == null) {
+      setState(() {
+        _dialogue = Dialogue.scene(scene, s);
+        _dialogueTitle = Dialogue.sceneTitle(scene, s);
+        _dialogueScene = scene;
+        _pendingScene = null;
+      });
+      return;
+    }
+    setState(() {
+      _dialogue = null;
+      _dialogueTitle = null;
+      _dialogueScene = null;
+    });
+    _showNextStageDialog();
+  }
+
   void _showNextStageDialog() {
     // 7월드 140 + 버전2 보드 게임 5월드 100 = 240 (141부터는 보드 게임 화면으로 이어짐)
-    bool hasNext = widget.stageNumber < kTotalStages;
+    bool hasNext = !widget.isDaily && widget.stageNumber < kTotalStages;
 
     showGeneralDialog(
       context: context,
@@ -523,7 +589,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  s.get('stageClearDesc', ['${widget.stageNumber}']),
+                  widget.isDaily
+                      ? s.get('dailyClear', ['${widget.stageManager.dailyStreak}'])
+                      : s.get('stageClearDesc', ['${widget.stageNumber}']),
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     fontFamily: _mono,
@@ -534,17 +602,8 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                   ),
                 ),
                 // (2026-09-15 대표님) 클리어 팝업엔 예린 그림 없음 — 뒤의 큰 예린이 보이게.
-                const SizedBox(height: 6),
-                Text(
-                  s.get('midnightNextTime'),
-                  style: const TextStyle(
-                    fontFamily: _mono,
-                    fontSize: 12,
-                    color: _Pal.inkSoft,
-                    fontStyle: FontStyle.italic,
-                    decoration: TextDecoration.none,
-                  ),
-                ),
+                const SizedBox(height: 8),
+                _affinityLine(),
                 const SizedBox(height: 20),
                 if (hasNext) ...[
                   SizedBox(
@@ -592,6 +651,41 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
           ),
         );
       },
+    );
+  }
+
+  /// 팝업 안 호감도 줄 — "♥ 예린 호감도 Lv.3 · 다음 이야기까지 4판"
+  Widget _affinityLine() {
+    final sm = widget.stageManager;
+    final String next = sm.pointsToNextLevel > 0
+        ? s.get('affinityNext', ['${sm.pointsToNextLevel}'])
+        : s.get('affinityMax');
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (_levelUp)
+          Text(
+            s.get('affinityUp'),
+            style: const TextStyle(
+              fontFamily: _mono,
+              fontSize: 14,
+              fontWeight: FontWeight.w900,
+              color: _Pal.alarm,
+              decoration: TextDecoration.none,
+            ),
+          ),
+        Text(
+          '♥ ${s.get('affinityLabel')} ${s.get('affinityLevel', ['${sm.affinityLevel}'])} · $next',
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            fontFamily: _mono,
+            fontSize: 12,
+            color: _Pal.inkSoft,
+            fontWeight: FontWeight.w700,
+            decoration: TextDecoration.none,
+          ),
+        ),
+      ],
     );
   }
 
@@ -1076,6 +1170,20 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                   children: [
                     _buildGameBoard(),
                     if (_guideReading) _buildGuideOverlay(),
+                    if (_dialogue != null)
+                      Positioned(
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        child: DialogueBox(
+                          key: ValueKey(_dialogueScene ?? -1),
+                          lines: _dialogue!,
+                          speaker: s.get('nameMidnight'),
+                          title: _dialogueTitle,
+                          onFace: (f) => setState(() => _midnightFace = f),
+                          onDone: _onDialogueDone,
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -1103,7 +1211,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
             onPressed: () => Navigator.pop(context),
           ),
           Text(
-            s.get('stageLabel', ['${widget.stageNumber}']),
+            widget.isDaily
+                ? s.get('dailyTitle')
+                : s.get('stageLabel', ['${widget.stageNumber}']),
             style: const TextStyle(
               fontFamily: _mono,
               color: _Pal.cream,
@@ -1547,9 +1657,11 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
             child: Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 330),
-                child: _tauntBubble(_poked
-                    ? s.get(_pokeKey)
-                    : (_guideSpeaking ? _guideText : _midnightMessage)),
+                child: _dialogue != null
+                    ? const SizedBox.shrink()
+                    : _tauntBubble(_poked
+                        ? s.get(_pokeKey)
+                        : (_guideSpeaking ? _guideText : _midnightMessage)),
               ),
             ),
           ),
@@ -1673,6 +1785,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                             stageManager: widget.stageManager,
                             stageNumber: widget.stageNumber,
                             localeProvider: widget.localeProvider,
+                            dailyConfig: widget.dailyConfig,
                           ),
                         ),
                       );
@@ -1704,7 +1817,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   /// (2026-09-15 정보 다이어트) 턴 배너·판 요약 삭제. 내 턴은 말풍선과 책상 테두리가,
   /// 남은 개수는 줄 옆 숫자가 말한다. 여기엔 **승리/패배 도장만** 결과 순간에 찍힌다.
   Widget _turnStamp() {
-    if (_phase != GamePhase.gameOver || _replaying) return const SizedBox.shrink();
+    if (_phase != GamePhase.gameOver || _replaying || _dialogue != null) {
+      return const SizedBox.shrink();
+    }
     final Color c = _playerWon ? _Pal.win : _Pal.alarm;
     final stamp = Center(
       child: Container(
