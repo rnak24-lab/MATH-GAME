@@ -3,24 +3,27 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 /// 광고 ID 관리 — 2026-07-24 실제 AdMob ID 발급 완료 (앱: 방과후 님게임).
 /// 디버그 빌드에서 테스트하려면 `useTestIds = true` 로 잠깐 바꿀 것.
+///
+/// (2026-09-15 대표님) 광고 정책:
+///  - 배너: **폐지**. 위젯·유닛 사용 코드 삭제. AdMob 콘솔의 banner_main 유닛만 남아 있음.
+///  - 전면(스테이지 클리어): 테스터 기간 동안 OFF → [AdService.kInterstitialEnabled]
+///  - 보상형(힌트): 유지
 class AdIds {
   static const bool useTestIds = false;
 
   // Google 공식 테스트 ID (Android)
-  static const String _testBannerId = 'ca-app-pub-3940256099942544/6300978111';
   static const String _testInterstitialId =
       'ca-app-pub-3940256099942544/1033173712';
   static const String _testRewardedId =
       'ca-app-pub-3940256099942544/5224354917';
 
-  // 실제 AdMob ID (2026-07-24 발급 — banner_main/interstitial_stageclear/rewarded_hint)
-  static const String _realBannerId = 'ca-app-pub-2700643196600577/8295264277';
+  // 실제 AdMob ID (2026-07-24 발급 — interstitial_stageclear / rewarded_hint)
+  // banner_main(ca-app-pub-2700643196600577/8295264277) 은 2026-09-15 배너 폐지로 미사용.
   static const String _realInterstitialId =
       'ca-app-pub-2700643196600577/1610702355';
   static const String _realRewardedId =
       'ca-app-pub-2700643196600577/8483232460';
 
-  static String get banner => useTestIds ? _testBannerId : _realBannerId;
   static String get interstitial =>
       useTestIds ? _testInterstitialId : _realInterstitialId;
   static String get rewarded => useTestIds ? _testRewardedId : _realRewardedId;
@@ -29,11 +32,15 @@ class AdIds {
 /// 전면 광고 빈도 제한 + 로딩/표시 추상화.
 /// 사용:
 ///   await AdService.instance.init();
-///   AdService.instance.maybeShowInterstitial();
-///   AdService.instance.createBannerAd(onLoaded: ...);
+///   AdService.instance.maybeShowInterstitialOnStageClear();
+///   AdService.instance.showRewardedAd(onReward: ...);
 class AdService {
   AdService._();
   static final AdService instance = AdService._();
+
+  /// 전면 광고 스위치. **테스터 기간(2026-09-15~)에는 false** — 보상형(힌트)만 나간다.
+  /// 정식 출시 때 true 로 되돌린다. false 면 로드조차 하지 않는다.
+  static const bool kInterstitialEnabled = false;
 
   bool _initialized = false;
   InterstitialAd? _interstitialAd;
@@ -48,31 +55,11 @@ class AdService {
     try {
       await MobileAds.instance.initialize();
       _initialized = true;
-      _loadInterstitial();
+      if (kInterstitialEnabled) _loadInterstitial();
       _loadRewarded();
     } catch (e) {
       debugPrint('[AdService] init 실패: $e');
     }
-  }
-
-  /// 배너 광고 위젯 생성용 BannerAd 반환. 호출자가 dispose 책임.
-  BannerAd createBannerAd({
-    required VoidCallback onLoaded,
-    VoidCallback? onFailed,
-  }) {
-    return BannerAd(
-      adUnitId: AdIds.banner,
-      size: AdSize.banner,
-      request: const AdRequest(),
-      listener: BannerAdListener(
-        onAdLoaded: (_) => onLoaded(),
-        onAdFailedToLoad: (ad, err) {
-          debugPrint('[AdService] banner fail: $err');
-          ad.dispose();
-          onFailed?.call();
-        },
-      ),
-    );
   }
 
   void _loadInterstitial() {
@@ -110,6 +97,7 @@ class AdService {
   /// 스테이지 클리어 카운트를 증가시키고, [interstitialEvery]의 배수일 때만 전면 광고 표시.
   /// 반환값은 실제로 광고를 보여주려 시도했는지 여부.
   bool maybeShowInterstitialOnStageClear() {
+    if (!kInterstitialEnabled) return false; // 테스터 기간: 전면 광고 없음
     _stageClearCount++;
     if (_stageClearCount % interstitialEvery != 0) return false;
     return _showInterstitial();
@@ -126,7 +114,7 @@ class AdService {
     return true;
   }
 
-  // ── 리워드 광고 (힌트 보기용) ──
+  // ── 리워드 광고 (힌트 보기용) — 테스터 기간에도 유지 ──
   RewardedAd? _rewardedAd;
   bool _loadingRewarded = false;
 

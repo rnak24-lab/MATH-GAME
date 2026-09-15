@@ -9,7 +9,6 @@ import '../game/stage_manager.dart';
 import '../game/nim_engine.dart';
 import '../models/game_state.dart';
 import '../widgets/midnight_character.dart';
-import '../widgets/banner_ad_widget.dart';
 import '../providers/locale_provider.dart';
 import '../l10n/app_strings.dart';
 import '../services/ad_service.dart';
@@ -1055,8 +1054,6 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                 ),
               ),
               _recordLine(),
-              // 하단 상시 배너 광고
-              const Center(child: BannerAdWidget()),
             ],
           ),
         ),

@@ -13,7 +13,6 @@ import '../providers/locale_provider.dart';
 import '../services/ad_service.dart';
 import '../services/app_settings.dart';
 import '../services/sfx_service.dart';
-import '../widgets/banner_ad_widget.dart';
 import '../widgets/midnight_character.dart';
 import 'game_screen.dart' show GameScreen;
 import 'settings_screen.dart';
@@ -676,7 +675,6 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
               ]),
             ),
             _recordLine(),
-            const Center(child: BannerAdWidget()),
           ]),
         ),
       ),
