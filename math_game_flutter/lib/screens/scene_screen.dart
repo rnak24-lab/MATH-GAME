@@ -55,6 +55,7 @@ class _SceneScreenState extends State<SceneScreen> {
     final lines = Dialogue.worldScene(widget.world, widget.scene, s);
     final title = Dialogue.sceneTitle(widget.world, widget.scene, s);
     final no = Dialogue.sceneNo(widget.world, widget.scene);
+    final double h = MediaQuery.of(context).size.height;
 
     return Scaffold(
       backgroundColor: NimTheme.deskBottom,
@@ -79,26 +80,26 @@ class _SceneScreenState extends State<SceneScreen> {
                 ),
               ),
             ),
-            // 예린 — 크게. 내가 말할 땐 어두워진다.
-            LayoutBuilder(builder: (context, cons) {
-              final double h = cons.maxHeight;
-              return Positioned(
-                top: h * 0.08,
-                left: 0,
-                right: 0,
-                child: AnimatedOpacity(
-                  opacity: _meSpeaking ? 0.55 : 1.0,
-                  duration: const Duration(milliseconds: 220),
-                  child: Center(
-                    child: MidnightCharacter(
-                      face: _face,
-                      size: (h * 0.78).clamp(420.0, 760.0),
-                      animate: false,
-                    ),
+            // 예린 — 크게. 내가 말할 땐 어두워진다. (Positioned 는 Stack 바로 아래여야 한다)
+            Positioned(
+              top: h * 0.08,
+              left: 0,
+              right: 0,
+              // 투명도 대신 어둡게 (투명하면 배경이 비쳐 보여 어색하다)
+              child: ColorFiltered(
+                colorFilter: ColorFilter.mode(
+                  Colors.black.withOpacity(_meSpeaking ? 0.38 : 0.0),
+                  BlendMode.srcATop,
+                ),
+                child: Center(
+                  child: MidnightCharacter(
+                    face: _face,
+                    size: (h * 0.78).clamp(420.0, 760.0),
+                    animate: false,
                   ),
                 ),
-              );
-            }),
+              ),
+            ),
             // 아래 어두운 그라데이션 (대화 상자 가독성)
             Positioned(
               left: 0,

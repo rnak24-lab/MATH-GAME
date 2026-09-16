@@ -4,7 +4,6 @@ import '../game/stage_manager.dart';
 import '../l10n/dialogue.dart';
 import '../providers/locale_provider.dart';
 import '../utils/nim_theme.dart';
-import '../widgets/midnight_character.dart';
 import 'scene_screen.dart';
 import 'world_select_screen.dart' show worlds;
 
@@ -174,11 +173,13 @@ class _SceneCard extends StatelessWidget {
           child: Stack(
             fit: StackFit.expand,
             children: [
+              // 썸네일은 작게 디코딩 — 48장이 원본 크기로 풀리면 ANR 난다
               if (open)
                 Image.asset(
                   'assets/backgrounds/world$worldId.png',
                   fit: BoxFit.cover,
                   alignment: Alignment.topCenter,
+                  cacheWidth: 360,
                   errorBuilder: (_, __, ___) => Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
@@ -190,15 +191,18 @@ class _SceneCard extends StatelessWidget {
                   ),
                 ),
               if (open)
-                const Positioned(
+                Positioned(
                   left: 0,
                   right: 0,
                   top: 10,
                   child: Center(
-                    child: MidnightCharacter(
-                      face: MidnightFace.happy1,
-                      size: 150,
-                      animate: false,
+                    child: Image.asset(
+                      'assets/yerin/happy.png',
+                      height: 150,
+                      cacheHeight: 300,
+                      fit: BoxFit.fitHeight,
+                      alignment: Alignment.topCenter,
+                      errorBuilder: (_, __, ___) => const SizedBox.shrink(),
                     ),
                   ),
                 ),
