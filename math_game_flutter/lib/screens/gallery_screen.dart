@@ -100,7 +100,9 @@ class GalleryScreen extends StatelessWidget {
                             world: n,
                             worldId: w.id,
                             scene: k,
-                            open: progress >= Dialogue.thresholdOf(k),
+                            // 검수 빌드(kReviewUnlockTestWorlds)에선 전부 열림 — 출시본은 플래그 false
+                            open: progress >= Dialogue.thresholdOf(k) ||
+                                StageManager.kReviewUnlockTestWorlds,
                             title: Dialogue.sceneTitle(n, k, s),
                             lockedText: s.get('storyLockedAt', ['${Dialogue.thresholdOf(k)}']),
                             gradient: w.bgGradient,
