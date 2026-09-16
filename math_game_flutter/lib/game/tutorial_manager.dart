@@ -155,19 +155,4 @@ class TutorialManager {
     ];
   }
 
-  /// 2회 연속 패배 시 자동 힌트 텍스트. [multiple] = 한 줄 님게임의 (maxTake+1).
-  static String autoHintOnConsecutiveLoss(int stageNumber, AppStrings s,
-      {int multiple = 0}) {
-    switch (worldOf(stageNumber)) {
-      case 1:
-        return s.get('tutHintW1', ['$multiple']);
-      case 2:
-        return s.get('tutHintW2');
-      case 3:
-        return s.get('tutHintW3');
-      case 4:
-        return s.get('tutHintW5'); // 막대과자 힌트
-    }
-    return s.get('tutHintGeneric');
-  }
 }

@@ -6,6 +6,7 @@ import '../utils/nim_theme.dart';
 import 'world_select_screen.dart';
 import 'settings_screen.dart';
 import 'note_screen.dart';
+import 'gallery_screen.dart';
 import 'game_screen.dart';
 import '../game/nim_engine.dart';
 
@@ -230,7 +231,13 @@ class _HomeScreenState extends State<HomeScreen>
                                     : Icons.today_rounded,
                                 onTap: _startDaily,
                               )),
-                              const SizedBox(width: 10),
+                              const SizedBox(width: 8),
+                              Expanded(child: _smallButton(
+                                label: s.get('galleryButton'),
+                                icon: Icons.auto_stories_rounded,
+                                onTap: _openGallery,
+                              )),
+                              const SizedBox(width: 8),
                               Expanded(child: _smallButton(
                                 label: s.get('noteButton'),
                                 icon: Icons.menu_book_rounded,
@@ -339,7 +346,7 @@ class _HomeScreenState extends State<HomeScreen>
         onTap: onTap,
         borderRadius: BorderRadius.circular(8),
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 8),
+          padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 4),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(8),
             border: Border.all(color: Colors.black.withOpacity(0.35), width: 2),
@@ -347,8 +354,8 @@ class _HomeScreenState extends State<HomeScreen>
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, color: NimTheme.cream, size: 18),
-              const SizedBox(width: 6),
+              Icon(icon, color: NimTheme.cream, size: 16),
+              const SizedBox(width: 4),
               Flexible(
                 child: Text(
                   label,
@@ -356,7 +363,7 @@ class _HomeScreenState extends State<HomeScreen>
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     fontFamily: NimTheme.font,
-                    fontSize: 14,
+                    fontSize: 13,
                     color: NimTheme.cream,
                   ),
                 ),
@@ -390,6 +397,20 @@ class _HomeScreenState extends State<HomeScreen>
           stageNumber: 0,
           localeProvider: widget.localeProvider,
           dailyConfig: cfg,
+        ),
+      ),
+    ).then((_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  void _openGallery() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => GalleryScreen(
+          stageManager: widget.stageManager,
+          localeProvider: widget.localeProvider,
         ),
       ),
     ).then((_) {

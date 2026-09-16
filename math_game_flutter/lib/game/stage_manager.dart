@@ -13,6 +13,7 @@ class StageManager extends ChangeNotifier {
   static const String _dailyDoneKey = 'daily_done_date';
   static const String _dailyStreakKey = 'daily_streak';
   static const String _dailyLastKey = 'daily_last_date';
+  static const String _ruleIntroKey = 'rule_intro_seen';
 
   /// 클리어한 최고 스테이지 (홈 화면 "이어하기" 표시용).
   int maxStage = 0;
@@ -35,6 +36,15 @@ class StageManager extends ChangeNotifier {
   String _dailyLastDate = '';
 
   int get clearCount => _cleared.length;
+
+  /// 규칙 설명 화면을 본 수업(1~12). 수업 첫 판에 들어갈 때 한 번 뜬다.
+  final Set<int> _ruleIntroSeen = <int>{};
+  bool ruleIntroSeen(int world) => _ruleIntroSeen.contains(world);
+  Future<void> markRuleIntroSeen(int world) async {
+    if (!_ruleIntroSeen.add(world)) return;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_ruleIntroKey, _ruleIntroSeen.map((e) => '$e').toList());
+  }
 
   /// 이 월드에서 지금까지 클리어한 판 수 (클리어 한마디 로테이션용)
   int worldClears(int stageNumber) => getWorldProgress((stageNumber - 1) ~/ 20);
@@ -75,6 +85,9 @@ class StageManager extends ChangeNotifier {
     dailyDoneDate = prefs.getString(_dailyDoneKey) ?? '';
     dailyStreak = prefs.getInt(_dailyStreakKey) ?? 0;
     _dailyLastDate = prefs.getString(_dailyLastKey) ?? '';
+    _ruleIntroSeen
+      ..clear()
+      ..addAll((prefs.getStringList(_ruleIntroKey) ?? const []).map(int.parse));
 
     _cleared.clear();
     final saved = prefs.getStringList(_clearedKey);
@@ -173,6 +186,8 @@ class StageManager extends ChangeNotifier {
     await prefs.remove(_dailyDoneKey);
     await prefs.remove(_dailyStreakKey);
     await prefs.remove(_dailyLastKey);
+    _ruleIntroSeen.clear();
+    await prefs.remove(_ruleIntroKey);
     notifyListeners();
   }
 

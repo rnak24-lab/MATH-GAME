@@ -9,6 +9,8 @@ import '../game/stage_manager.dart';
 import '../game/tutorial_manager.dart';
 import '../l10n/dialogue.dart';
 import '../widgets/dialogue_box.dart';
+import 'scene_screen.dart';
+import 'rule_intro_screen.dart';
 import '../l10n/app_strings.dart';
 import '../models/game_state.dart' show GamePhase;
 import '../providers/locale_provider.dart';
@@ -99,7 +101,7 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
   MidnightFace _face = MidnightFace.neutral;
   String? _msgKey;
   List<String> _msgArgs = const [];
-  bool _msgAutoHint = false;
+  final math.Random _rng = math.Random();
   int _lossTurns = 0;
   int _defeats = 0;
 
@@ -140,19 +142,11 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
 
   double get _blunder => blunderRateForStage(widget.stageNumber);
 
-  String get _message {
-    if (_msgKey == null) return '';
-    String m = s.get(_msgKey!, _msgArgs);
-    if (_msgAutoHint) {
-      m = '$m\n\n${TutorialManager.autoHintOnConsecutiveLoss(widget.stageNumber, s)}';
-    }
-    return m;
-  }
+  String get _message => _msgKey == null ? '' : s.get(_msgKey!, _msgArgs);
 
-  void _say(String key, [List<String> args = const [], bool autoHint = false]) {
+  void _say(String key, [List<String> args = const []]) {
     _msgKey = key;
     _msgArgs = args;
-    _msgAutoHint = autoHint;
   }
 
   void _haptic([bool strong = false]) {
@@ -164,19 +158,30 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
   void initState() {
     super.initState();
     _game = BoardGame.forStage(widget.stageNumber);
-    const keys = ['greetReady', 'greetWin', 'greetConfident', 'greetLetsGo'];
-    final k = keys[widget.stageNumber % keys.length];
-    if (k == 'greetReady') {
-      _say(k, ['${widget.stageNumber}']);
-    } else {
-      _say(k);
-    }
+    _say(s.pickKey('greet', _rng));
     _guide = TutorialManager.boardGuide(widget.stageNumber, s);
     // (2026-09-15 대표님) 선공 선택 없음 — 항상 플레이어가 먼저. 심은 예린이
     // 한 줄을 미리 그어 둔 판(BoardGame.forStage)이라 그 사실을 첫 대사로 알린다.
     _game.toMove = 0;
     if (kind == BoardKind.sim) _say('simOpening');
     _losing = _game.toMoveIsLosing();
+    _maybeShowRuleIntro();
+  }
+
+  /// 수업 첫 판: 규칙 설명 화면을 먼저 (한 번만). 다시 보기는 규칙 노트에서.
+  void _maybeShowRuleIntro() {
+    if (!TutorialManager.isTutorialStage(widget.stageNumber)) return;
+    final int w = TutorialManager.worldOf(widget.stageNumber);
+    if (widget.stageManager.ruleIntroSeen(w)) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => RuleIntroScreen(world: w, localeProvider: widget.localeProvider),
+        ),
+      ).then((_) => widget.stageManager.markRuleIntroSeen(w));
+    });
   }
 
   @override
@@ -377,7 +382,7 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
     if (_game.toMove == 1) {
       // 점과 상자: 예린이 상자를 먹어 한 번 더
       setState(() {
-        _say('midnightWinEarly3');
+        _say(s.pickKey('winEarly', _rng));
         _face = MidnightFace.happy1;
       });
       Future.delayed(const Duration(milliseconds: 650), () {
@@ -407,12 +412,10 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
         _lossTurns++;
         if (_lossTurns >= 2) {
           _face = MidnightFace.confident;
-          const keys = ['midnightWinLate1', 'midnightWinLate2', 'midnightWinLate3'];
-          _say(keys[_turnCount % keys.length]);
+          _say(s.pickKey('winLate', _rng));
         } else {
           _face = MidnightFace.happy1;
-          const keys = ['midnightWinEarly1', 'midnightWinEarly2', 'midnightWinEarly3'];
-          _say(keys[_turnCount % keys.length]);
+          _say(s.pickKey('winEarly', _rng));
         }
       } else {
         _lossTurns = 0;
@@ -431,50 +434,54 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
       _selPoint = -1;
       if (playerWins) {
         _face = MidnightFace.worried2;
-        _say('midnightLost');
+        _say(s.pickKey('lost', _rng));
         _defeats = 0;
       } else {
         _face = MidnightFace.happy2;
         _defeats++;
-        final bool autoHint =
-            _defeats >= 2 && TutorialManager.isTutorialStage(widget.stageNumber);
-        _say('midnightWon', const [], autoHint);
+        _say(s.pickKey('won', _rng));
       }
     });
     if (playerWins) {
-      final int nth = widget.stageManager.worldClears(widget.stageNumber);
+      final int before = widget.stageManager.worldClears(widget.stageNumber);
       widget.stageManager.clearStage(widget.stageNumber);
       AdService.instance.maybeShowInterstitialOnStageClear();
       Future.delayed(const Duration(milliseconds: 1100), () {
         if (!mounted) return;
         final int after = widget.stageManager.worldClears(widget.stageNumber);
         setState(() {
-          _dialogue = [Dialogue.afterClear(widget.stageNumber, nth, s)];
+          _dialogue = [Dialogue.afterClear(widget.stageNumber, s, _rng)];
           _dialogueTitle = null;
           _dialogueScene = null;
-          _pendingScene = after == nth ? null : Dialogue.thresholdFor(after);
+          _pendingScene = after == before ? null : Dialogue.sceneFor(after);
         });
       });
     }
   }
 
   void _onDialogueDone() {
-    final int? t = _pendingScene;
-    if (t != null && _dialogueScene == null) {
-      final int w = Dialogue.worldOf(widget.stageNumber);
-      setState(() {
-        _dialogue = Dialogue.worldScene(w, t, s);
-        _dialogueTitle = Dialogue.sceneTitle(w, t, s);
-        _dialogueScene = t;
-        _pendingScene = null;
-      });
-      return;
-    }
+    final int? k = _pendingScene;
     setState(() {
       _dialogue = null;
       _dialogueTitle = null;
       _dialogueScene = null;
+      _pendingScene = null;
     });
+    if (k != null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => SceneScreen(
+            world: Dialogue.worldOf(widget.stageNumber),
+            scene: k,
+            localeProvider: widget.localeProvider,
+          ),
+        ),
+      ).then((_) {
+        if (mounted) _showNextStageDialog();
+      });
+      return;
+    }
     _showNextStageDialog();
   }
 
@@ -748,11 +755,11 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
                     right: 0,
                     bottom: 0,
                     child: DialogueBox(
-                      key: ValueKey(_dialogueScene ?? -1),
                       lines: _dialogue!,
-                      speaker: s.get('nameMidnight'),
+                      yerinName: s.get('nameMidnight'),
+                      meName: s.get('nameYou'),
                       title: _dialogueTitle,
-                      onFace: (f) => setState(() => _face = f),
+                      onLine: (l) => setState(() => _face = l.face),
                       onDone: _onDialogueDone,
                     ),
                   ),

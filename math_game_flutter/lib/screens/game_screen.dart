@@ -15,6 +15,8 @@ import '../services/ad_service.dart';
 import '../game/tutorial_manager.dart';
 import '../l10n/dialogue.dart';
 import '../widgets/dialogue_box.dart';
+import 'scene_screen.dart';
+import 'rule_intro_screen.dart';
 import 'world_select_screen.dart' show worldForStage;
 import 'board_game_screen.dart' show stageScreenFor;
 import '../game/board_games.dart' show kTotalStages;
@@ -131,23 +133,13 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   // → 게임 중 언어를 바꿔도 말풍선이 즉시 새 언어로 표시된다.
   String? _msgKey;
   List<String> _msgArgs = const [];
-  bool _msgAppendAutoHint = false; // 패배 시 자동 힌트 덧붙임 여부
-
-  String get _midnightMessage {
-    if (_msgKey == null) return '';
-    String m = s.get(_msgKey!, _msgArgs);
-    if (_msgAppendAutoHint) {
-      m = '$m\n\n${TutorialManager.autoHintOnConsecutiveLoss(widget.stageNumber, s, multiple: _config.maxTake + 1)}';
-    }
-    return m;
-  }
+  String get _midnightMessage =>
+      _msgKey == null ? '' : s.get(_msgKey!, _msgArgs);
 
   /// 말풍선 대사 설정 (setState 밖에서도 호출 가능 — 호출부가 setState 책임)
-  void _say(String key,
-      [List<String> args = const [], bool appendAutoHint = false]) {
+  void _say(String key, [List<String> args = const []]) {
     _msgKey = key;
     _msgArgs = args;
-    _msgAppendAutoHint = appendAutoHint;
   }
 
   bool _isAiAnimating = false;
@@ -239,6 +231,23 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     _currentTurn = TurnOwner.player;
     _losing = _calculateMidnightWinsState();
     _applyGuideHighlight();
+    if (!widget.isDaily) _maybeShowRuleIntro();
+  }
+
+  /// 수업 첫 판: 규칙 설명 화면을 먼저 (한 번만). 다시 보기는 규칙 노트에서.
+  void _maybeShowRuleIntro() {
+    if (!TutorialManager.isTutorialStage(widget.stageNumber)) return;
+    final int w = TutorialManager.worldOf(widget.stageNumber);
+    if (widget.stageManager.ruleIntroSeen(w)) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => RuleIntroScreen(world: w, localeProvider: widget.localeProvider),
+        ),
+      ).then((_) => widget.stageManager.markRuleIntroSeen(w));
+    });
   }
 
   @override
@@ -360,18 +369,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       _say('dailyGreet');
       return;
     }
-    List<String> greetingKeys = [
-      'greetReady',
-      'greetWin',
-      'greetConfident',
-      'greetLetsGo',
-    ];
-    String key = greetingKeys[widget.stageNumber % greetingKeys.length];
-    if (key == 'greetReady') {
-      _say(key, ['${widget.stageNumber}']);
-    } else {
-      _say(key);
-    }
+    _say(s.pickKey('greet', _rng));
   }
 
   String _getModeTitle() {
@@ -415,20 +413,10 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         _consecutiveLossTurns++;
         if (_consecutiveLossTurns >= 2) {
           _midnightFace = MidnightFace.confident;
-          List<String> keys = [
-            'midnightWinLate1',
-            'midnightWinLate2',
-            'midnightWinLate3'
-          ];
-          _say(keys[_turnCount % keys.length]);
+          _say(s.pickKey('winLate', _rng));
         } else {
           _midnightFace = MidnightFace.happy1;
-          List<String> keys = [
-            'midnightWinEarly1',
-            'midnightWinEarly2',
-            'midnightWinEarly3'
-          ];
-          _say(keys[_turnCount % keys.length]);
+          _say(s.pickKey('winEarly', _rng));
         }
       } else {
         _consecutiveLossTurns = 0;
@@ -462,21 +450,17 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       _playerWon = playerWins;
       if (playerWins) {
         _midnightFace = MidnightFace.worried2;
-        _say('midnightLost');
+        _say(s.pickKey('lost', _rng));
         _consecutiveDefeats = 0;
       } else {
         _midnightFace = MidnightFace.happy2;
         _consecutiveDefeats++;
-        // 자동 힌트: 스테이지 1은 첫 패배 즉시, 그 외 튜토리얼 스테이지는 2연패 시
-        final int hintAfter = widget.stageNumber == 1 ? 1 : 2;
-        final bool autoHint = _consecutiveDefeats >= hintAfter &&
-            TutorialManager.offsetInWorld(widget.stageNumber) <= 2;
-        _say('midnightWon', const [], autoHint);
+        _say(s.pickKey('won', _rng));
       }
     });
 
     if (playerWins) {
-      final int nth = widget.stageManager.worldClears(widget.stageNumber);
+      final int before = widget.stageManager.worldClears(widget.stageNumber);
       if (widget.isDaily) {
         widget.stageManager.recordDailyWin();
       } else {
@@ -491,7 +475,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
           widget.isDaily
               ? DialogueLine(MidnightFace.happy2,
                   s.get('daily_win_${(widget.stageManager.dailyStreak % 3) + 1}'))
-              : Dialogue.afterClear(widget.stageNumber, nth, s)
+              : Dialogue.afterClear(widget.stageNumber, s, _rng)
         ];
         // clearStage 뒤의 진행도. 이미 깬 판을 다시 깬 거면 수가 안 늘어 이야기도 없다.
         final int after = widget.stageManager.worldClears(widget.stageNumber);
@@ -499,7 +483,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
           _dialogue = lines;
           _dialogueTitle = null;
           _dialogueScene = null;
-          _pendingScene = (widget.isDaily || after == nth) ? null : Dialogue.thresholdFor(after);
+          _pendingScene = (widget.isDaily || after == before) ? null : Dialogue.sceneFor(after);
         });
       });
     }
@@ -507,24 +491,30 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
 
   int? _pendingScene;
 
-  /// 대화 상자가 끝났을 때: 이야기가 남았으면 이야기 → 아니면 팝업.
+  /// 한마디가 끝났을 때: 5·10·15·20판째면 미연시 화면으로 → 돌아오면 팝업.
   void _onDialogueDone() {
-    final int? t = _pendingScene;
-    if (t != null && _dialogueScene == null) {
-      final int w = Dialogue.worldOf(widget.stageNumber);
-      setState(() {
-        _dialogue = Dialogue.worldScene(w, t, s);
-        _dialogueTitle = Dialogue.sceneTitle(w, t, s);
-        _dialogueScene = t;
-        _pendingScene = null;
-      });
-      return;
-    }
+    final int? k = _pendingScene;
     setState(() {
       _dialogue = null;
       _dialogueTitle = null;
       _dialogueScene = null;
+      _pendingScene = null;
     });
+    if (k != null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => SceneScreen(
+            world: Dialogue.worldOf(widget.stageNumber),
+            scene: k,
+            localeProvider: widget.localeProvider,
+          ),
+        ),
+      ).then((_) {
+        if (mounted) _showNextStageDialog();
+      });
+      return;
+    }
     _showNextStageDialog();
   }
 
@@ -1153,11 +1143,11 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                         right: 0,
                         bottom: 0,
                         child: DialogueBox(
-                          key: ValueKey(_dialogueScene ?? -1),
                           lines: _dialogue!,
-                          speaker: s.get('nameMidnight'),
+                          yerinName: s.get('nameMidnight'),
+                          meName: s.get('nameYou'),
                           title: _dialogueTitle,
-                          onFace: (f) => setState(() => _midnightFace = f),
+                          onLine: (l) => setState(() => _midnightFace = l.face),
                           onDone: _onDialogueDone,
                         ),
                       ),
@@ -1898,8 +1888,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     final bool multi = _rows.length > 1;
     return Center(
       child: LayoutBuilder(builder: (context, cons) {
-        final double avail =
-            cons.maxWidth - 32 - (multi ? 40 : 0); // 패딩 + 개수 라벨 여유
+        final double avail = cons.maxWidth - 32 - 40; // 패딩 + 개수 라벨 여유
         final int maxLen = _rows.fold(1, (m, r) => r > m ? r : m).clamp(1, 60);
         // 한 줄에 놓을 최대 개수 — 셀 30px 까지는 한 줄에 둔다 (세 줄 님게임의 8개가
         // 7+1 로 어색하게 갈라지지 않게). 그보다 많아야 줄바꿈.
@@ -1951,9 +1940,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                 ),
               );
 
-              if (!multi) return stones;
-
-              // 여러 줄: 쟁반 테두리 + 개수 라벨로 줄 구분
+              // 개수 라벨은 한 줄도 표시 — 쟁반 테두리는 여러 줄일 때만
               return Padding(
                 padding: EdgeInsets.only(bottom: trayPad),
                 child: Row(
