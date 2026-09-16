@@ -48,3 +48,6 @@ app.*.map.json
 android/key.properties
 *.jks
 *.keystore
+tool/story_changed.txt
+tool/story_import.json
+tool/story_sheets.json
