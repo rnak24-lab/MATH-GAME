@@ -163,7 +163,13 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
     // (2026-09-15 대표님) 선공 선택 없음 — 항상 플레이어가 먼저. 심은 예린이
     // 한 줄을 미리 그어 둔 판(BoardGame.forStage)이라 그 사실을 첫 대사로 알린다.
     _game.toMove = 0;
-    if (kind == BoardKind.sim) _say('simOpening');
+    // 예린이 선을 미리 그어 둔 판(심·점과 상자·스프라우트 3점 이상)은 그 사실을 첫 대사로 알린다.
+    final g0 = _game;
+    if (kind == BoardKind.sim || (g0 is SproutsGame && g0.segs.isNotEmpty)) {
+      _say('simOpening');
+    } else if (g0 is DotsBoxesGame && g0.preDrawn.isNotEmpty) {
+      _say(g0.preDrawn.length == 1 ? 'simOpening' : 'dotsOpening');
+    }
     _losing = _game.toMoveIsLosing();
     _maybeShowRuleIntro();
   }
@@ -1548,7 +1554,7 @@ class _BoardPainter extends CustomPainter {
         ..strokeCap = StrokeCap.round
         ..strokeWidth = d.drawn[e] ? 4 : ((isHint || isWrong) ? 4 : 2)
         ..color = d.drawn[e]
-            ? _P.ink
+            ? (d.preDrawn.contains(e) ? _P.inkSoft : _P.ink)
             : isWrong
                 ? _P.alarmHi
                 : (isHint ? _P.sky : _P.deskWoodDark.withOpacity(0.35));

@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:typed_data';
 
 /// ─────────────────────────────────────────────────────────────────────────
 /// 월드 8~12 — "공식을 알아도 끝나지 않는" 보드 게임 5종.
@@ -55,6 +56,37 @@ class BoardMove {
   @override
   String toString() => 'M($a,$b)';
 }
+
+class _DotsSpec {
+  final int r, c;
+  final List<int> pre; // 예린이 미리 그어 둔 변 번호
+  const _DotsSpec(this.r, this.c, this.pre);
+}
+
+/// 점과 상자 20판 — tool/dots_gen.dart 출력 (둘 차례 = 플레이어 필승이 증명된 시작 판)
+const List<_DotsSpec> _dotsStages = [
+  _DotsSpec(1, 1, [1]), // 161: 자유 변 3, 선공 +1
+  _DotsSpec(1, 3, [2]), // 162: 자유 변 9, 선공 +1
+  _DotsSpec(1, 3, [2, 4, 8]), // 163: 자유 변 7, 선공 +1
+  _DotsSpec(1, 5, [1]), // 164: 자유 변 15, 선공 +1
+  _DotsSpec(1, 5, [1, 12, 14]), // 165: 자유 변 13, 선공 +1
+  _DotsSpec(1, 7, [13]), // 166: 자유 변 21, 선공 +1
+  _DotsSpec(1, 7, [0, 6, 7]), // 167: 자유 변 19, 선공 +1
+  _DotsSpec(3, 3, [8]), // 168: 자유 변 23, 선공 +3
+  _DotsSpec(3, 3, [5]), // 169: 자유 변 23, 선공 +3
+  _DotsSpec(3, 3, [5, 7, 16]), // 170: 자유 변 21, 선공 +3
+  _DotsSpec(3, 3, [2, 3, 22]), // 171: 자유 변 21, 선공 +3
+  _DotsSpec(3, 3, [1, 7, 17, 20, 23]), // 172: 자유 변 19, 선공 +3
+  _DotsSpec(3, 3, [2, 6, 12, 16, 20]), // 173: 자유 변 19, 선공 +3
+  _DotsSpec(3, 3, [0, 1, 5, 9, 12, 18, 22]), // 174: 자유 변 17, 선공 +3
+  _DotsSpec(3, 3, [2, 3, 4, 5, 7, 13, 22]), // 175: 자유 변 17, 선공 +3
+  // 3x5 는 자유 변 18개(기기에서 첫 수부터 완전 풀이) — 뒤로 갈수록 여유(마진)가 줄어든다
+  _DotsSpec(3, 5, [0, 1, 2, 3, 5, 10, 11, 14, 16, 17, 18, 19, 22, 24, 25, 28, 29, 31, 32, 35]), // 176: 선공 +7
+  _DotsSpec(3, 5, [0, 1, 2, 3, 4, 11, 13, 15, 18, 19, 21, 23, 25, 26, 27, 30, 31, 32, 34, 37]), // 177: 선공 +7
+  _DotsSpec(3, 5, [1, 3, 4, 10, 11, 12, 13, 15, 16, 17, 18, 19, 20, 21, 23, 25, 26, 29, 31, 37]), // 178: 선공 +3
+  _DotsSpec(3, 5, [0, 1, 2, 4, 6, 15, 16, 17, 20, 23, 25, 26, 27, 29, 30, 31, 33, 35, 36, 37]), // 179: 선공 +3
+  _DotsSpec(3, 5, [0, 1, 2, 3, 4, 8, 11, 15, 17, 18, 20, 22, 25, 28, 30, 31, 32, 34, 36, 37]), // 180: 선공 +1
+];
 
 abstract class BoardGame {
   BoardKind get kind;
@@ -115,13 +147,12 @@ abstract class BoardGame {
         ];
         return ChompGame(sizes[t][0], sizes[t][1]);
       case BoardKind.dotsBoxes:
-        // 작은 판부터. 홀수x홀수(또는 1xN 홀수 변)만 써서 무승부가 절대 안 난다.
-        // (2026-09-15) 1x1·1x3 은 변 수 홀짝 때문에 선공(플레이어)이 지므로 1x2·1x4 로.
-        const sizes = [
-          [1, 2], [1, 2], [1, 4], [1, 5], [1, 5], [3, 3], [3, 3], [3, 3], [3, 5], [3, 5],
-          [3, 5], [5, 5], [5, 5], [5, 5], [5, 7], [5, 7], [5, 7], [7, 7], [7, 7], [7, 7],
-        ];
-        return DotsBoxesGame(sizes[t][0], sizes[t][1]);
+        // (2026-09-20 출시 전 전수 점검) 빈 판은 1x1·1x3·1x5·1x7·3x3 전부 **선공 패**(완전 풀이).
+        // 그래서 심처럼 예린이 선을 몇 개 미리 그어 둔 판에서 시작한다. 표의 20판은
+        // tool/dots_gen.dart 가 "둘 차례(플레이어) 최선 결과 +1 이상"을 DP 로 증명한 시작 판이다.
+        // 상자 수는 전부 홀수 → 무승부 없음.
+        final spec = _dotsStages[t];
+        return DotsBoxesGame(spec.r, spec.c)..preDraw(spec.pre);
       case BoardKind.sim:
         // 심은 점 6개가 규칙 자체라 판 크기가 없다. 20단계 동일.
         // (2026-09-15) K6 심은 후공 필승이 증명된 게임 → 예린이 먼저 한 줄을 그어 둔
@@ -131,9 +162,21 @@ abstract class BoardGame {
           ..toMove = 1
           ..apply(BoardMove(t % 15));
       case BoardKind.sprouts:
-        // 점 2개(선 하나면 끝)부터 6개까지. (2026-09-15) 점 3개는 선공이 지므로 뺐다.
-        const ns = [2, 2, 4, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 6, 6, 6, 6];
-        return SproutsGame.circle(ns[t]);
+        // (2026-09-20) 완전 탐색 결과: 점 2개 = 선공 승, 점 3·4·5개 = **선공 패**.
+        // 그래서 3개부터는 예린이 한 줄을 먼저 잇고 시작한다(지는 자리에서 어떤 수를 둬도
+        // 다음 차례가 이기므로, 플레이어 필승). 점 6개는 증명할 수 없어 뺐다.
+        const ns = [2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5];
+        final g = SproutsGame.circle(ns[t]);
+        if (ns[t] >= 3) {
+          g.toMove = 1;
+          final first = g.legalMoves();
+          // 점 5개: (1,4)·(2,4) 로 시작하면 이론상 이기지만 엔진 힌트가 못 따라간다
+          // (tool/sprouts_pre.dart 측정) → 힌트가 끝까지 맞는 첫 선만 쓴다.
+          const good5 = [0, 1, 2, 3, 4, 5, 7, 9];
+          final int i = ns[t] == 5 ? good5[t % good5.length] : t % first.length;
+          g.apply(first[i]);
+        }
+        return g;
       case BoardKind.hex:
         // 3x3(가운데 잡으면 끝)부터 8x8까지
         const ns = [3, 3, 4, 4, 4, 5, 5, 5, 5, 6, 6, 6, 6, 7, 7, 7, 7, 8, 8, 8];
@@ -287,6 +330,91 @@ class DotsBoxesGame extends BoardGame {
   @override
   BoardKind get kind => BoardKind.dotsBoxes;
 
+  /// 예린이 미리 그어 둔 선 (상자를 완성하지 않는 선들). 점수·차례에 영향 없음.
+  final Set<int> preDrawn = <int>{};
+  void preDraw(List<int> edges) {
+    for (final e in edges) {
+      drawn[e] = true;
+      preDrawn.add(e);
+    }
+  }
+
+  // ── 완전 풀이 (남은 변 ≤ _exactMax) — 표는 clone 끼리 공유 ──
+  static const int _exactMax = 18;
+  List<int>? _xFree; // 풀이 시점의 자유 변
+  Int8List? _xVal; // 부분집합(그 뒤에 그어진 변) → 둘 차례의 앞으로 마진
+
+  void _ensureExact() {
+    if (_xVal != null) return;
+    final free = [for (int e = 0; e < edgeCount; e++) if (!drawn[e]) e];
+    if (free.length > _exactMax) return;
+    final f = free.length;
+    final idx = {for (int i = 0; i < f; i++) free[i]: i};
+    final boxFree = List<int>.filled(R * C, 0);
+    for (int r = 0; r < R; r++) {
+      for (int c = 0; c < C; c++) {
+        for (final e in boxEdges(r, c)) {
+          final i = idx[e];
+          if (i != null) boxFree[r * C + c] |= 1 << i;
+        }
+      }
+    }
+    final boxesOfFree = [
+      for (final e in free) [for (final b in boxesOfEdge(e)) b[0] * C + b[1]]
+    ];
+    final n = 1 << f;
+    final val = Int8List(n);
+    for (int mask = n - 2; mask >= 0; mask--) {
+      int best = -100;
+      for (int i = 0; i < f; i++) {
+        final bit = 1 << i;
+        if (mask & bit != 0) continue;
+        final nm = mask | bit;
+        int gain = 0;
+        for (final b in boxesOfFree[i]) {
+          if (nm & boxFree[b] == boxFree[b]) gain++;
+        }
+        final v = gain > 0 ? gain + val[nm] : -val[nm];
+        if (v > best) best = v;
+      }
+      val[mask] = best;
+    }
+    _xFree = free;
+    _xVal = val;
+  }
+
+  int _xMask() {
+    int m = 0;
+    final free = _xFree!;
+    for (int i = 0; i < free.length; i++) {
+      if (drawn[free[i]]) m |= 1 << i;
+    }
+    return m;
+  }
+
+  /// 완전 풀이가 가능하면 최선 수들, 아니면 null
+  List<BoardMove>? _exactBest() {
+    _ensureExact();
+    final val = _xVal;
+    if (val == null) return null;
+    final free = _xFree!;
+    final mask = _xMask();
+    int best = -100;
+    final out = <BoardMove>[];
+    for (int i = 0; i < free.length; i++) {
+      final bit = 1 << i;
+      if (mask & bit != 0) continue;
+      final gain = boxesOfEdge(free[i]).where((b) => boxSides(b[0], b[1]) == 3).length;
+      final v = gain > 0 ? gain + val[mask | bit] : -val[mask | bit];
+      if (v > best) {
+        best = v;
+        out.clear();
+      }
+      if (v == best) out.add(BoardMove(free[i]));
+    }
+    return out;
+  }
+
   int hIdx(int r, int c) => r * C + c;
   int vIdx(int r, int c) => hCount + r * (C + 1) + c;
   bool isH(int e) => e < hCount;
@@ -350,9 +478,15 @@ class DotsBoxesGame extends BoardGame {
   }
 
   @override
-  BoardGame clone() => DotsBoxesGame._(R, C, List<bool>.from(drawn),
-      List<int>.from(owner), List<int>.from(score))
-    ..toMove = toMove;
+  BoardGame clone() {
+    final g = DotsBoxesGame._(R, C, List<bool>.from(drawn), List<int>.from(owner),
+        List<int>.from(score))
+      ..toMove = toMove;
+    g.preDrawn.addAll(preDrawn);
+    g._xFree = _xFree;
+    g._xVal = _xVal;
+    return g;
+  }
 
   @override
   String summary() => '${score[0]} : ${score[1]}';
@@ -384,11 +518,8 @@ class DotsBoxesGame extends BoardGame {
   @override
   BoardMove bestMove() {
     final moves = legalMoves();
-    final int remaining = moves.length;
-    if (remaining <= 12) {
-      final r = _search(this, 0, -999, 999, 60000);
-      if (r.move != null) return r.move!;
-    }
+    final exact = _exactBest();
+    if (exact != null && exact.isNotEmpty) return exact[_rng.nextInt(exact.length)];
     final take = moves.where((m) => completes(m.a)).toList();
     if (take.isNotEmpty) return take[_rng.nextInt(take.length)];
     final safe = moves.where((m) => !givesAway(m.a)).toList();
@@ -422,60 +553,15 @@ class DotsBoxesGame extends BoardGame {
     return gained;
   }
 
-  static int _nodes = 0;
-
-  /// 네가맥스 (점수차 기준). 예산을 넘기면 정적 평가로 자른다.
-  static _SearchResult _search(
-      DotsBoxesGame g, int depth, int alpha, int beta, int budget) {
-    if (depth == 0) _nodes = 0;
-    _nodes++;
-    if (g.isOver || _nodes > budget) {
-      final me = g.toMove;
-      return _SearchResult(g.score[me] - g.score[1 - me], null);
-    }
-    final moves = g.legalMoves();
-    // 먹는 수 먼저 보면 가지치기가 잘 된다
-    moves.sort((x, y) {
-      final cx = g.completes(x.a) ? 0 : (g.givesAway(x.a) ? 2 : 1);
-      final cy = g.completes(y.a) ? 0 : (g.givesAway(y.a) ? 2 : 1);
-      return cx - cy;
-    });
-    int best = -999;
-    BoardMove? bestMove;
-    for (final m in moves) {
-      final n = g.clone() as DotsBoxesGame;
-      n.apply(m);
-      int v;
-      if (n.toMove == g.toMove) {
-        v = _search(n, depth + 1, alpha, beta, budget).value;
-      } else {
-        v = -_search(n, depth + 1, -beta, -alpha, budget).value;
-      }
-      if (v > best) {
-        best = v;
-        bestMove = m;
-      }
-      if (v > alpha) alpha = v;
-      if (alpha >= beta) break;
-    }
-    return _SearchResult(best, bestMove);
-  }
-
   @override
   bool toMoveIsLosing() {
-    // 남은 변이 적을 때만 탐색으로 판정 (초반은 판단 보류 = false).
-    // 판 전체를 끝까지 시뮬레이션하면 탐색이 여러 번 돌아 폰에서 버벅인다.
-    final remaining = legalMoves().length;
-    if (remaining > 12) return false;
-    final r = _search(this, 0, -999, 999, 40000);
-    return r.value < 0;
+    // 남은 변 ${_exactMax}개 이하에서만 판정 (그 전은 판단 보류 = false).
+    _ensureExact();
+    final val = _xVal;
+    if (val == null) return false;
+    final int total = score[toMove] - score[1 - toMove] + val[_xMask()];
+    return toMove == 0 ? total <= 0 : total < 0;
   }
-}
-
-class _SearchResult {
-  final int value;
-  final BoardMove? move;
-  const _SearchResult(this.value, this.move);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -546,26 +632,45 @@ class SimGame extends BoardGame {
   @override
   String summary() => '${15 - color.where((c) => c < 0).length} / 15';
 
-  static final Map<String, bool> _cache = {};
+  // ── 완전 탐색 (2026-09-20): 정수 키 메모 + 제자리 탐색이라 빈 판에서도 수십 ms 에 끝난다.
+  //    그래서 힌트·되감기·예린의 최선 수가 **첫 수부터** 정확하다.
+  static final Map<int, bool> _memo = {};
+  static final List<int> _pow3 = [for (int i = 0, p = 1; i < 15; i++, p *= 3) p];
 
-  /// 둘 차례가 이기는가 (완전 탐색 — 남은 선이 적을 때만 호출)
-  static bool _win(SimGame g) {
-    if (g.isOver) return g.winner == g.toMove;
-    final key = '${g.toMove}:${g.color.join()}';
-    final c = _cache[key];
+  static bool _winAt(List<int> col, int idx, int side) {
+    final c = _memo[idx * 2 + side];
     if (c != null) return c;
     bool res = false;
-    for (final m in g.legalMoves()) {
-      if (g.makesTriangle(m.a, g.toMove)) continue; // 자멸은 후보에서 제외
-      final n = g.clone() as SimGame;
-      n.apply(m);
-      if (!_win(n)) {
+    for (int e = 0; e < 15; e++) {
+      if (col[e] >= 0) continue;
+      // 자멸(내 삼각형) 수는 후보에서 제외
+      final a = edges[e][0], b = edges[e][1];
+      bool tri = false;
+      for (int k = 0; k < 6 && !tri; k++) {
+        if (k == a || k == b) continue;
+        if (col[edgeIndex(a, k)] == side && col[edgeIndex(b, k)] == side) tri = true;
+      }
+      if (tri) continue;
+      col[e] = side;
+      final w = _winAt(col, idx + (side + 1) * _pow3[e], 1 - side);
+      col[e] = -1;
+      if (!w) {
         res = true;
         break;
       }
     }
-    _cache[key] = res;
+    _memo[idx * 2 + side] = res;
     return res;
+  }
+
+  /// 둘 차례가 이기는가
+  static bool _win(SimGame g) {
+    if (g.isOver) return g.winner == g.toMove;
+    int idx = 0;
+    for (int e = 0; e < 15; e++) {
+      idx += (g.color[e] + 1) * _pow3[e];
+    }
+    return _winAt(List<int>.from(g.color), idx, g.toMove);
   }
 
   int _remaining() => color.where((c) => c < 0).length;
@@ -580,17 +685,14 @@ class SimGame extends BoardGame {
       legalMoves().where((m) => !makesTriangle(m.a, toMove)).toList();
 
   @override
-  bool toMoveIsLosing() {
-    if (_remaining() > 9) return false;
-    return !_win(this);
-  }
+  bool toMoveIsLosing() => !_win(this);
 
   @override
   BoardMove bestMove() {
     final moves = legalMoves();
     final safe = moves.where((m) => !makesTriangle(m.a, toMove)).toList();
     if (safe.isEmpty) return moves[_rng.nextInt(moves.length)]; // 어차피 패배
-    if (_remaining() <= 9) {
+    {
       final wins = <BoardMove>[];
       for (final m in safe) {
         final n = clone() as SimGame;
