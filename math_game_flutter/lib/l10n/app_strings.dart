@@ -3300,7 +3300,7 @@ class AppStrings {
       'vi': 'Unlocks at {0} wins',
     },
     'dailyButton': {
-      'en': 'Daily's match',
+      'en': 'Daily match',
       'ko': '오늘 한 판',
       'ja': '今日の一局',
       'zh': '今日一局',
