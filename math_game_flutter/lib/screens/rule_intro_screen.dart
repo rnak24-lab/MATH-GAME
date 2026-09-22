@@ -4,7 +4,8 @@ import '../game/tutorial_manager.dart';
 import '../providers/locale_provider.dart';
 import '../utils/nim_theme.dart';
 import '../widgets/midnight_character.dart';
-import 'world_select_screen.dart' show worlds;
+import '../game/board_games.dart';
+import 'board_game_screen.dart' show BoardView;
 
 /// 규칙 설명 화면 — (2026-09-16 대표님) "아예 시작부터 다른 화면을 만들어서 설명을 보게".
 /// 수업의 첫 판에 들어가기 전에 한 번 뜬다(다시 보기: 규칙 노트). 그림 + 한 문장씩, 페이지로.
@@ -12,7 +13,10 @@ import 'world_select_screen.dart' show worlds;
 class RuleIntroScreen extends StatefulWidget {
   final int world; // 1~12
   final LocaleProvider localeProvider;
-  const RuleIntroScreen({super.key, required this.world, required this.localeProvider});
+
+  /// 게임 화면 안에 인라인으로 띄울 때: 마지막 페이지에서 pop 대신 이 콜백.
+  final VoidCallback? onDone;
+  const RuleIntroScreen({super.key, required this.world, required this.localeProvider, this.onDone});
 
   @override
   State<RuleIntroScreen> createState() => _RuleIntroScreenState();
@@ -50,12 +54,15 @@ class _RuleIntroScreenState extends State<RuleIntroScreen> {
     final String rule = n == 1
         ? s.get('ruleSingleRow', [snack, '2'])
         : (n <= 7 ? s.get(_ruleKeys[n - 1], [snack]) : s.get(_ruleKeys[n - 1]));
-    final w = worlds[(n - 1).clamp(0, worlds.length - 1)];
-    Widget emoji(String e) => Center(child: Text(e, style: const TextStyle(fontSize: 64)));
+    // 그림: 님 계열은 간식 줄 그림 3장, 보드 계열은 실제 첫 판 미리보기
+    Widget pic(int page) {
+      if (n <= 7) return _NimPicture(world: n, page: page, take: s.get('riTake'), last: s.get('riLast'));
+      return _BoardPreview(stage: (n - 1) * 20 + 1);
+    }
     return [
-      _RuleIntroPage(rule, emoji(w.emoji)),
-      _RuleIntroPage(s.get('rx_w${n}_1'), emoji('1️⃣')),
-      _RuleIntroPage(s.get('rx_w${n}_2'), emoji('2️⃣')),
+      _RuleIntroPage(rule, pic(0)),
+      _RuleIntroPage(s.get('rx_w${n}_1'), pic(1)),
+      _RuleIntroPage(s.get('rx_w${n}_2'), pic(2)),
     ];
   }
 
@@ -95,7 +102,7 @@ class _RuleIntroScreenState extends State<RuleIntroScreen> {
                 child: Column(
                   children: [
                     const SizedBox(height: 4),
-                    const MidnightCharacter(face: MidnightFace.happy1, size: 210, animate: false),
+                    const MidnightCharacter(face: MidnightFace.happy1, size: 170, animate: false),
                     Expanded(
                       child: Container(
                         margin: const EdgeInsets.fromLTRB(20, 0, 20, 12),
@@ -166,7 +173,9 @@ class _RuleIntroScreenState extends State<RuleIntroScreen> {
                             last ? s.get('ruleIntroStart') : s.get('tutNext'),
                             NimTheme.gold,
                             NimTheme.deskBottom,
-                            () => last ? Navigator.pop(context) : setState(() => _page++),
+                            () => last
+                                ? (widget.onDone != null ? widget.onDone!() : Navigator.pop(context))
+                                : setState(() => _page++),
                           ),
                         ),
                       ],
@@ -317,4 +326,162 @@ class _PeperoPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _PeperoPainter old) => old.kind != kind;
+}
+
+/// 보드 게임 미리보기 — 실제 첫 판(BoardGame.forStage)을 그대로 그린다 (터치 불가).
+class _BoardPreview extends StatelessWidget {
+  final int stage;
+  const _BoardPreview({required this.stage});
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(8),
+      child: BoardView(
+        game: BoardGame.forStage(stage),
+        hint: null,
+        selPoint: -1,
+        enabled: false,
+        onMove: (_) {},
+        onSelectPoint: (_) {},
+      ),
+    );
+  }
+}
+
+/// 님 계열 규칙 그림 — 간식 줄 + 하늘색(가져갈 것) + 별(마지막 = 승리)
+class _NimPicture extends StatelessWidget {
+  final int world;
+  final int page;
+  final String take;
+  final String last;
+  const _NimPicture({required this.world, required this.page, required this.take, required this.last});
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(builder: (context, cons) {
+      return CustomPaint(
+        size: Size(cons.maxWidth, cons.maxHeight),
+        painter: _NimPicturePainter(world, page, take, last),
+      );
+    });
+  }
+}
+
+class _NimPicturePainter extends CustomPainter {
+  final int world, page;
+  final String take, last;
+  _NimPicturePainter(this.world, this.page, this.take, this.last);
+
+  static const Color _candy = Color(0xFFE88BB0);
+  static const Color _candyDark = Color(0xFFB85C86);
+  static const Color _sky = Color(0xFF3D8FB8);
+  static const Color _ink = Color(0xFF332817);
+  static const Color _gold = Color(0xFFC9A24B);
+  static const Color _no = Color(0xFF9B3B2E);
+
+  /// (줄 목록, 강조 집합 {row*100+index}, 라벨, 별 위치 row*100+index or -1, 금지 X 여부)
+  List<dynamic> _spec() {
+    switch (world) {
+      case 1:
+        if (page == 0) return [[6], {5}, '1~2 · $take', -1, false];
+        if (page == 1) return [[6], {4, 5}, '2 · $take', -1, false];
+        return [[1], {0}, last, 0, false];
+      case 2:
+        if (page == 0) return [[3, 5], {103, 104}, take, -1, false];
+        if (page == 1) return [[3, 5], {0, 1, 2}, take, -1, false];
+        return [[0, 1], {100}, last, 100, false];
+      case 3:
+        if (page == 0) return [[2, 3, 5], {202, 203, 204}, take, -1, false];
+        if (page == 1) return [[2, 3, 5], {100, 101, 102}, take, -1, false];
+        return [[0, 0, 1], {200}, last, 200, false];
+      case 5: // 카일즈: 붙어 있는 1~2개, 가운데 빼면 갈라짐
+        if (page == 0) return [[7], {3, 4}, '1~2 · $take', -1, false];
+        if (page == 1) return [[3, 2], {}, '', -1, false];
+        return [[1], {0}, last, 0, false];
+      case 6: // 위토프
+        if (page == 0) return [[4, 6], {103, 104, 105}, take, -1, false];
+        if (page == 1) return [[4, 6], {2, 3, 104, 105}, '= · =', -1, false];
+        return [[1, 0], {0}, last, 0, false];
+      case 7: // 피보나치
+        if (page == 0) return [[8], {0, 1, 2, 3, 4, 5, 6, 7}, '✕', -1, true];
+        if (page == 1) return [[8], {6, 7}, '×2', -1, false];
+        return [[1], {0}, last, 0, false];
+    }
+    return [[5], {4}, take, -1, false];
+  }
+
+  @override
+  void paint(Canvas c, Size size) {
+    final spec = _spec();
+    final List<int> rows = (spec[0] as List).cast<int>();
+    final Set<int> hi = (spec[1] as Set).cast<int>();
+    final String label = spec[2] as String;
+    final int star = spec[3] as int;
+    final bool forbid = spec[4] as bool;
+    final int maxLen = rows.fold(1, (m, r) => r > m ? r : m);
+    final double cell = ((size.width - 40) / maxLen).clamp(24.0, 56.0);
+    final double d = cell * 0.7;
+    final double rowH = cell + 10;
+    final double top = (size.height - rows.length * rowH) / 2 - 10;
+    for (int r = 0; r < rows.length; r++) {
+      final n = rows[r];
+      final double x0 = (size.width - n * cell) / 2;
+      final double cy = top + r * rowH + rowH / 2;
+      // 줄 바탕(쟁반)
+      if (rows.length > 1) {
+        c.drawRRect(
+          RRect.fromRectAndRadius(Rect.fromLTWH(20, cy - rowH / 2 + 3, size.width - 40, rowH - 6), const Radius.circular(8)),
+          Paint()..color = _ink.withOpacity(0.06),
+        );
+      }
+      for (int i = 0; i < n; i++) {
+        final cx = x0 + i * cell + cell / 2;
+        final bool h = hi.contains(r * 100 + i);
+        if (h) {
+          c.drawCircle(Offset(cx, cy), d / 2 + 6, Paint()..color = _sky.withOpacity(0.25));
+          c.drawCircle(Offset(cx, cy), d / 2 + 6, Paint()
+            ..color = _sky
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 2.5);
+        }
+        // 사탕: 분홍 원 + 양옆 포장
+        c.drawCircle(Offset(cx, cy), d / 2, Paint()..color = _candy);
+        c.drawCircle(Offset(cx, cy), d / 2, Paint()
+          ..color = _candyDark
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2);
+        final wrap = Paint()..color = _candyDark;
+        c.drawPath(Path()..moveTo(cx - d / 2, cy)..lineTo(cx - d / 2 - 7, cy - 6)..lineTo(cx - d / 2 - 7, cy + 6)..close(), wrap);
+        c.drawPath(Path()..moveTo(cx + d / 2, cy)..lineTo(cx + d / 2 + 7, cy - 6)..lineTo(cx + d / 2 + 7, cy + 6)..close(), wrap);
+        if (star == r * 100 + i) {
+          _text(c, '★', Offset(cx, cy - d / 2 - 16), 22, _gold);
+        }
+      }
+      if (n == 0) {
+        _text(c, '—', Offset(size.width / 2, cy), 16, _ink.withOpacity(0.4));
+      }
+    }
+    if (label.isNotEmpty) {
+      final double ly = top + rows.length * rowH + 22;
+      if (forbid) {
+        // 전부 가져가기 금지: 큰 X 를 줄 위에
+        _text(c, '✕', Offset(size.width / 2, top + rowH / 2), 40, _no.withOpacity(0.8));
+        _text(c, label == '✕' ? '' : label, Offset(size.width / 2, ly), 16, _no);
+      } else {
+        _text(c, label, Offset(size.width / 2, ly), 16, label == last ? _gold : _sky);
+      }
+    }
+  }
+
+  void _text(Canvas c, String t, Offset center, double size, Color color) {
+    if (t.isEmpty) return;
+    final tp = TextPainter(
+      text: TextSpan(text: t, style: TextStyle(fontFamily: 'NeoDGM', fontSize: size, color: color, fontWeight: FontWeight.w800)),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    tp.paint(c, center - Offset(tp.width / 2, tp.height / 2));
+  }
+
+  @override
+  bool shouldRepaint(covariant _NimPicturePainter old) => old.world != world || old.page != page;
 }

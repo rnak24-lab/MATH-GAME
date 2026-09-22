@@ -192,7 +192,7 @@ class _HomeScreenState extends State<HomeScreen>
                           Border.all(color: const Color(0x332F2B57), width: 1),
                     ),
                     child: Text(
-                      s.get('midnightGreeting'),
+                      s.get(_hasProgress ? 'midnightGreeting' : 'midnightGreetingNew'),
                       style: const TextStyle(
                         fontFamily: NimTheme.font,
                         fontSize: 15,

@@ -175,20 +175,22 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
   }
 
   /// 수업 첫 판: 규칙 설명 화면을 먼저 (한 번만). 다시 보기는 규칙 노트에서.
+  bool _introVisible = false;
   void _maybeShowRuleIntro() {
     if (!TutorialManager.isTutorialStage(widget.stageNumber)) return;
     final int w = TutorialManager.worldOf(widget.stageNumber);
     if (widget.stageManager.ruleIntroSeen(w)) return;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => RuleIntroScreen(world: w, localeProvider: widget.localeProvider),
-        ),
-      ).then((_) => widget.stageManager.markRuleIntroSeen(w));
-    });
+    _introVisible = true; // 게임 화면 대신 바로 그린다 (푸시하면 게임 화면이 한 프레임 먼저 보임)
   }
+
+  Widget _inlineIntro() => RuleIntroScreen(
+        world: TutorialManager.worldOf(widget.stageNumber),
+        localeProvider: widget.localeProvider,
+        onDone: () {
+          widget.stageManager.markRuleIntroSeen(TutorialManager.worldOf(widget.stageNumber));
+          setState(() => _introVisible = false);
+        },
+      );
 
   @override
   void didChangeDependencies() {
@@ -737,6 +739,7 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
   // ── 화면 ────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
+    if (_introVisible) return _inlineIntro();
     final WorldInfo w = worldForStage(widget.stageNumber);
     return Scaffold(
       backgroundColor: _P.deskBottom,
@@ -1015,7 +1018,7 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
               borderRadius: BorderRadius.circular(6),
               border: Border.all(color: _P.frameHi, width: 1.5),
             ),
-            child: Text(_cta,
+            child: Text(_guideFollow ? s.get('guideTapBoard') : _cta,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                     fontFamily: _mono,
@@ -1099,10 +1102,11 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
               Positioned.fill(
                 child: Padding(
                   padding: const EdgeInsets.all(10),
-                  child: _BoardView(
+                  child: BoardView(
                     game: _game,
                     hint: _hint,
                     wrong: _wrong,
+                    pointer: _guideFollow && _hint != null,
                     selPoint: _selPoint,
                     enabled: _myTurn && !_guideReading,
                     onMove: _onBoardMove,
@@ -1226,19 +1230,21 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
 // ═══════════════════════════════════════════════════════════════════════════
 // 판 위젯 — 그리기와 탭 판정이 같은 기하(_Layout)를 쓴다.
 // ═══════════════════════════════════════════════════════════════════════════
-class _BoardView extends StatelessWidget {
+class BoardView extends StatelessWidget {
   final BoardGame game;
   final BoardMove? hint;
   final BoardMove? wrong; // 되감기: 실수한 수 (빨강)
+  final bool pointer; // 가이드: 힌트 자리에 손가락
   final int selPoint;
   final bool enabled;
   final void Function(BoardMove) onMove;
   final void Function(int) onSelectPoint;
 
-  const _BoardView({
+  const BoardView({
     required this.game,
     required this.hint,
     this.wrong,
+    this.pointer = false,
     required this.selPoint,
     required this.enabled,
     required this.onMove,
@@ -1279,7 +1285,7 @@ class _BoardView extends StatelessWidget {
               },
         child: CustomPaint(
           size: size,
-          painter: _BoardPainter(game, lay, hint, selPoint, wrong),
+          painter: _BoardPainter(game, lay, hint, selPoint, wrong, pointer),
         ),
       );
     });
@@ -1466,7 +1472,14 @@ class _BoardPainter extends CustomPainter {
   final BoardMove? hint;
   final int selPoint;
   final BoardMove? wrong;
-  _BoardPainter(this.g, this.lay, this.hint, this.selPoint, [this.wrong]);
+  final bool pointer;
+  _BoardPainter(this.g, this.lay, this.hint, this.selPoint, [this.wrong, this.pointer = false]);
+
+  /// 힌트 자리 위에 손가락 — 가이드 판에서 "여길 눌러" 를 그림으로.
+  void _hand(Canvas c, Offset at) {
+    if (!pointer) return;
+    _text(c, '👆', at + const Offset(0, 26), 26, Colors.white);
+  }
 
   bool _isWrong(int a, [int b = 0]) => wrong != null && wrong!.a == a && wrong!.b == b;
 
@@ -1475,11 +1488,21 @@ class _BoardPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    if (g is ChompGame) return _chomp(canvas);
-    if (g is DotsBoxesGame) return _dots(canvas);
-    if (g is SimGame) return _sim(canvas);
-    if (g is SproutsGame) return _sprouts(canvas);
-    if (g is HexGame) return _hex(canvas);
+    if (g is ChompGame) _chomp(canvas);
+    if (g is DotsBoxesGame) _dots(canvas);
+    if (g is SimGame) _sim(canvas);
+    if (g is SproutsGame) _sprouts(canvas);
+    if (g is HexGame) _hex(canvas);
+    final h = hint;
+    if (h != null && pointer) {
+      Offset? at;
+      if (g is ChompGame) at = lay.chompRect(h.a, h.b).center;
+      if (g is DotsBoxesGame) { final e = lay.edgeEnds(h.a); at = (e[0] + e[1]) / 2; }
+      if (g is SimGame) { final a = SimGame.edges[h.a]; at = (lay.simPt(a[0]) + lay.simPt(a[1])) / 2; }
+      if (g is SproutsGame) at = lay.sproutPt(h.a);
+      if (g is HexGame) { final n = (g as HexGame).n; at = lay.hexCenter(h.a ~/ n, h.a % n); }
+      if (at != null) _hand(canvas, at);
+    }
   }
 
   void _text(Canvas c, String t, Offset center, double size, Color color) {

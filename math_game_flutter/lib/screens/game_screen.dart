@@ -235,20 +235,22 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   }
 
   /// 수업 첫 판: 규칙 설명 화면을 먼저 (한 번만). 다시 보기는 규칙 노트에서.
+  bool _introVisible = false;
   void _maybeShowRuleIntro() {
     if (!TutorialManager.isTutorialStage(widget.stageNumber)) return;
     final int w = TutorialManager.worldOf(widget.stageNumber);
     if (widget.stageManager.ruleIntroSeen(w)) return;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => RuleIntroScreen(world: w, localeProvider: widget.localeProvider),
-        ),
-      ).then((_) => widget.stageManager.markRuleIntroSeen(w));
-    });
+    _introVisible = true; // 게임 화면 대신 바로 그린다 (푸시하면 게임 화면이 한 프레임 먼저 보임)
   }
+
+  Widget _inlineIntro() => RuleIntroScreen(
+        world: TutorialManager.worldOf(widget.stageNumber),
+        localeProvider: widget.localeProvider,
+        onDone: () {
+          widget.stageManager.markRuleIntroSeen(TutorialManager.worldOf(widget.stageNumber));
+          setState(() => _introVisible = false);
+        },
+      );
 
   @override
   void didChangeDependencies() {
@@ -475,7 +477,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
           widget.isDaily
               ? DialogueLine(MidnightFace.happy2,
                   s.get('daily_win_${(widget.stageManager.dailyStreak % 3) + 1}'))
-              : Dialogue.afterClear(widget.stageNumber, s, _rng)
+              : widget.stageNumber == 1
+                  ? DialogueLine(MidnightFace.happy1, s.get('g1_win')) // 첫 승리: 왜 이겼는지
+                  : Dialogue.afterClear(widget.stageNumber, s, _rng)
         ];
         // clearStage 뒤의 진행도. 이미 깬 판을 다시 깬 거면 수가 안 늘어 이야기도 없다.
         final int after = widget.stageManager.worldClears(widget.stageNumber);
@@ -1118,6 +1122,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   // ─────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
+    if (_introVisible) return _inlineIntro();
     return Scaffold(
       backgroundColor: _Pal.deskBottom,
       body: Container(
@@ -1933,6 +1938,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                       leaving: _leaving && selected,
                       danger: danger,
                       hint: _isHintStone(rowIdx, i, len),
+                      pointer: _guideRequired != null && _isHintStone(rowIdx, i, len),
                       kind: snackForStage(widget.stageNumber),
                       onTap: () => _selectStone(rowIdx, i),
                     );
@@ -2100,6 +2106,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                           leaving: _leaving && selected,
                           danger: _isWrongStone(rowIdx, i, len),
                           hint: _isHintStone(rowIdx, i, len),
+                          pointer: _guideRequired != null && _isHintStone(rowIdx, i, len),
                           kind: snackForStage(widget.stageNumber),
                           onTap: () => _selectKayles(rowIdx, i),
                         );
@@ -2117,6 +2124,10 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
 
   Widget _buildKaylesAction() {
     final bool hasSel = _kSelCount > 0 && _kSelRow >= 0;
+    return _guideWrap(_buildKaylesButton(hasSel), hasSel);
+  }
+
+  Widget _buildKaylesButton(bool hasSel) {
     return SizedBox(
       width: double.infinity,
       child: _StampButton(
@@ -2260,6 +2271,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                           leaving: _leaving && selected,
                           danger: _isWrongStone(rowIdx, i, len),
                           hint: _isHintStone(rowIdx, i, len),
+                          pointer: _guideRequired != null && _isHintStone(rowIdx, i, len),
                           kind: snackForStage(widget.stageNumber),
                           onTap: () => _selectWythoff(rowIdx, i),
                         );
@@ -2276,6 +2288,11 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildWythoffAction() {
+    final bool any = _wSelA > 0 || _wSelB > 0;
+    return _guideWrap(_buildWythoffButton(), any && _wythoffValid);
+  }
+
+  Widget _buildWythoffButton() {
     final bool any = _wSelA > 0 || _wSelB > 0;
     final bool valid = _wythoffValid;
     final int total = _wSelA + _wSelB;
@@ -2600,6 +2617,16 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
 
   /// 힌트가 알려주는 쪼갤 위치 — 점선 느낌의 하늘색 선.
   Widget _hintDivider(double h) {
+    final bar = _hintDividerBar(h);
+    if (_guideRequired == null) return bar;
+    return Stack(
+      clipBehavior: Clip.none,
+      alignment: Alignment.center,
+      children: [bar, const Positioned(bottom: -30, child: _BouncingHand())],
+    );
+  }
+
+  Widget _hintDividerBar(double h) {
     return Container(
       width: 3.5,
       height: h + 8,
@@ -2687,7 +2714,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     final bool hasSel = _selectedCount > 0;
 
     // (2026-09-15 정보 다이어트) "가져갈 개수 / —" 라벨 줄 삭제. 버튼 하나가 전부.
-    return AnimatedScale(
+    final Widget button = AnimatedScale(
       scale: hasSel ? 1.0 : 0.97,
       duration: const Duration(milliseconds: 180),
       curve: Curves.easeOutBack,
@@ -2702,6 +2729,28 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         ),
       ),
     );
+    return _guideWrap(button, hasSel);
+  }
+
+  /// 가이드 판: ① 하늘색 누르기 → ② 버튼 누르기 를 버튼 위에 적고, ②단계엔 버튼이 두근거린다.
+  Widget _guideWrap(Widget button, bool hasSel) {
+    if (_guideRequired == null) return button;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          hasSel ? s.get('guideConfirm') : s.get('guideTap', [s.snackObj(_snackKey)]),
+          style: TextStyle(
+            fontFamily: _mono,
+            fontSize: 13,
+            fontWeight: FontWeight.w800,
+            color: hasSel ? _Pal.gold : _Pal.sky,
+          ),
+        ),
+        const SizedBox(height: 6),
+        hasSel ? _Pulse(child: button) : button,
+      ],
+    );
   }
 
   /// 막대과자 액션 — 슬라이더 없음. 판 위에서 자를 곳을 정하고 여기선 확정만.
@@ -2709,6 +2758,10 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     final bool hasSel = _selectedPile >= 0 &&
         _selectedPile < _rows.length &&
         _rows[_selectedPile] >= 3;
+    return _guideWrap(_buildPeperoButton(hasSel), hasSel);
+  }
+
+  Widget _buildPeperoButton(bool hasSel) {
 
     if (!hasSel) {
       // 아직 자를 곳을 안 골랐을 때 — 버튼 자리를 비워두지 않고 안내로 채운다
@@ -3134,6 +3187,7 @@ class _Stone extends StatelessWidget {
   final bool leaving;
   final bool danger; // 가져가면 지는 돌 (스테이지1 학습용) — 빨간 돌
   final bool hint; // 힌트 추천 — 하늘색 테두리 + 반짝임
+  final bool pointer; // 가이드: 손가락이 위에서 콩콩
   final SnackKind kind; // 월드별 간식 종류
   final VoidCallback? onTap;
   const _Stone({
@@ -3144,6 +3198,7 @@ class _Stone extends StatelessWidget {
     required this.leaving,
     this.danger = false,
     this.hint = false,
+    this.pointer = false,
     this.kind = SnackKind.candy,
     this.onTap,
   });
@@ -3182,6 +3237,13 @@ class _Stone extends StatelessWidget {
           ],
         ),
         child: Center(child: token),
+      );
+    }
+    if (pointer) {
+      token = Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.center,
+        children: [token, Positioned(top: -d * 0.95, child: const _BouncingHand())],
       );
     }
 
@@ -3410,6 +3472,67 @@ class _BubbleTailDown extends CustomPainter {
 }
 
 /// 공통 "도장" 버튼 — 모노 타이포 + 베벨 테두리.
+/// 가이드용 손가락 — 위아래로 콩콩. 하늘색 돌 위에 놓인다.
+class _BouncingHand extends StatefulWidget {
+  const _BouncingHand();
+  @override
+  State<_BouncingHand> createState() => _BouncingHandState();
+}
+
+class _BouncingHandState extends State<_BouncingHand> with SingleTickerProviderStateMixin {
+  late final AnimationController _c =
+      AnimationController(vsync: this, duration: const Duration(milliseconds: 520))..repeat(reverse: true);
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: AnimatedBuilder(
+        animation: _c,
+        builder: (_, child) => Transform.translate(
+          offset: Offset(0, -8 * Curves.easeInOut.transform(_c.value)),
+          child: child,
+        ),
+        child: const Text('👆', style: TextStyle(fontSize: 26)),
+      ),
+    );
+  }
+}
+
+/// 가이드용 두근거림 — 눌러야 할 버튼을 살짝 키웠다 줄였다.
+class _Pulse extends StatefulWidget {
+  final Widget child;
+  const _Pulse({required this.child});
+  @override
+  State<_Pulse> createState() => _PulseState();
+}
+
+class _PulseState extends State<_Pulse> with SingleTickerProviderStateMixin {
+  late final AnimationController _c =
+      AnimationController(vsync: this, duration: const Duration(milliseconds: 600))..repeat(reverse: true);
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _c,
+      builder: (_, child) => Transform.scale(
+        scale: 1.0 + 0.05 * Curves.easeInOut.transform(_c.value),
+        child: child,
+      ),
+      child: widget.child,
+    );
+  }
+}
+
 class _StampButton extends StatelessWidget {
   final String label;
   final Color color;
