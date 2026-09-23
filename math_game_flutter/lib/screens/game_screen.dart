@@ -196,13 +196,6 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
 
   final math.Random _rng = math.Random();
 
-  // ── 패배 되감기: "이기던 판을 지는 판으로 만든 첫 수" 를 기억한다 ──
-  List<int>? _mistakeRows;
-  NimMove? _mistakeMove;
-  NimMove? _mistakeBest;
-  int _mistakeFib = 0;
-  bool _replaying = false;
-
   // ── 클리어 뒤 미연시식 대화 (한마디 + 호감도 장면) ──
   List<DialogueLine>? _dialogue;
   String? _dialogueTitle;
@@ -286,84 +279,6 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   void _applyGuideHighlight() {
     final req = _guideRequired;
     if (req != null) _setHintFields(req);
-  }
-
-  /// 되감기·가이드용 순수 적용 — 화면 상태를 건드리지 않고 "이 수를 두면 어떤 판이 되나".
-  /// 반환: (rows, 다음 피보나치 한도)
-  (List<int>, int) _applied(List<int> rows, NimMove m) {
-    final r = List<int>.from(rows);
-    int fib = _fibLimit;
-    if (m.isPepero) {
-      r.removeAt(m.rowIndex);
-      r.add(m.splitA);
-      r.add(m.splitB);
-      r.sort((x, y) => y.compareTo(x));
-    } else if (m.isKayles) {
-      r.removeAt(m.rowIndex);
-      if (m.kaylesRight > 0) r.insert(m.rowIndex, m.kaylesRight);
-      if (m.kaylesLeft > 0) r.insert(m.rowIndex, m.kaylesLeft);
-    } else if (m.isWythoff) {
-      r[0] -= m.takeA;
-      r[1] -= m.takeB;
-    } else {
-      r[m.rowIndex] -= m.count;
-      if (_config.mode == GameMode.fibonacci) fib = m.count * 2;
-    }
-    return (r, fib);
-  }
-
-  /// 플레이어가 수를 두기 직전에 호출 — 이기던 판을 지는 판으로 만들었으면 기록.
-  void _recordPlayerMove(NimMove m) {
-    if (_mistakeMove != null) return;
-    final bool losingBefore = _engine.toMoveLoses(_rows, _config.mode,
-        maxTake: _config.maxTake, fibLimit: _fibLimit);
-    if (losingBefore) return; // 이미 지던 판 — 이 수는 실수가 아니다
-    final best = _engine.bestMove(_rows, _config.mode,
-        maxTake: _config.maxTake, fibLimit: _fibLimit);
-    final (after, fib) = _applied(_rows, m);
-    final bool aiLoses = _engine.toMoveLoses(after, _config.mode,
-        maxTake: _config.maxTake, fibLimit: fib);
-    if (!aiLoses) {
-      _mistakeRows = List<int>.from(_rows);
-      _mistakeMove = m;
-      _mistakeBest = best;
-      _mistakeFib = _fibLimit;
-    }
-  }
-
-  String _describeMove(NimMove m, bool multi) {
-    if (m.isPepero) return s.get('mvSplit', ['${m.splitA}', '${m.splitB}']);
-    if (m.isWythoff) {
-      if (m.takeA > 0 && m.takeB > 0) return s.get('mvBoth', ['${m.takeA}']);
-      return s.get('mvTakeRow',
-          ['${m.takeA > 0 ? m.takeA : m.takeB}', m.takeA > 0 ? '1' : '2']);
-    }
-    if (multi) return s.get('mvTakeRow', ['${m.count}', '${m.rowIndex + 1}']);
-    return s.get('mvTake', ['${m.count}']);
-  }
-
-  /// "왜 졌지?" — 실수한 판으로 되돌려 빨강(실수)·하늘색(정답)을 같이 보여준다.
-  void _startReplay() {
-    final m = _mistakeMove;
-    final best = _mistakeBest;
-    final rows = _mistakeRows;
-    if (m == null || best == null || rows == null) return;
-    _haptic();
-    setState(() {
-      _replaying = true;
-      _rows = List<int>.from(rows);
-      _fibLimit = _mistakeFib;
-      _selectedCount = 0;
-      _selectedPile = -1;
-      _kSelCount = 0;
-      _wSelA = 0;
-      _wSelB = 0;
-      _setHintFields(best);
-      _setWrongFields(m);
-      _midnightFace = MidnightFace.confident;
-      final bool multi = rows.length > 1;
-      _say('replayHint', [_describeMove(m, multi), _describeMove(best, multi)]);
-    });
   }
 
   void _sayGreeting() {
@@ -684,7 +599,6 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         _isAiAnimating) return;
 
     final int tookCount = _selectedCount;
-    _recordPlayerMove(NimMove(rowIndex: _selectedRow, count: tookCount));
 
     setState(() {
       if (_config.mode == GameMode.pepero) {
@@ -1083,38 +997,6 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       _hintStart = -1;
       _hintSplitA = 0;
     }
-  }
-
-  // ── 되감기: 실수한 수를 빨갛게 ──
-  int _wrongRow = -1;
-  int _wrongCount = 0;
-  int _wrongStart = -1;
-
-  void _setWrongFields(NimMove m) {
-    if (m.isPepero) {
-      _wrongRow = -1; // 막대과자는 문장으로만
-      _wrongCount = 0;
-      _wrongStart = -1;
-    } else if (m.isWythoff) {
-      // 양쪽 동시면 첫 줄만 표시 (문장이 나머지를 설명)
-      _wrongRow = m.takeA > 0 ? 0 : 1;
-      _wrongCount = m.takeA > 0 ? m.takeA : m.takeB;
-      _wrongStart = -1;
-    } else if (m.isKayles) {
-      _wrongRow = m.rowIndex;
-      _wrongCount = m.count;
-      _wrongStart = m.kaylesLeft;
-    } else {
-      _wrongRow = m.rowIndex;
-      _wrongCount = m.count;
-      _wrongStart = -1;
-    }
-  }
-
-  bool _isWrongStone(int rowIdx, int i, int len) {
-    if (_wrongRow != rowIdx || _wrongCount <= 0) return false;
-    if (_wrongStart >= 0) return i >= _wrongStart && i < _wrongStart + _wrongCount;
-    return i >= len - _wrongCount;
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -1727,23 +1609,6 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
             padding: const EdgeInsets.all(12),
             child: Row(
               children: [
-                if (!_replaying) ...[
-                  Expanded(
-                    child: _StampButton(
-                      label: s.get('whyLost'),
-                      color: _Pal.hint,
-                      icon: Icons.replay_rounded,
-                      onTap: _mistakeMove != null
-                          ? _startReplay
-                          : () => setState(() {
-                                _replaying = true;
-                                _midnightFace = MidnightFace.neutral;
-                                _say('replayNone');
-                              }),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                ],
                 Expanded(
                   child: _StampButton(
                     label: s.get('retry'),
@@ -1789,7 +1654,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   /// (2026-09-15 정보 다이어트) 턴 배너·판 요약 삭제. 내 턴은 말풍선과 책상 테두리가,
   /// 남은 개수는 줄 옆 숫자가 말한다. 여기엔 **승리/패배 도장만** 결과 순간에 찍힌다.
   Widget _turnStamp() {
-    if (_phase != GamePhase.gameOver || _replaying || _dialogue != null) {
+    if (_phase != GamePhase.gameOver || _dialogue != null) {
       return const SizedBox.shrink();
     }
     final Color c = _playerWon ? _Pal.win : _Pal.alarm;
@@ -1929,7 +1794,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                   children: List.generate(len, (i) {
                     final bool selected =
                         isSelRow && i >= len - _selectedCount;
-                    final bool danger = _isWrongStone(rowIdx, i, len);
+                    const bool danger = false;
                     return _Stone(
                       cell: cell,
                       cellH: lineH,
@@ -2104,7 +1969,6 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                           size: stone,
                           selected: selected,
                           leaving: _leaving && selected,
-                          danger: _isWrongStone(rowIdx, i, len),
                           hint: _isHintStone(rowIdx, i, len),
                           pointer: _guideRequired != null && _isHintStone(rowIdx, i, len),
                           kind: snackForStage(widget.stageNumber),
@@ -2155,12 +2019,6 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       final int row = _kSelRow;
       final int left = _kSelStart;
       final int right = _rows[row] - (_kSelStart + _kSelCount);
-      _recordPlayerMove(NimMove(
-          rowIndex: row,
-          count: _kSelCount,
-          isKayles: true,
-          kaylesLeft: left,
-          kaylesRight: right));
       setState(() {
         _leaving = false;
         // (대표님 7/24) 분열은 제자리에서 위아래로 — 정렬하면 줄 위치가 튀어 헷갈림
@@ -2269,7 +2127,6 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                           size: stone,
                           selected: selected,
                           leaving: _leaving && selected,
-                          danger: _isWrongStone(rowIdx, i, len),
                           hint: _isHintStone(rowIdx, i, len),
                           pointer: _guideRequired != null && _isHintStone(rowIdx, i, len),
                           kind: snackForStage(widget.stageNumber),
@@ -2342,7 +2199,6 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     Future.delayed(const Duration(milliseconds: 360), () {
       if (!mounted) return;
       final int a = _wSelA, b = _wSelB;
-      _recordPlayerMove(NimMove(isWythoff: true, takeA: a, takeB: b));
       setState(() {
         _leaving = false;
         _rows[0] -= a;
@@ -2798,8 +2654,6 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         color: _Pal.alarm,
         onTap: () {
           if (a <= 0 || b <= 0 || a == b) return;
-          _recordPlayerMove(NimMove(
-              rowIndex: _selectedPile, splitA: a, splitB: b, isPepero: true));
           SfxService.instance.playTake();
           _haptic(true);
           _clearHint();

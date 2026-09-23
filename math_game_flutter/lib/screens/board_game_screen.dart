@@ -120,13 +120,6 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
   bool get _guideSpeaking =>
       _guideActive && (_guideReading || (_game.toMove == 0 && !_aiBusy));
 
-  // ── 패배 되감기 (종반 = 판정이 정확한 구간에서만 기록) ──
-  BoardGame? _mistakeGame;
-  BoardMove? _mistakeMove;
-  BoardMove? _mistakeBest;
-  BoardMove? _wrong;
-  bool _replaying = false;
-
   // ── 클리어 뒤 미연시식 대화 ──
   List<DialogueLine>? _dialogue;
   String? _dialogueTitle;
@@ -297,48 +290,11 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
     if (_guideFollow && _game.toMove == 0 && !_game.isOver) _hint = _game.bestMove();
   }
 
-  /// 플레이어 수 직전 — 종반(판정 정확)에서 이기던 판을 지는 판으로 만들면 기록.
-  void _recordPlayerMove(BoardMove m) {
-    if (_mistakeMove != null || !_game.inEndgame()) return;
-    if (_game.toMoveIsLosing()) return;
-    final best = _game.bestMove();
-    final after = _game.clone()..apply(m);
-    if (after.isOver || after.toMove != 1) return; // 끝났거나 "한 번 더" — 판정 생략
-    if (!after.toMoveIsLosing()) {
-      _mistakeGame = _game.clone();
-      _mistakeMove = m;
-      _mistakeBest = best;
-    }
-  }
-
-  void _startReplay() {
-    final g = _mistakeGame;
-    if (g == null) {
-      setState(() {
-        _replaying = true;
-        _face = MidnightFace.neutral;
-        _say('replayNone');
-      });
-      return;
-    }
-    _haptic();
-    setState(() {
-      _replaying = true;
-      _game = g.clone();
-      _hint = _mistakeBest;
-      _wrong = _mistakeMove;
-      _selPoint = -1;
-      _face = MidnightFace.confident;
-      _say('replayHintBoard');
-    });
-  }
-
   /// 판 위를 눌렀을 때 — 종류별로 "수" 로 바뀐 것이 들어온다.
   void _onBoardMove(BoardMove m) {
     if (!_myTurn || _guideReading) return;
     if (!_game.legalMoves().contains(m)) return;
     if (_guideFollow && _hint != null && m != _hint) return; // 가이드: 하늘색만
-    _recordPlayerMove(m);
     _haptic(true);
     SfxService.instance.playTake();
     final bool wasDots = _game is DotsBoxesGame;
@@ -887,7 +843,7 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
 
   /// (2026-09-15 정보 다이어트) 턴 배너 삭제 — 결과 도장만 승리/패배 순간에 찍힌다.
   Widget _turnStamp() {
-    if (_phase != GamePhase.gameOver || _replaying || _dialogue != null) {
+    if (_phase != GamePhase.gameOver || _dialogue != null) {
       return const SizedBox.shrink();
     }
     final Color c = _playerWon ? _P.win : _P.alarm;
@@ -956,17 +912,6 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
         Padding(
           padding: const EdgeInsets.all(12),
           child: Row(children: [
-            if (!_replaying) ...[
-              Expanded(
-                child: _Stamp(
-                  label: s.get('whyLost'),
-                  color: _P.hint,
-                  icon: Icons.replay_rounded,
-                  onTap: _startReplay,
-                ),
-              ),
-              const SizedBox(width: 10),
-            ],
             Expanded(
               child: _Stamp(
                 label: s.get('retry'),
@@ -1105,7 +1050,6 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
                   child: BoardView(
                     game: _game,
                     hint: _hint,
-                    wrong: _wrong,
                     pointer: _guideFollow && _hint != null,
                     selPoint: _selPoint,
                     enabled: _myTurn && !_guideReading,
