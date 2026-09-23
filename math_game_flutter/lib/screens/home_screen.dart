@@ -61,6 +61,9 @@ class _HomeScreenState extends State<HomeScreen>
 
   bool get _hasProgress => widget.stageManager.maxStage > 0;
 
+  /// 하단 책상 패널 대략 높이(인사말+배지+버튼 3줄) — 예린 크기 계산용
+  static const double _kHomePanelH = 250;
+
   @override
   Widget build(BuildContext context) {
     final s = widget.localeProvider.strings;
@@ -92,19 +95,23 @@ class _HomeScreenState extends State<HomeScreen>
     return SafeArea(
       child: LayoutBuilder(builder: (context, cons) {
         final double h = cons.maxHeight;
+        // 타이틀 밴드 아래(+130)부터 하단 패널 위(-_kHomePanelH)까지가 예린 머리~가슴팍.
+        // 게임 화면처럼 그림 높이의 약 62% 지점에서 잘리게 크기를 정한다.
+        final double yerinTop = h * 0.075 + 130;
+        final double yerinH =
+            ((h - yerinTop - _kHomePanelH) / 0.62).clamp(560.0, 820.0);
         return Stack(
           children: [
-            // 예린 — 크게, 하단 버튼 패널 뒤로 자연스럽게 이어지는 구도
+            // 예린 — 게임 화면과 같은 구도: 타이틀 밴드 아래에 얼굴, 가슴팍까지만 보이고
+            // 나머지는 하단 책상 패널 뒤로 (2026-09-23 대표님: 크게, 가슴팍까지)
             Positioned(
-              // (2026-09-15 대표님) 얼굴 크게 — 타이틀 밴드 바로 아래에 머리, 다리는
-              // 하단 패널 뒤로 사라진다. 이미지 높이 460 (대표님: 중간 크기).
-              top: h * 0.075 + 118,
+              top: yerinTop,
               left: 0,
               right: 0,
-              child: const Center(
+              child: Center(
                 child: MidnightCharacter(
                   face: MidnightFace.happy1,
-                  size: 460,
+                  size: yerinH,
                   animate: false,
                 ),
               ),
@@ -175,10 +182,19 @@ class _HomeScreenState extends State<HomeScreen>
                 ),
               ),
             ),
-            // 하단 패널 — 인사말·배지·버튼 (예린 하반신이 이 뒤로 이어진다)
+            // 하단 책상 패널 — 인사말·배지·버튼. 예린 하반신을 가린다 (불투명).
             Align(
               alignment: Alignment.bottomCenter,
-              child: Column(
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.only(top: 16),
+                decoration: const BoxDecoration(
+                  color: Color(0xF2EFE6D0),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+                  border: Border(top: BorderSide(color: NimTheme.gold, width: 2.5)),
+                  boxShadow: [BoxShadow(color: Color(0x40000000), blurRadius: 14, offset: Offset(0, -4))],
+                ),
+                child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   // 인사말 캡슐
@@ -251,6 +267,7 @@ class _HomeScreenState extends State<HomeScreen>
                   ),
                   const SizedBox(height: 14),
                 ],
+              ),
               ),
             ),
           ],
