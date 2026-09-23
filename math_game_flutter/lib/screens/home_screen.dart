@@ -9,6 +9,7 @@ import 'note_screen.dart';
 import 'gallery_screen.dart';
 import 'game_screen.dart';
 import '../game/nim_engine.dart';
+import '../services/telemetry.dart';
 
 /// 홈 — 세피아 노와르 통일 (2026-07-02 UX 개편 #1·#2).
 /// 큰 한밤이 + 스포트라이트, 진행 배지, 이어하기(주)/처음부터(보조).
@@ -44,6 +45,8 @@ class _HomeScreenState extends State<HomeScreen>
       _fadeController.forward();
       setState(() => _showButtons = true);
     });
+    // 테스트 계측: 하루 한 번 조용히 전송
+    Future.delayed(const Duration(seconds: 3), () => Telemetry.instance.maybeAutoSend());
     // 언어는 기기 설정 자동 추종 (LocaleProvider.load) — 변경은 설정에서.
     widget.stageManager.addListener(_onProgress); // 진행도 배지 즉시 반영
   }

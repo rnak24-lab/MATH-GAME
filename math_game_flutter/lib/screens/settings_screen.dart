@@ -4,6 +4,8 @@ import '../services/app_settings.dart';
 import '../services/music_service.dart';
 import '../game/stage_manager.dart';
 import 'privacy_policy_screen.dart';
+import 'package:flutter/services.dart';
+import '../services/telemetry.dart';
 
 /// 설정 화면 — 언어 / 게임(진동·규칙·초기화) / 정보(개인정보처리방침·버전).
 class SettingsScreen extends StatefulWidget {
@@ -24,6 +26,23 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   static const String _appVersion = '1.0.0';
+  bool _sending = false;
+
+  Future<void> _sendTelemetry() async {
+    final s = widget.localeProvider.strings;
+    setState(() => _sending = true);
+    final ok = await Telemetry.instance.send();
+    if (!mounted) return;
+    setState(() => _sending = false);
+    if (!ok) {
+      // 전송 실패 → 내용을 클립보드에 복사해 두어 직접 붙여넣을 수 있게
+      await Clipboard.setData(ClipboardData(text: Telemetry.instance.report()));
+    }
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(s.get(ok ? 'telemetrySent' : 'telemetryFailCopied'))),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -316,6 +335,47 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   _navRow(Icons.privacy_tip_outlined, s.get('privacyPolicy')),
             ),
           ),
+          // 테스트 리포트 (계측) — 하루 한 번 자동, 여기서 즉시 전송
+          if (kTelemetryEnabled)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: _card(
+                onTap: _sending ? null : _sendTelemetry,
+                child: Row(
+                  children: [
+                    const Icon(Icons.bar_chart_rounded, color: Color(0xFFC9A24B)),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(s.get('telemetryTitle'),
+                              style: const TextStyle(
+                                  fontSize: 16, fontWeight: FontWeight.w500, color: Color(0xFF332817))),
+                          const SizedBox(height: 2),
+                          Text(
+                            s.get('telemetrySummary', [
+                              '${Telemetry.instance.sessions}',
+                              '${Telemetry.instance.totalTries}',
+                              Telemetry.instance.lastSent.isEmpty
+                                  ? s.get('telemetryNever')
+                                  : Telemetry.instance.lastSent.substring(5, 16).replaceAll('T', ' '),
+                            ]),
+                            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                          ),
+                        ],
+                      ),
+                    ),
+                    _sending
+                        ? const SizedBox(
+                            width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                        : Text(s.get('telemetrySend'),
+                            style: const TextStyle(
+                                fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF3D8FB8))),
+                  ],
+                ),
+              ),
+            ),
           // 버전
           _card(
             child: Row(

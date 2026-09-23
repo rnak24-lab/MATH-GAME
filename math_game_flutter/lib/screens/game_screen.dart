@@ -12,6 +12,7 @@ import '../widgets/midnight_character.dart';
 import '../providers/locale_provider.dart';
 import '../l10n/app_strings.dart';
 import '../services/ad_service.dart';
+import '../services/telemetry.dart';
 import '../game/tutorial_manager.dart';
 import '../l10n/dialogue.dart';
 import '../widgets/dialogue_box.dart';
@@ -209,6 +210,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     super.initState();
     _config = widget.dailyConfig ?? _engine.generateStage(widget.stageNumber);
     _rows = List.from(_config.rows);
+    Telemetry.instance.stageStart(_statStage);
     _sayGreeting();
     // 피보나치: 첫 수는 "전부 빼기 금지" → 최대 n-1
     if (_config.mode == GameMode.fibonacci) {
@@ -360,7 +362,11 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     return false;
   }
 
+  /// 계측용 스테이지 번호 — 오늘 한 판은 0
+  int get _statStage => widget.isDaily ? 0 : widget.stageNumber;
+
   void _endGame(bool playerWins) {
+    Telemetry.instance.stageEnd(_statStage, won: playerWins);
     _haptic(playerWins); // 승리 = 강하게, 패배 = 가볍게 (M3: 패배는 조용히)
     setState(() {
       _phase = GamePhase.gameOver;
@@ -866,6 +872,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     if (!mounted || _currentTurn != TurnOwner.player) {
       return;
     }
+    Telemetry.instance.hintUsed(_statStage);
 
     // (id=1201) 4번: 현재 턴 플레이어가 이미 진 상태(nimSum=0/Grundy=0)인지 먼저 판정.
     final bool canWin = !_calculateMidnightWinsState();
@@ -1258,6 +1265,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
 
   @override
   void dispose() {
+    Telemetry.instance.stageLeave(_statStage);
     _pokeTimer?.cancel();
     _hintTimer?.cancel();
     super.dispose();

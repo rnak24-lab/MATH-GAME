@@ -6,12 +6,14 @@ import 'screens/home_screen.dart';
 import 'services/ad_service.dart';
 import 'services/app_settings.dart';
 import 'services/music_service.dart';
+import 'services/telemetry.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   // AdMob 초기화 (실패해도 앱은 정상 실행)
   AdService.instance.init();
+  Telemetry.instance.load(); // 테스트 계측 (세션 수) — 실패해도 무시
   runApp(const MathNimApp());
 }
 

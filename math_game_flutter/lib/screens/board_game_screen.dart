@@ -15,6 +15,7 @@ import '../l10n/app_strings.dart';
 import '../models/game_state.dart' show GamePhase;
 import '../providers/locale_provider.dart';
 import '../services/ad_service.dart';
+import '../services/telemetry.dart';
 import '../services/app_settings.dart';
 import '../services/sfx_service.dart';
 import '../widgets/midnight_character.dart';
@@ -152,6 +153,7 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
   void initState() {
     super.initState();
     _game = BoardGame.forStage(widget.stageNumber);
+    Telemetry.instance.stageStart(widget.stageNumber);
     _say(s.pickKey('greet', _rng));
     _guide = TutorialManager.boardGuide(widget.stageNumber, s);
     // (2026-09-15 대표님) 선공 선택 없음 — 항상 플레이어가 먼저. 심은 예린이
@@ -196,6 +198,7 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
 
   @override
   void dispose() {
+    Telemetry.instance.stageLeave(widget.stageNumber);
     _pokeTimer?.cancel();
     super.dispose();
   }
@@ -391,6 +394,7 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
   }
 
   void _endGame(bool playerWins) {
+    Telemetry.instance.stageEnd(widget.stageNumber, won: playerWins);
     _haptic(playerWins);
     setState(() {
       _phase = GamePhase.gameOver;
@@ -618,6 +622,7 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
 
   void _revealHint() {
     if (!mounted || !_myTurn) return;
+    Telemetry.instance.hintUsed(widget.stageNumber);
     final bool losing = _game.toMoveIsLosing();
     String text;
     if (losing) {
