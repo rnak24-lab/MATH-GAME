@@ -59,6 +59,7 @@ class _P {
   static const win = Color(0xFF5E7D52);
   static const sky = Color(0xFF79C6EA);
   static const hint = Color(0xFF3D8FB8);
+  static const mine = Color(0xFF2E63B5); // 내 선·상자·돌 — 종이 위에서 또렷한 파랑
   static const deskWood = Color(0xFFD9A05B);
   static const deskWoodDark = Color(0xFFB98443);
   static const choco = Color(0xFF6B4226);
@@ -250,11 +251,11 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
       case BoardKind.chomp:
         return s.get('ctaChomp');
       case BoardKind.dotsBoxes:
-        return s.get('ctaDots');
+        return _selPoint >= 0 ? s.get('ctaConnect2') : s.get('ctaDots');
       case BoardKind.sim:
-        return s.get('ctaSim');
+        return _selPoint >= 0 ? s.get('ctaConnect2') : s.get('ctaSim');
       case BoardKind.sprouts:
-        return _selPoint >= 0 ? s.get('ctaSprouts2') : s.get('ctaSprouts');
+        return _selPoint >= 0 ? s.get('ctaConnect2') : s.get('ctaSprouts');
       case BoardKind.hex:
         return s.get('ctaHex');
     }
@@ -1174,10 +1175,9 @@ class _BoardGameScreenState extends State<BoardGameScreen> {
 // ═══════════════════════════════════════════════════════════════════════════
 // 판 위젯 — 그리기와 탭 판정이 같은 기하(_Layout)를 쓴다.
 // ═══════════════════════════════════════════════════════════════════════════
-class BoardView extends StatelessWidget {
+class BoardView extends StatefulWidget {
   final BoardGame game;
   final BoardMove? hint;
-  final BoardMove? wrong; // 되감기: 실수한 수 (빨강)
   final bool pointer; // 가이드: 힌트 자리에 손가락
   final int selPoint;
   final bool enabled;
@@ -1187,7 +1187,6 @@ class BoardView extends StatelessWidget {
   const BoardView({
     required this.game,
     required this.hint,
-    this.wrong,
     this.pointer = false,
     required this.selPoint,
     required this.enabled,
@@ -1196,40 +1195,103 @@ class BoardView extends StatelessWidget {
   });
 
   @override
+  State<BoardView> createState() => _BoardViewState();
+}
+
+class _BoardViewState extends State<BoardView> {
+  // 끌어서 잇기 — 시작 점과 손가락 위치
+  int _dragFrom = -1;
+  Offset? _dragPos;
+
+  void _connect(_Layout lay, int a, int b) {
+    final m = lay.connect(a, b);
+    if (m == null) return;
+    widget.onSelectPoint(-1);
+    widget.onMove(m);
+  }
+
+  void _tap(_Layout lay, Offset p) {
+    final sel = widget.selPoint;
+    if (lay.hasPoints) {
+      final i = lay.hitPoint(p, lay.tapRadius);
+      if (i >= 0) {
+        if (sel < 0) {
+          if (lay.canStart(i)) widget.onSelectPoint(i);
+          return;
+        }
+        if (i == sel) {
+          widget.onSelectPoint(-1);
+          return;
+        }
+        if (lay.connect(sel, i) != null) {
+          _connect(lay, sel, i);
+          return;
+        }
+        if (lay.canStart(i)) widget.onSelectPoint(i);
+        return;
+      }
+      // 점이 아니면: 점을 골라 둔 상태에서 그 방향의 선을 눌렀나 (느슨하게)
+      if (sel >= 0) {
+        final j = lay.towardPoint(sel, p);
+        if (j >= 0) {
+          _connect(lay, sel, j);
+          return;
+        }
+      }
+    }
+    final m = lay.hitMove(p);
+    if (m != null) {
+      widget.onSelectPoint(-1);
+      widget.onMove(m);
+    }
+  }
+
+  void _dragEnd(_Layout lay) {
+    final from = _dragFrom;
+    final pos = _dragPos;
+    setState(() {
+      _dragFrom = -1;
+      _dragPos = null;
+    });
+    if (from < 0 || pos == null) return;
+    // 손을 뗀 자리의 점 (넉넉한 반경) → 없으면 끌고 간 방향의 점
+    int j = lay.hitPoint(pos, lay.dropRadius);
+    if (j == from || (j >= 0 && lay.connect(from, j) == null)) j = -1;
+    if (j < 0) j = lay.towardPoint(from, pos);
+    if (j >= 0) _connect(lay, from, j);
+  }
+
+  @override
   Widget build(BuildContext context) {
     return LayoutBuilder(builder: (context, cons) {
       final size = Size(cons.maxWidth, cons.maxHeight);
-      final lay = _Layout(game, size);
+      final lay = _Layout(widget.game, size);
+      final bool on = widget.enabled;
       return GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTapUp: !enabled
+        onTapUp: !on ? null : (d) => _tap(lay, d.localPosition),
+        onPanStart: !on || !lay.hasPoints
             ? null
             : (d) {
-                final p = d.localPosition;
-                if (game is SproutsGame) {
-                  final i = lay.hitPoint(p);
-                  if (i < 0) return;
-                  final g = game as SproutsGame;
-                  if (selPoint < 0) {
-                    if (g.deg[i] < 3) onSelectPoint(i);
-                  } else if (i == selPoint) {
-                    onSelectPoint(-1);
-                  } else {
-                    final a = math.min(selPoint, i), b = math.max(selPoint, i);
-                    if (g.isLegal(a, b)) {
-                      onMove(BoardMove(a, b));
-                    } else if (g.deg[i] < 3) {
-                      onSelectPoint(i);
-                    }
-                  }
-                  return;
-                }
-                final m = lay.hitMove(p);
-                if (m != null) onMove(m);
+                final i = lay.hitPoint(d.localPosition, lay.tapRadius);
+                if (i < 0 || !lay.canStart(i)) return;
+                setState(() {
+                  _dragFrom = i;
+                  _dragPos = d.localPosition;
+                });
               },
+        onPanUpdate: !on || !lay.hasPoints
+            ? null
+            : (d) {
+                if (_dragFrom < 0) return;
+                setState(() => _dragPos = d.localPosition);
+              },
+        onPanEnd: !on || !lay.hasPoints ? null : (_) => _dragEnd(lay),
+        onPanCancel: !on || !lay.hasPoints ? null : () => _dragEnd(lay),
         child: CustomPaint(
           size: size,
-          painter: _BoardPainter(game, lay, hint, selPoint, wrong, pointer),
+          painter: _BoardPainter(widget.game, lay, widget.hint,
+              _dragFrom >= 0 ? _dragFrom : widget.selPoint, widget.pointer, _dragPos),
         ),
       );
     });
@@ -1366,7 +1428,7 @@ class _Layout {
     if (g is SimGame) {
       final sg = g as SimGame;
       int best = -1;
-      double bestD = 16;
+      double bestD = 22;
       for (int e = 0; e < 15; e++) {
         if (sg.color[e] >= 0) continue;
         final a = SimGame.edges[e];
@@ -1395,15 +1457,110 @@ class _Layout {
     return null;
   }
 
-  int hitPoint(Offset p) {
-    final sp = g as SproutsGame;
+  // ── 점-점 잇기 공통 (점과 상자 · 심 · 스프라우트) ──
+  // 처음 하는 사람은 "선을 누른다" 보다 "점을 이으려" 하므로 (대표님 2026-09-23)
+  // 점을 끌거나 두 번 눌러 잇는 입력을 넉넉한 판정으로 받는다.
+  bool get hasPoints => g is DotsBoxesGame || g is SimGame || g is SproutsGame;
+
+  int get pointCount {
+    if (g is DotsBoxesGame) {
+      final d = g as DotsBoxesGame;
+      return (d.R + 1) * (d.C + 1);
+    }
+    if (g is SimGame) return 6;
+    if (g is SproutsGame) return (g as SproutsGame).pointCount;
+    return 0;
+  }
+
+  Offset point(int i) {
+    if (g is DotsBoxesGame) {
+      final d = g as DotsBoxesGame;
+      return dot(i ~/ (d.C + 1), i % (d.C + 1));
+    }
+    if (g is SimGame) return simPt(i);
+    return sproutPt(i);
+  }
+
+  /// 점을 "누른" 걸로 치는 반경 — 손가락 기준으로 넉넉하게
+  double get tapRadius {
+    if (g is DotsBoxesGame) return math.max(26.0, dGap * 0.38);
+    if (g is SimGame) return 34;
+    return 30;
+  }
+
+  /// 끌다 손을 뗀 자리에서 점을 찾는 반경 — 더 넉넉하게
+  double get dropRadius {
+    if (g is DotsBoxesGame) return math.max(34.0, dGap * 0.48);
+    if (g is SimGame) return 48;
+    return 40;
+  }
+
+  /// 이 점에서 그을 수 있는 선이 남아 있는가
+  bool canStart(int i) {
+    for (int j = 0; j < pointCount; j++) {
+      if (j != i && connect(i, j) != null) return true;
+    }
+    return false;
+  }
+
+  /// 두 점을 잇는 합법 수. 없으면 null.
+  BoardMove? connect(int a, int b) {
+    if (a == b || a < 0 || b < 0) return null;
+    if (g is DotsBoxesGame) {
+      final d = g as DotsBoxesGame;
+      final cw = d.C + 1;
+      final ra = a ~/ cw, ca = a % cw, rb = b ~/ cw, cb = b % cw;
+      int e = -1;
+      if (ra == rb && (ca - cb).abs() == 1) {
+        e = ra * d.C + math.min(ca, cb); // 가로
+      } else if (ca == cb && (ra - rb).abs() == 1) {
+        e = d.hCount + math.min(ra, rb) * cw + ca; // 세로
+      }
+      if (e < 0 || d.drawn[e]) return null;
+      return BoardMove(e);
+    }
+    if (g is SimGame) {
+      final e = SimGame.edgeIndex(a, b);
+      if (e < 0 || (g as SimGame).color[e] >= 0) return null;
+      return BoardMove(e);
+    }
+    if (g is SproutsGame) {
+      final sp = g as SproutsGame;
+      final lo = math.min(a, b), hi = math.max(a, b);
+      return sp.isLegal(lo, hi) ? BoardMove(lo, hi) : null;
+    }
+    return null;
+  }
+
+  /// p 에서 가장 가까운 점 (반경 r 안). 없으면 -1.
+  int hitPoint(Offset p, [double r = 26]) {
     int best = -1;
-    double bestD = 26;
-    for (int i = 0; i < sp.pointCount; i++) {
-      final d = (p - sproutPt(i)).distance;
+    double bestD = r;
+    for (int i = 0; i < pointCount; i++) {
+      final d = (p - point(i)).distance;
       if (d < bestD) {
         bestD = d;
         best = i;
+      }
+    }
+    return best;
+  }
+
+  /// from 점에서 p 쪽으로 향한 "이을 수 있는" 점 — 끝까지 안 가도 방향만 맞으면 인정.
+  int towardPoint(int from, Offset p) {
+    final o = point(from);
+    final v = p - o;
+    if (v.distance < 12) return -1;
+    int best = -1;
+    double bestCos = math.cos(28 * math.pi / 180);
+    for (int j = 0; j < pointCount; j++) {
+      if (j == from || connect(from, j) == null) continue;
+      final u = point(j) - o;
+      if (v.distance < u.distance * 0.35) continue; // 너무 짧게 끌었으면 무시
+      final cosv = (v.dx * u.dx + v.dy * u.dy) / (v.distance * u.distance);
+      if (cosv > bestCos) {
+        bestCos = cosv;
+        best = j;
       }
     }
     return best;
@@ -1415,9 +1572,9 @@ class _BoardPainter extends CustomPainter {
   final _Layout lay;
   final BoardMove? hint;
   final int selPoint;
-  final BoardMove? wrong;
   final bool pointer;
-  _BoardPainter(this.g, this.lay, this.hint, this.selPoint, [this.wrong, this.pointer = false]);
+  final Offset? dragPos; // 끌어서 잇는 중인 손가락 위치
+  _BoardPainter(this.g, this.lay, this.hint, this.selPoint, [this.pointer = false, this.dragPos]);
 
   /// 힌트 자리 위에 손가락 — 가이드 판에서 "여길 눌러" 를 그림으로.
   void _hand(Canvas c, Offset at) {
@@ -1425,9 +1582,7 @@ class _BoardPainter extends CustomPainter {
     _text(c, '👆', at + const Offset(0, 26), 26, Colors.white);
   }
 
-  bool _isWrong(int a, [int b = 0]) => wrong != null && wrong!.a == a && wrong!.b == b;
-
-  static const Color _me = _P.gold;
+  static const Color _me = _P.mine;
   static const Color _ai = _P.alarmHi;
 
   @override
@@ -1437,6 +1592,7 @@ class _BoardPainter extends CustomPainter {
     if (g is SimGame) _sim(canvas);
     if (g is SproutsGame) _sprouts(canvas);
     if (g is HexGame) _hex(canvas);
+    _selection(canvas);
     final h = hint;
     if (h != null && pointer) {
       Offset? at;
@@ -1446,6 +1602,41 @@ class _BoardPainter extends CustomPainter {
       if (g is SproutsGame) at = lay.sproutPt(h.a);
       if (g is HexGame) { final n = (g as HexGame).n; at = lay.hexCenter(h.a ~/ n, h.a % n); }
       if (at != null) _hand(canvas, at);
+    }
+  }
+
+  /// 고른 점 · 이을 수 있는 점 · 끌고 있는 고무줄 선 (점과 상자 · 심 · 스프라우트 공통)
+  void _selection(Canvas c) {
+    if (!lay.hasPoints || selPoint < 0) return;
+    final o = lay.point(selPoint);
+    for (int j = 0; j < lay.pointCount; j++) {
+      if (j == selPoint || lay.connect(selPoint, j) == null) continue;
+      c.drawCircle(lay.point(j), 5, Paint()..color = _me.withOpacity(0.85));
+    }
+    c.drawCircle(o, 14, Paint()
+      ..color = _me
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3);
+    final p = dragPos;
+    if (p != null) {
+      c.drawLine(o, p, Paint()
+        ..color = _me.withOpacity(0.55)
+        ..strokeWidth = 5
+        ..strokeCap = StrokeCap.round);
+      final j = lay.hitPoint(p, lay.dropRadius) >= 0 &&
+              lay.connect(selPoint, lay.hitPoint(p, lay.dropRadius)) != null
+          ? lay.hitPoint(p, lay.dropRadius)
+          : lay.towardPoint(selPoint, p);
+      if (j >= 0) {
+        c.drawLine(o, lay.point(j), Paint()
+          ..color = _me.withOpacity(0.35)
+          ..strokeWidth = 8
+          ..strokeCap = StrokeCap.round);
+        c.drawCircle(lay.point(j), 14, Paint()
+          ..color = _me
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 3);
+      }
     }
   }
 
@@ -1487,14 +1678,6 @@ class _BoardPainter extends CustomPainter {
                 ..style = PaintingStyle.stroke
                 ..strokeWidth = 4);
         }
-        if (_isWrong(r, col)) {
-          c.drawRRect(
-              rr.inflate(2),
-              Paint()
-                ..color = _P.alarmHi
-                ..style = PaintingStyle.stroke
-                ..strokeWidth = 4);
-        }
       }
     }
   }
@@ -1516,21 +1699,18 @@ class _BoardPainter extends CustomPainter {
     for (int e = 0; e < d.edgeCount; e++) {
       final ends = lay.edgeEnds(e);
       final isHint = hint != null && hint!.a == e;
-      final isWrong = _isWrong(e);
       final paint = Paint()
         ..strokeCap = StrokeCap.round
-        ..strokeWidth = d.drawn[e] ? 4 : ((isHint || isWrong) ? 4 : 2)
+        ..strokeWidth = d.drawn[e] ? 4 : (isHint ? 4 : 2)
         ..color = d.drawn[e]
             ? (d.preDrawn.contains(e) ? _P.inkSoft : _P.ink)
-            : isWrong
-                ? _P.alarmHi
-                : (isHint ? _P.sky : _P.deskWoodDark.withOpacity(0.35));
+            : (isHint ? _P.sky : _P.deskWoodDark.withOpacity(0.35));
       c.drawLine(ends[0], ends[1], paint);
     }
     // 점
     for (int r = 0; r <= d.R; r++) {
       for (int col = 0; col <= d.C; col++) {
-        c.drawCircle(lay.dot(r, col), 4.5, Paint()..color = _P.ink);
+        c.drawCircle(lay.dot(r, col), 5.5, Paint()..color = _P.ink);
       }
     }
   }
@@ -1559,7 +1739,6 @@ class _BoardPainter extends CustomPainter {
       final p1 = lay.simPt(a[0]), p2 = lay.simPt(a[1]);
       final col = sg.color[e];
       final isHint = hint != null && hint!.a == e;
-      final isWrong = _isWrong(e);
       if (tri.contains(e)) {
         c.drawLine(p1, p2, Paint()
           ..color = _P.alarmHi.withOpacity(0.45)
@@ -1571,18 +1750,16 @@ class _BoardPainter extends CustomPainter {
           p2,
           Paint()
             ..strokeCap = StrokeCap.round
-            ..strokeWidth = col >= 0 ? 4.5 : ((isHint || isWrong) ? 4 : 2)
+            ..strokeWidth = col >= 0 ? 6 : (isHint ? 4 : 2)
             ..color = col == 0
                 ? _me
                 : col == 1
                     ? _ai
-                    : isWrong
-                        ? _P.alarmHi
-                        : (isHint ? _P.sky : _P.deskWoodDark.withOpacity(0.45)));
+                    : (isHint ? _P.sky : _P.deskWoodDark.withOpacity(0.45)));
     }
     for (int i = 0; i < 6; i++) {
-      c.drawCircle(lay.simPt(i), 8, Paint()..color = _P.ink);
-      c.drawCircle(lay.simPt(i), 8, Paint()
+      c.drawCircle(lay.simPt(i), 10, Paint()..color = _P.ink);
+      c.drawCircle(lay.simPt(i), 10, Paint()
         ..color = _P.cream
         ..style = PaintingStyle.stroke
         ..strokeWidth = 2);
@@ -1597,14 +1774,6 @@ class _BoardPainter extends CustomPainter {
         ..strokeWidth = 3
         ..strokeCap = StrokeCap.round);
     }
-    // 선택했을 때 이을 수 있는 점 표시
-    final legal = <int>{};
-    if (selPoint >= 0) {
-      for (int j = 0; j < sp.pointCount; j++) {
-        if (j == selPoint) continue;
-        if (sp.isLegal(math.min(selPoint, j), math.max(selPoint, j))) legal.add(j);
-      }
-    }
     for (int i = 0; i < sp.pointCount; i++) {
       final p = lay.sproutPt(i);
       final dead = sp.deg[i] >= 3;
@@ -1614,14 +1783,6 @@ class _BoardPainter extends CustomPainter {
         ..color = dead ? _P.deskWoodDark : _P.ink
         ..style = PaintingStyle.stroke
         ..strokeWidth = 2.5);
-      if (i == selPoint) {
-        c.drawCircle(p, r + 6, Paint()
-          ..color = _me
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 3);
-      } else if (legal.contains(i)) {
-        c.drawCircle(p, 4, Paint()..color = _me);
-      }
       if (hint != null && (hint!.a == i || hint!.b == i)) {
         c.drawCircle(p, r + 6, Paint()
           ..color = _P.sky
@@ -1632,11 +1793,6 @@ class _BoardPainter extends CustomPainter {
     if (hint != null) {
       c.drawLine(lay.sproutPt(hint!.a), lay.sproutPt(hint!.b), Paint()
         ..color = _P.sky.withOpacity(0.7)
-        ..strokeWidth = 3);
-    }
-    if (wrong != null) {
-      c.drawLine(lay.sproutPt(wrong!.a), lay.sproutPt(wrong!.b), Paint()
-        ..color = _P.alarmHi.withOpacity(0.7)
         ..strokeWidth = 3);
     }
   }
@@ -1669,12 +1825,6 @@ class _BoardPainter extends CustomPainter {
       if (hint != null && hint!.a == i) {
         c.drawPath(path, Paint()
           ..color = _P.sky
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 3.5);
-      }
-      if (_isWrong(i)) {
-        c.drawPath(path, Paint()
-          ..color = _P.alarmHi
           ..style = PaintingStyle.stroke
           ..strokeWidth = 3.5);
       }

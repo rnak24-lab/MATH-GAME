@@ -40,6 +40,17 @@ String _yerinAssetPath(MidnightFace face) {
   return 'assets/yerin/$base.png';
 }
 
+/// 표정별 세로 보정 — 앞으로 숙인 원화(smug)는 눈이 다른 표정보다 한참 아래라
+/// 그림을 위로 올려 눈높이를 어느 정도 맞춘다 (대표님 2026-09-23: 내려오는 건 맞지만 덜).
+double _faceLift(MidnightFace face, double size) {
+  switch (face) {
+    case MidnightFace.confident:
+      return size * 0.12;
+    default:
+      return 0;
+  }
+}
+
 /// (폴백) 구 고양이 에셋 경로 매핑.
 String _midnightAssetPath(MidnightFace face, {bool gif = false}) {
   final String base;
@@ -152,7 +163,7 @@ class _MidnightCharacterState extends State<MidnightCharacter>
       animation: _bounceAnim,
       builder: (context, child) {
         return Transform.translate(
-          offset: Offset(0, -_bounceAnim.value),
+          offset: Offset(0, -_bounceAnim.value - _faceLift(widget.face, widget.size)),
           child: SizedBox(
             width: widget.size,
             height: widget.size,
