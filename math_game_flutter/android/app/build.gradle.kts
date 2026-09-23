@@ -17,7 +17,8 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace = "com.endolphinstudio.nim"
-    compileSdk = flutter.compileSdkVersion
+    // (2026-09-23) Play 신규 앱 API 36 요구(2026-08-31~) — Flutter 3.27 기본값(35) 대신 명시
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -33,7 +34,7 @@ android {
         // 방과후 님게임 — 엔돌핀 스튜디오 (2026-07-24 확정)
         applicationId = "com.endolphinstudio.nim"
         minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
+        targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
