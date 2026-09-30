@@ -42,6 +42,11 @@ class AdService {
   /// 정식 출시 때 true 로 되돌린다. false 면 로드조차 하지 않는다.
   static const bool kInterstitialEnabled = false;
 
+  /// 광고 전체 스위치. **비공개 테스트 기간(2026-09-30~)에는 false** — 지인 테스터의
+  /// 광고 트래픽이 AdMob 무효 트래픽으로 잡히지 않게 SDK 초기화조차 하지 않는다.
+  /// 힌트는 광고 없이 바로 공개된다. 정식 출시 때 true (전면 광고도 함께 검토).
+  static const bool kAdsEnabled = false;
+
   bool _initialized = false;
   InterstitialAd? _interstitialAd;
   bool _loadingInterstitial = false;
@@ -51,7 +56,7 @@ class AdService {
   static const int interstitialEvery = 3;
 
   Future<void> init() async {
-    if (_initialized) return;
+    if (_initialized || !kAdsEnabled) return;
     try {
       await MobileAds.instance.initialize();
       _initialized = true;
@@ -140,6 +145,7 @@ class AdService {
   /// 리워드 광고를 표시하고, 시청 완료 시 [onReward] 호출.
   /// 광고가 준비 안 됐으면 false 반환 (호출자가 폴백 처리 — 예: 그냥 힌트 제공).
   bool showRewardedAd({required VoidCallback onReward}) {
+    if (!kAdsEnabled) return false; // 테스트 기간: 호출자가 바로 힌트 공개
     final ad = _rewardedAd;
     if (!_initialized || ad == null) {
       _loadRewarded();

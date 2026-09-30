@@ -25,7 +25,7 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  static const String _appVersion = '1.0.0';
+  static const String _appVersion = '1.4.2'; // pubspec version 과 함께 올릴 것
   bool _sending = false;
 
   Future<void> _sendTelemetry() async {
@@ -271,6 +271,52 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     activeColor: const Color(0xFFC9A24B),
                     onChanged: (v) async {
                       await AppSettings.instance.setHaptics(v);
+                      setState(() {});
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+          // 집중 모드 — 예린을 작은 얼굴로 줄이고 판을 크게
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: _card(
+              onTap: () async {
+                await AppSettings.instance
+                    .setFocusMode(!AppSettings.instance.focusMode);
+                setState(() {});
+              },
+              child: Row(
+                children: [
+                  const Icon(Icons.center_focus_strong_rounded,
+                      color: Color(0xFFC9A24B)),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          s.get('focusModeTitle'),
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xFF332817),
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          s.get('focusModeDesc'),
+                          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Switch(
+                    value: AppSettings.instance.focusMode,
+                    activeColor: const Color(0xFFC9A24B),
+                    onChanged: (v) async {
+                      await AppSettings.instance.setFocusMode(v);
                       setState(() {});
                     },
                   ),

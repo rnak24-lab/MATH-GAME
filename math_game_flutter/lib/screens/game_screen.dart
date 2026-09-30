@@ -28,6 +28,9 @@ import '../game/board_games.dart' show kTotalStages;
 /// 값이 클수록 책상이 아래로 내려가 캐릭터가 더 많이 보인다.
 const double _kDeskTop = 340;
 
+/// 집중 모드의 책상 상단 y — 작은 얼굴(68)과 말풍선만 남기고 판을 위로 끌어올린다.
+const double _kDeskTopFocus = 122;
+
 /// 예린 이미지 높이(논리 px). 원화 머리 구간(높이의 6%~36%)이 말풍선 아래~책상 위에
 /// 오도록 530 (대표님: 400과 660의 중간). 폭은 자동(530 × 1080/1920 ≈ 298) — 폰 해상도가 달라도 논리 px 기준이라
 /// 얼굴 크기가 같다. 아래쪽(허리 이하)은 책상에 가려진다 — 의도.
@@ -828,7 +831,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
           ),
         ),
         content: Text(
-          s.get('hintDialogBody'),
+          s.get(AdService.kAdsEnabled ? 'hintDialogBody' : 'hintDialogBodyFree'),
           style: const TextStyle(
             fontFamily: _mono,
             fontSize: 13.5,
@@ -849,9 +852,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
               backgroundColor: _Pal.gold,
               foregroundColor: _Pal.ink,
             ),
-            icon: const Icon(Icons.ondemand_video_rounded, size: 18),
+            icon: Icon(AdService.kAdsEnabled ? Icons.ondemand_video_rounded : Icons.lightbulb_rounded, size: 18),
             label: Text(
-              s.get('hintWatchAd'),
+              s.get(AdService.kAdsEnabled ? 'hintWatchAd' : 'hintShow'),
               style: const TextStyle(
                   fontFamily: _mono, fontWeight: FontWeight.w800),
             ),
@@ -1345,6 +1348,39 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   }
 
   /// (v2) 예린 대사 말풍선 — 머리 위에 떠 있고 꼬리가 아래(예린)를 향한다.
+  /// 집중 모드 — 큰 예린 대신 왼쪽 위 작은 얼굴 (표정·찌르기 반응은 그대로).
+  /// 원화(1080x1920)를 240 높이로 그리면 머리는 y≈14~86 → 눈이 원 가운데 오게 위로 26.
+  Widget _miniYerin() {
+    const double d = 68;
+    return Container(
+      width: d,
+      height: d,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: _Pal.cream,
+        border: Border.all(color: _Pal.gold, width: 2.5),
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withOpacity(0.3),
+              blurRadius: 6,
+              offset: const Offset(0, 2)),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: OverflowBox(
+        alignment: Alignment.topCenter,
+        minWidth: 0,
+        minHeight: 0,
+        maxWidth: 240,
+        maxHeight: 240,
+        child: Transform.translate(
+          offset: const Offset(0, -26),
+          child: MidnightCharacter(face: _poked ? _pokeFace : (_guideReading ? MidnightFace.happy1 : _midnightFace), size: 240, animate: false),
+        ),
+      ),
+    );
+  }
+
   Widget _tauntBubble(String message) {
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -1386,7 +1422,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         onTap: _advanceGuide,
         child: Column(
           children: [
-            const SizedBox(height: _kDeskTop + 4),
+            SizedBox(height: _deskTop + 4),
             Expanded(
               child: Container(
                 color: Colors.black.withOpacity(0.66),
@@ -1498,25 +1534,33 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
           // 1) 예린 — (2026-09-15 대표님) 얼굴이 크게 보이는 게 최우선. 아래쪽은 책상에
           //    잘려도 된다. 원화(1080x1920)의 머리는 위에서 ~6%~36% 구간이라, 이미지
           //    높이 _kYerinH 로 두면 머리가 말풍선 아래(~128)부터 책상 위(~330)까지 찬다.
-          Positioned(
-            top: _kYerinTop,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: _pokeYerin,
-                child: _catFigure(size: _kYerinH),
+          if (!_focus)
+            Positioned(
+              top: _kYerinTop,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: _pokeYerin,
+                  child: _catFigure(size: _kYerinH),
+                ),
               ),
             ),
-          ),
+          if (_focus)
+            Positioned(
+              top: 40,
+              left: 14,
+              child: GestureDetector(onTap: _pokeYerin, child: _miniYerin()),
+            ),
           // 말풍선 — 예린 머리 위 중앙, 꼬리가 아래로. 튜토리얼 중엔 튜토리얼 문장이
           // 여기 뜬다 (예린이 직접 설명하는 연출 — 화면에 예린은 항상 한 명).
           Positioned(
-            top: 46,
-            left: 24,
-            right: 24,
-            child: Center(
+            top: _focus ? 34 : 46,
+            left: _focus ? 92 : 24,
+            right: _focus ? 12 : 24,
+            child: Align(
+              alignment: _focus ? Alignment.centerLeft : Alignment.center,
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 330),
                 child: _dialogue != null
@@ -1532,7 +1576,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
           // 3) 테이블 — 캐릭터 하반신만 살짝 덮도록 아래쪽에 배치.
           //    (책상이 화면을 반 이상 먹으면 캐릭터가 얼굴만 남아 답답함)
           Positioned(
-            top: _kDeskTop,
+            top: _deskTop,
             bottom: 0,
             left: 28,
             right: 28,
@@ -1652,6 +1696,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       ],
     );
   }
+
+  bool get _focus => AppSettings.instance.focusMode;
+  double get _deskTop => _focus ? _kDeskTopFocus : _kDeskTop;
 
   /// 이 스테이지의 간식 키 — 문구에 "쿠키/사탕/…"을 넣기 위한 것.
   /// 막대과자 월드는 전용 비주얼이라 'stick'.

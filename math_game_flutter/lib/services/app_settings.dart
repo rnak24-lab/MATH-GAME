@@ -23,12 +23,23 @@ class AppSettings {
   bool sfx = true;
   static const String _sfxKey = 'settings_sfx';
 
+  /// 집중 모드 — 게임 화면의 큰 예린을 작은 얼굴로 줄이고 판을 크게 (2026-09-30).
+  bool focusMode = false;
+  static const String _focusKey = 'settings_focus_mode';
+
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
     haptics = prefs.getBool(_hapticsKey) ?? true;
     music = prefs.getBool(_musicKey) ?? true;
     musicVolume = prefs.getDouble(_musicVolumeKey) ?? 0.3;
     sfx = prefs.getBool(_sfxKey) ?? true;
+    focusMode = prefs.getBool(_focusKey) ?? false;
+  }
+
+  Future<void> setFocusMode(bool v) async {
+    focusMode = v;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_focusKey, v);
   }
 
   Future<void> setSfx(bool v) async {
