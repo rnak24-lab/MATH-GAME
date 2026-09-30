@@ -32,7 +32,7 @@ const POOLS = [
 const SINGLES = [
   ['midnightGreeting', '홈 화면 인사'], ['dailyGreet', '오늘의 한 판 시작'], ['yourTurnNow', '내 차례'], ['midnightThinking', '예린 생각 중'],
   ['pokeReact1', '예린 찌르기 1'], ['pokeReact2', '예린 찌르기 2'], ['pokeReact3', '예린 찌르기 3'],
-  ['simOpening', '심 시작 (예린이 먼저 한 줄)'], ['hintLosingRetry', '힌트: 이미 진 판'], 
+  ['simOpening', '심 시작 (예린이 먼저 한 줄)'], ['dotsOpening', '점과 상자 시작 (예린이 선 몇 개 먼저)'], ['hintLosingRetry', '힌트: 이미 진 판'], ['hintDialogBodyFree', '힌트 창 문구 (광고 없을 때)'], ['g1_win', '맨 첫 판 이겼을 때 한마디'], ['midnightGreetingNew', '홈 인사 (처음 온 사람)'],
   ['dotsExtraTurn', '점과 상자: 한 번 더'], ['g1_1', '튜토리얼 1 인사'], ['g1_2', '튜토리얼 1 지시'], ['g1_3', '튜토리얼 1 마무리'],
   ['g2_1', '튜토리얼 21 인사'], ['g3_1', '튜토리얼 41 인사'], ['g4_1', '튜토리얼 61 인사'],
 ];
