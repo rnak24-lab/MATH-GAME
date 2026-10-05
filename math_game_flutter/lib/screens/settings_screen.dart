@@ -25,7 +25,7 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  static const String _appVersion = '1.4.3'; // pubspec version 과 함께 올릴 것
+  static const String _appVersion = '1.4.4'; // pubspec version 과 함께 올릴 것
   bool _sending = false;
 
   Future<void> _sendTelemetry() async {

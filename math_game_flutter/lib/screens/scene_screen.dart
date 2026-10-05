@@ -5,6 +5,7 @@ import '../providers/locale_provider.dart';
 import '../utils/nim_theme.dart';
 import '../widgets/dialogue_box.dart';
 import '../widgets/midnight_character.dart';
+import '../services/telemetry.dart';
 import 'world_select_screen.dart' show worlds;
 
 /// 미연시 화면 — (2026-09-16 대표님) "진짜 미연시 화면으로 넘어간 것처럼".
@@ -48,11 +49,24 @@ class _SceneScreenState extends State<SceneScreen> {
     });
   }
 
+  static int _playedInWorld(int world) {
+    int n = 0;
+    for (int st = (world - 1) * 20 + 1; st <= world * 20; st++) {
+      n += Telemetry.instance.stats[st]?.tries ?? 0;
+    }
+    return n < 20 ? 20 : n;
+  }
+
   @override
   Widget build(BuildContext context) {
     final s = widget.localeProvider.strings;
     final w = worlds[(widget.world - 1).clamp(0, worlds.length - 1)];
-    final lines = Dialogue.worldScene(widget.world, widget.scene, s);
+    // 대본의 {n} = 이 수업에서 실제로 둔 판 수 (기록이 없으면 20)
+    final int played = _playedInWorld(widget.world);
+    final lines = [
+      for (final l in Dialogue.worldScene(widget.world, widget.scene, s))
+        DialogueLine(l.face, l.text.replaceAll('{n}', '$played'), speaker: l.speaker),
+    ];
     final title = Dialogue.sceneTitle(widget.world, widget.scene, s);
     final no = Dialogue.sceneNo(widget.world, widget.scene);
     final double h = MediaQuery.of(context).size.height;
