@@ -19,7 +19,7 @@ void main() {
       for (int w = 1; w <= 12; w++) {
         for (int k = 1; k <= 4; k++) {
           final lines = Dialogue.worldScene(w, k, s);
-          expect(lines.length, Dialogue.lineCount(k), reason: 'w$w k$k $loc');
+          expect(lines.length, Dialogue.lineCount(w, k), reason: 'w$w k$k $loc');
           for (final l in lines) {
             expect(l.text, isNot(startsWith('sc_')), reason: 'missing $loc ${l.text}');
           }

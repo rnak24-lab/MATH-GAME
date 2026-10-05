@@ -2,6 +2,7 @@ import 'dart:math';
 
 import '../widgets/midnight_character.dart' show MidnightFace;
 import 'app_strings.dart';
+import 'scene_script.dart';
 
 /// ─────────────────────────────────────────────────────────────────────────
 /// (2026-09-16 대표님) 미연시식 이야기.
@@ -10,8 +11,9 @@ import 'app_strings.dart';
 ///  - 수업 안에서 5·10·15판째: 미연시 화면으로 넘어가 예린↔나 대화 6줄     → [worldScene] k=1,2,3
 ///  - 20판 다 깨면: 긴 대화 12줄 (그 수업의 마무리)                          → [worldScene] k=4
 ///
-/// 문장은 AppStrings 키 sc_w{w}_{k}_{i} / 제목 sc_w{w}_{k}_title. 화자 순서는 여기 고정
-/// (짧은 장면 [예,나,예,예,나,예] / 긴 장면 [예,예,나,예,나,예,예,나,예,나,예,예]).
+/// 문장은 AppStrings 키 sc_w{w}_{k}_{i} / 제목 sc_w{w}_{k}_title.
+/// (2026-10-06) 줄 수·화자·표정은 대본 편집 페이지가 만드는 scene_script.dart 를 따른다.
+/// 거기 없는 장면만 아래 기본 순서 (짧은 장면 6줄 / 긴 장면 12줄).
 /// 열림 여부는 월드 클리어 수로만 결정되므로 "본 기록"이 필요 없다 (모음집에서 언제든 다시 봄).
 /// ─────────────────────────────────────────────────────────────────────────
 enum Speaker { yerin, me }
@@ -71,15 +73,42 @@ class Dialogue {
   ];
 
   static List<Speaker> speakers(int k) => k == 4 ? _longPattern : _shortPattern;
-  static int lineCount(int k) => k == 4 ? 12 : 6;
+
+  static const Map<String, MidnightFace> _faceByName = {
+    'neutral': MidnightFace.neutral,
+    'happy1': MidnightFace.happy1,
+    'happy2': MidnightFace.happy2,
+    'worried1': MidnightFace.worried1,
+    'worried2': MidnightFace.worried2,
+    'confident': MidnightFace.confident,
+    'thinking': MidnightFace.thinking,
+  };
+
+  /// 장면의 줄 목록 (화자, 표정). 대본 파일 우선, 없으면 기본 순서.
+  static List<(Speaker, MidnightFace)> _layout(int w, int k) {
+    final script = kSceneScript['sc_w${w}_$k'];
+    if (script != null && script.isNotEmpty) {
+      return [
+        for (final cell in script)
+          (
+            cell.startsWith('m') ? Speaker.me : Speaker.yerin,
+            _faceByName[cell.substring(2)] ?? MidnightFace.neutral,
+          ),
+      ];
+    }
+    final sp = speakers(k);
+    final faces = k == 4 ? _longFaces : _shortFaces;
+    return [for (int i = 0; i < sp.length; i++) (sp[i], faces[i])];
+  }
+
+  static int lineCount(int w, int k) => _layout(w, k).length;
 
   /// 수업 [w](1~12)의 장면 [k](1~4).
   static List<DialogueLine> worldScene(int w, int k, AppStrings s) {
-    final sp = speakers(k);
-    final faces = k == 4 ? _longFaces : _shortFaces;
+    final lay = _layout(w, k);
     return [
-      for (int i = 0; i < sp.length; i++)
-        DialogueLine(faces[i], s.get('sc_w${w}_${k}_${i + 1}'), speaker: sp[i]),
+      for (int i = 0; i < lay.length; i++)
+        DialogueLine(lay[i].$2, s.get('sc_w${w}_${k}_${i + 1}'), speaker: lay[i].$1),
     ];
   }
 

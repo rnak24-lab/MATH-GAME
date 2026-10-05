@@ -116,7 +116,8 @@ function importXlsx() {
 
 // 편집 페이지(NIM_대본_편집.html)에서 받은 json — 엑셀 없이 반영
 function importJson(file) {
-  applyImport(JSON.parse(fs.readFileSync(file, 'utf8')));
+  const d = JSON.parse(fs.readFileSync(file, 'utf8'));
+  if (d && d.version === 2) applyImportV2(d); else applyImport(d);
 }
 
 function applyImport(data) {
@@ -154,8 +155,105 @@ function applyImport(data) {
   console.log(`changed ${changed.length}, added ${added.length} → ${CHANGED}`);
 }
 
-const cmd = process.argv[2];
-if (cmd === 'export') exportXlsx();
-else if (cmd === 'import') importXlsx();
-else if (cmd === 'importjson') importJson(process.argv[3]);
-else console.log('usage: node tool/story_template.js export|import');
+
+
+// ── v2 (2026-10-06): 편집 페이지 형식 — 장면 줄 추가·삭제·화자·표정, 대사 풀 추가 ──
+const SCENE_SCRIPT = path.join(ROOT, 'lib/l10n/scene_script.dart');
+const FACES = ['neutral', 'happy1', 'happy2', 'worried1', 'worried2', 'confident', 'thinking'];
+const DEF_SHORT = { who: ['y', 'm', 'y', 'y', 'm', 'y'], face: ['neutral', 'neutral', 'confident', 'worried1', 'worried1', 'happy1'] };
+const DEF_LONG = {
+  who: ['y', 'y', 'm', 'y', 'm', 'y', 'y', 'm', 'y', 'm', 'y', 'y'],
+  face: ['neutral', 'thinking', 'thinking', 'confident', 'confident', 'worried1', 'worried2', 'worried2', 'happy1', 'happy1', 'happy1', 'happy2'],
+};
+function readSceneScript() {
+  const out = {};
+  if (!fs.existsSync(SCENE_SCRIPT)) return out;
+  const src = fs.readFileSync(SCENE_SCRIPT, 'utf8');
+  const re = /'(sc_w\d+_\d)': \[([^\]]*)\]/g;
+  let m;
+  while ((m = re.exec(src))) out[m[1]] = [...m[2].matchAll(/'([ym]):(\w+)'/g)].map(x => ({ who: x[1], face: x[2] }));
+  return out;
+}
+function sceneLayout(w, k, script) {
+  const id = `sc_w${w}_${k}`;
+  if (script[id] && script[id].length) return script[id];
+  const d = k === 4 ? DEF_LONG : DEF_SHORT;
+  return d.who.map((who, i) => ({ who, face: d.face[i] }));
+}
+function blockRe(key) { return new RegExp(`^    '${key}': \\{\\n[\\s\\S]*?^    \\},\\n`, 'm'); }
+// multiline = 규칙 설명처럼 줄바꿈을 살리는 문장 (Dart 쪽은 \n)
+function normText(v, multiline) {
+  const s = String(v || '');
+  return multiline
+    ? s.split('\n').map(x => x.replace(/\s+/g, ' ').trim()).filter(Boolean).join('\n')
+    : s.replace(/\s+/g, ' ').trim();
+}
+function escDart(t) { return escKo(t).replace(/\n/g, '\\n'); }
+function setKoSrc(src, key, text, log, multiline = false) {
+  const t = normText(text, multiline);
+  const re = new RegExp(`(^    '${key}': \\{\\n[\\s\\S]*?^      'ko': ')((?:[^'\\\\]|\\\\.)*)(',)`, 'm');
+  const m = re.exec(src);
+  if (m) {
+    const cur = normText(m[2].replace(/\\(.)/g, (_, c) => (c === 'n' ? '\n' : c)), multiline);
+    if (cur === t) return src;
+    log.changed.push(`${key}\t${t.replace(/\n/g, ' / ')}`);
+    return src.replace(re, (_, a, __, c) => a + escDart(t) + c);
+  }
+  const block = `    '${key}': {\n` + LANGS.map(l => `      '${l}': '${escDart(t)}',`).join('\n') + `\n    },\n`;
+  const getIdx = src.indexOf('  String get(String key');
+  const endMap = src.lastIndexOf('\n  };\n', getIdx);
+  log.added.push(`${key}\t${t}`);
+  return src.slice(0, endMap + 1) + block + src.slice(endMap + 1);
+}
+function delKeySrc(src, key, log) {
+  const re = blockRe(key);
+  if (!re.test(src)) return src;
+  log.deleted.push(key);
+  return src.replace(re, '');
+}
+function applyImportV2(d) {
+  const raw = fs.readFileSync(STRINGS, 'utf8');
+  const crlf = raw.includes('\r\n');
+  let src = raw.replace(/\r\n/g, '\n');
+  const log = { changed: [], added: [], deleted: [] };
+  const script = {};
+  for (const sc of d.scenes || []) {
+    const lines = (sc.lines || []).filter(l => String(l.text || '').trim());
+    if (!lines.length) continue; // 장면을 통째로 비우는 건 무시 (실수 방지)
+    if (String(sc.title || '').trim()) src = setKoSrc(src, `${sc.id}_title`, sc.title, log);
+    lines.forEach((l, i) => { src = setKoSrc(src, `${sc.id}_${i + 1}`, l.text, log); });
+    for (let i = lines.length + 1; i <= 60; i++) src = delKeySrc(src, `${sc.id}_${i}`, log);
+    script[sc.id] = lines.map(l => `${l.who === 'm' ? 'm' : 'y'}:${FACES.includes(l.face) ? l.face : 'neutral'}`);
+  }
+  for (const base of Object.keys(d.pools || {})) {
+    const items = d.pools[base].map(t => String(t || '').trim()).filter(Boolean);
+    if (!items.length) continue;
+    items.forEach((t, i) => { src = setKoSrc(src, `${base}_${i + 1}`, t, log); });
+    for (let i = items.length + 1; i <= 30; i++) src = delKeySrc(src, `${base}_${i}`, log);
+  }
+  for (const grp of ['singles', 'rules']) {
+    for (const key of Object.keys(d[grp] || {})) if (String(d[grp][key] || '').trim()) src = setKoSrc(src, key, d[grp][key], log, grp === 'rules');
+  }
+  fs.writeFileSync(STRINGS, crlf ? src.replace(/\n/g, '\r\n') : src, 'utf8');
+  const ids = Object.keys(script).sort((a, b) => a.localeCompare(b, 'en', { numeric: true }));
+  fs.writeFileSync(SCENE_SCRIPT, `// 생성 파일 — tool/story_template.js importjson 이 덮어쓴다. 손으로 고치지 말 것.
+// 장면별 줄 목록: "y:표정" = 예린, "m:표정" = 나. 표정 = ${FACES.join(' ')}
+// 여기 없는 장면은 Dialogue 의 기본 순서(6줄 / 12줄).
+const Map<String, List<String>> kSceneScript = {
+${ids.map(id => `  '${id}': [${script[id].map(c => `'${c}'`).join(', ')}],`).join('\n')}
+};
+`, 'utf8');
+  fs.writeFileSync(CHANGED, [...log.changed, ...log.added].join('\n') + ((log.changed.length + log.added.length) ? '\n' : ''), 'utf8');
+  console.log(`changed ${log.changed.length}, added ${log.added.length}, deleted ${log.deleted.length} → ${CHANGED}`);
+  if (log.deleted.length) console.log('deleted: ' + log.deleted.join(' '));
+}
+
+module.exports = { WORLDS, POOLS, SINGLES, RULE_KEYS, readMap, readSceneScript, sceneLayout, FACES };
+
+if (require.main === module) {
+  const cmd = process.argv[2];
+  if (cmd === 'export') exportXlsx();
+  else if (cmd === 'import') importXlsx();
+  else if (cmd === 'importjson') importJson(process.argv[3]);
+  else console.log('usage: node tool/story_template.js export|import');
+}
