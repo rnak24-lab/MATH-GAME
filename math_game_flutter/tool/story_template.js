@@ -111,7 +111,15 @@ function escKo(v) { return v.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace
 function importXlsx() {
   const json = path.join(__dirname, 'story_import.json');
   console.log(ps(['import', XLSX, json]).trim());
-  const data = JSON.parse(fs.readFileSync(json, 'utf8'));
+  applyImport(JSON.parse(fs.readFileSync(json, 'utf8')));
+}
+
+// 편집 페이지(NIM_대본_편집.html)에서 받은 json — 엑셀 없이 반영
+function importJson(file) {
+  applyImport(JSON.parse(fs.readFileSync(file, 'utf8')));
+}
+
+function applyImport(data) {
   const ko = readMap();
   const raw = fs.readFileSync(STRINGS, 'utf8');
   const crlf = raw.includes('\r\n');
@@ -149,4 +157,5 @@ function importXlsx() {
 const cmd = process.argv[2];
 if (cmd === 'export') exportXlsx();
 else if (cmd === 'import') importXlsx();
+else if (cmd === 'importjson') importJson(process.argv[3]);
 else console.log('usage: node tool/story_template.js export|import');
