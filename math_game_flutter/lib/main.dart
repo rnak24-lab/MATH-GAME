@@ -66,12 +66,13 @@ class _SplashScreenState extends State<SplashScreen>
   late AnimationController _controller;
   late Animation<double> _scaleAnim;
   late Animation<double> _opacityAnim;
+  final Stopwatch _sw = Stopwatch();
 
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(
-      duration: const Duration(milliseconds: 1800),
+      duration: const Duration(milliseconds: 900),
       vsync: this,
     );
     _scaleAnim = Tween<double>(begin: 0.5, end: 1.0).animate(
@@ -87,6 +88,7 @@ class _SplashScreenState extends State<SplashScreen>
       ),
     );
     _controller.forward();
+    _sw.start();
     _loadAndNavigate();
   }
 
@@ -103,7 +105,16 @@ class _SplashScreenState extends State<SplashScreen>
       MusicService.instance.start();
     }
 
-    await Future.delayed(const Duration(milliseconds: 2200));
+    // 홈 그림을 미리 읽어 두면 홈이 뜰 때 예린이 늦게 나타나지 않는다
+    if (mounted) {
+      await Future.wait([
+        precacheImage(const AssetImage('assets/backgrounds/home.png'), context),
+        precacheImage(const AssetImage('assets/yerin/happy.png'), context),
+      ]).catchError((_) => <void>[]);
+    }
+    // 너무 짧으면 깜빡이는 느낌이라 최소 0.9초
+    final left = 900 - _sw.elapsedMilliseconds;
+    if (left > 0) await Future.delayed(Duration(milliseconds: left));
 
     if (mounted) {
       Navigator.pushReplacement(
@@ -132,97 +143,75 @@ class _SplashScreenState extends State<SplashScreen>
   Widget build(BuildContext context) {
     final s = widget.localeProvider.strings;
 
-    // 로딩화면 — 홈과 같은 컨셉: 크림 수학낙서 배경 + 네이비 타이틀 밴드 + 예린
+    // (2026-10-06 대표님) 로딩화면 — 게임들처럼 남색 바탕 + 제목 + 진행 막대만.
+    // 예린은 홈에서 처음 크게 등장한다 (로딩에서 작게 미리 보여주면 홈이 김빠짐).
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F0E4),
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          Image.asset(
-            'assets/backgrounds/home.png',
-            fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-          ),
-          SafeArea(
-            child: AnimatedBuilder(
-              animation: _controller,
-              builder: (context, child) {
-                return Column(
-                  children: [
-                    const Spacer(flex: 2),
-                    // 타이틀 밴드 (홈과 동일한 네이비+골드)
-                    Transform.scale(
-                      scale: _scaleAnim.value.clamp(0.0, 1.2),
-                      child: Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 36),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 20, vertical: 14),
-                        decoration: BoxDecoration(
-                          color: const Color(0xE62F2B57),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                              color: const Color(0xFFC9A24B), width: 2.5),
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              s.get('appTitle'),
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                fontFamily: 'NeoDGM',
-                                fontSize: 30,
-                                color: Color(0xFFC9A24B),
-                                letterSpacing: 1.5,
-                              ),
-                            ),
-                            const SizedBox(height: 5),
-                            Text(
-                              s.get('appSubtitle'),
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                fontFamily: 'NeoDGM',
-                                fontSize: 14,
-                                color: Color(0xFFEADFC6),
-                                letterSpacing: 1,
-                              ),
-                            ),
-                          ],
+      backgroundColor: const Color(0xFF1F1B3A),
+      body: SafeArea(
+        child: AnimatedBuilder(
+          animation: _controller,
+          builder: (context, _) {
+            return Opacity(
+              opacity: _opacityAnim.value,
+              child: Column(
+                children: [
+                  const Spacer(flex: 5),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        s.get('appTitle'),
+                        maxLines: 1,
+                        style: const TextStyle(
+                          fontFamily: 'NeoDGM',
+                          fontSize: 40,
+                          color: Color(0xFFC9A24B),
+                          letterSpacing: 2,
                         ),
                       ),
                     ),
-                    const Spacer(),
-                    // 예린 — 아이콘 사각형 대신 캐릭터가 직접 맞이
-                    Opacity(
-                      opacity: _opacityAnim.value,
-                      child: Image.asset(
-                        'assets/yerin/happy.png',
-                        width: 240,
-                        errorBuilder: (_, __, ___) =>
-                            const SizedBox(width: 240, height: 200),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    s.get('appSubtitle'),
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontFamily: 'NeoDGM',
+                      fontSize: 15,
+                      color: const Color(0xFFEADFC6).withOpacity(0.8),
+                      letterSpacing: 1,
+                    ),
+                  ),
+                  const Spacer(flex: 4),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 72),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(2),
+                      child: LinearProgressIndicator(
+                        value: _controller.value,
+                        minHeight: 4,
+                        backgroundColor: Colors.white.withOpacity(0.12),
+                        valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFC9A24B)),
                       ),
                     ),
-                    const Spacer(),
-                    // 골드 스피너
-                    Opacity(
-                      opacity: _opacityAnim.value,
-                      child: const SizedBox(
-                        width: 36,
-                        height: 36,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 3.5,
-                          valueColor:
-                              AlwaysStoppedAnimation<Color>(Color(0xFFC9A24B)),
-                        ),
-                      ),
+                  ),
+                  const SizedBox(height: 18),
+                  Text(
+                    'ENDOLPHIN STUDIO',
+                    style: TextStyle(
+                      fontFamily: 'NeoDGM',
+                      fontSize: 11,
+                      letterSpacing: 3,
+                      color: const Color(0xFFEADFC6).withOpacity(0.45),
                     ),
-                    const SizedBox(height: 56),
-                  ],
-                );
-              },
-            ),
-          ),
-        ],
+                  ),
+                  const SizedBox(height: 28),
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }

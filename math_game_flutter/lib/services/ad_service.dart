@@ -9,7 +9,9 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 ///  - 전면(스테이지 클리어): 테스터 기간 동안 OFF → [AdService.kInterstitialEnabled]
 ///  - 보상형(힌트): 유지
 class AdIds {
-  static const bool useTestIds = false;
+  // (2026-10-06) 비공개 테스트 동안 true: 지인 테스터가 실제 광고를 눌러 무효 트래픽이 되지 않게
+  // 구글 테스트 광고("Test Ad")로 흐름만 보여준다. 정식 출시 때 false.
+  static const bool useTestIds = true;
 
   // Google 공식 테스트 ID (Android)
   static const String _testInterstitialId =
@@ -45,7 +47,7 @@ class AdService {
   /// 광고 전체 스위치. **비공개 테스트 기간(2026-09-30~)에는 false** — 지인 테스터의
   /// 광고 트래픽이 AdMob 무효 트래픽으로 잡히지 않게 SDK 초기화조차 하지 않는다.
   /// 힌트는 광고 없이 바로 공개된다. 정식 출시 때 true (전면 광고도 함께 검토).
-  static const bool kAdsEnabled = false;
+  static const bool kAdsEnabled = true;
 
   bool _initialized = false;
   InterstitialAd? _interstitialAd;

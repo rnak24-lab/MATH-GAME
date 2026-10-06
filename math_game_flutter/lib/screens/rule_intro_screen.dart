@@ -48,6 +48,7 @@ class _RuleIntroScreenState extends State<RuleIntroScreen> {
         _RuleIntroPage(s.get('ri_w4_2'), const _PeperoPicture(kind: 1)),
         _RuleIntroPage(s.get('ri_w4_3'), const _PeperoPicture(kind: 2)),
         _RuleIntroPage(s.get('ri_w4_4'), const _PeperoPicture(kind: 3)),
+        _RuleIntroPage(s.get('ddCaption'), DoDontList(world: n, s: s)),
       ];
     }
     final String snack = s.snackObj(TutorialManager.snackKeyForWorld(n));
@@ -63,6 +64,7 @@ class _RuleIntroScreenState extends State<RuleIntroScreen> {
       _RuleIntroPage(rule, pic(0)),
       _RuleIntroPage(s.get('rx_w${n}_1'), pic(1)),
       _RuleIntroPage(s.get('rx_w${n}_2'), pic(2)),
+      _RuleIntroPage(s.get('ddCaption'), DoDontList(world: n, s: s)),
     ];
   }
 
@@ -209,6 +211,63 @@ class _RuleIntroScreenState extends State<RuleIntroScreen> {
 
 /// 막대과자 규칙 그림 — kind 0: 묶음 하나를 둘로 / 1: 같은 개수 X, 다른 개수 O /
 /// 2: 1개·2개는 못 쪼갬 / 3: 쪼갤 게 없으면 패배
+/// 되는 것(✓) / 안 되는 것(✗) 목록 — 규칙 설명 마지막 장, 규칙 노트에서도 씀.
+class DoDontList extends StatelessWidget {
+  final int world;
+  final dynamic s;
+  final bool compact;
+  const DoDontList({super.key, required this.world, required this.s, this.compact = false});
+
+  static const Color _ok = Color(0xFF4E7D43);
+  static const Color _no = Color(0xFFB0412F);
+
+  Widget _row(IconData icon, Color c, String text) => Padding(
+        padding: EdgeInsets.symmetric(vertical: compact ? 2 : 5),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, color: c, size: compact ? 16 : 22),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(text,
+                  style: TextStyle(
+                      fontFamily: NimTheme.font,
+                      fontSize: compact ? 13 : 16,
+                      height: 1.35,
+                      color: NimTheme.ink)),
+            ),
+          ],
+        ),
+      );
+
+  Widget _head(String t, Color c) => Padding(
+        padding: EdgeInsets.only(top: compact ? 6 : 10, bottom: 2),
+        child: Text(t,
+            style: TextStyle(
+                fontFamily: NimTheme.font,
+                fontSize: compact ? 13 : 17,
+                fontWeight: FontWeight.w800,
+                color: c)),
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    final ok = (s.get('dd_w${world}_ok') as String).split('\n');
+    final no = (s.get('dd_w${world}_no') as String).split('\n');
+    return Column(
+      mainAxisAlignment: compact ? MainAxisAlignment.start : MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _head(s.get('ddOk'), _ok),
+        for (final t in ok) _row(Icons.check_circle_rounded, _ok, t),
+        _head(s.get('ddNo'), _no),
+        for (final t in no) _row(Icons.cancel_rounded, _no, t),
+      ],
+    );
+  }
+}
+
 class _PeperoPicture extends StatelessWidget {
   final int kind;
   const _PeperoPicture({required this.kind});

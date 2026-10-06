@@ -106,6 +106,11 @@ class NoteScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 6),
+                    if (unlocked)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4, bottom: 2),
+                        child: DoDontList(world: n, s: s, compact: true),
+                      ),
                     for (int k = 1; k <= 2; k++)
                       Padding(
                         padding: const EdgeInsets.only(top: 4),
