@@ -89,7 +89,7 @@ const L = {
   dailyTitle: '오늘 한 판: 게임 화면 제목', dailyGreet: '오늘 한 판: 시작 예린 대사', dailyClear: '오늘 한 판: 이겼을 때 ({0}=연속 일수)', dailyDoneHint: '오늘 한 판: 이미 이겼을 때',
   // 설정
   languageSettings: '설정: 언어 칸 제목', settingsGameplay: '설정: 게임 칸 제목', musicTitle: '설정: 배경음악', sfxTitle: '설정: 효과음', hapticsTitle: '설정: 진동',
-  focusModeTitle: '설정: 집중 모드', focusModeDesc: '설정: 집중 모드 설명', resetProgress: '설정: 진행도 초기화', resetConfirmTitle: '초기화 확인 창 제목',
+  focusModeTitle: '설정: 집중 모드', resetProgress: '설정: 진행도 초기화', resetConfirmTitle: '초기화 확인 창 제목',
   resetConfirmBody: '초기화 확인 창 설명', cancel: '취소 버튼', resetDo: '초기화 확인 창 버튼', resetDone: '초기화 끝 알림',
   aboutSettings: '설정: 정보 칸 제목', privacyPolicy: '설정: 개인정보처리방침', versionLabel: '설정: 버전',
   telemetryTitle: '설정: 테스트 리포트', telemetrySummary: '설정: 테스트 리포트 설명 ({0}세션, {1}판, {2}전송)', telemetryNever: '테스트 리포트: 보낸 적 없음',

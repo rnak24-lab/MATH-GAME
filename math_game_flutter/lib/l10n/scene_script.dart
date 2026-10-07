@@ -9,7 +9,7 @@ const Map<String, List<String>> kSceneScript = {
   'sc_w2_1': ['y:neutral', 'm:neutral', 'y:confident', 'y:worried1', 'm:worried1', 'y:happy1'],
   'sc_w2_2': ['y:neutral', 'm:neutral', 'y:confident', 'y:worried1', 'm:worried1', 'y:happy1'],
   'sc_w2_3': ['y:neutral', 'm:neutral', 'y:confident', 'y:worried1', 'm:worried1', 'y:happy1'],
-  'sc_w2_4': ['y:neutral', 'y:thinking', 'm:thinking', 'y:confident', 'm:confident', 'y:worried1', 'y:worried2', 'm:worried2', 'y:happy1', 'm:happy1', 'y:happy1', 'y:happy2'],
+  'sc_w2_4': ['y:neutral', 'y:thinking', 'm:thinking', 'y:confident', 'm:confident', 'y:worried1', 'y:worried2', 'm:worried2', 'y:happy1', 'm:happy1', 'y:happy2'],
   'sc_w3_1': ['y:neutral', 'm:neutral', 'y:confident', 'y:worried1', 'm:worried1', 'y:happy1'],
   'sc_w3_2': ['y:neutral', 'm:neutral', 'y:confident', 'y:worried1', 'm:worried1', 'y:happy1'],
   'sc_w3_3': ['y:neutral', 'm:neutral', 'y:confident', 'y:worried1', 'm:worried1', 'y:happy1'],
