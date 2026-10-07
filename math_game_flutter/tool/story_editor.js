@@ -45,6 +45,10 @@ for (const [n, name] of T.WORLDS) {
 const BASE = { scenes, pools, singles, rules };
 const hash = crypto.createHash('md5').update(JSON.stringify(BASE)).digest('hex').slice(0, 10);
 const json = JSON.stringify({ ...BASE, hash }).replace(/</g, '\\u003c');
+// 표정 고르기용 얼굴 그림 (tool/editor_faces/make_thumbs.js 로 만든 160px 썸네일)
+const thumb = f => 'data:image/png;base64,' + fs.readFileSync(require('path').join(__dirname, 'editor_faces', f + '.png')).toString('base64');
+const FACE_FILE = { neutral: 'default', happy1: 'happy', happy2: 'happy', worried1: 'worried', worried2: 'upset', confident: 'smug', thinking: 'thinking' };
+const fimg = JSON.stringify(Object.fromEntries(Object.entries(FACE_FILE).map(([k, f]) => [k, thumb(f)])));
 
 const html = `<!doctype html>
 <html lang="ko"><head><meta charset="utf-8">
@@ -74,7 +78,15 @@ input.title{flex:1;min-width:160px}
 .line.changed{background:var(--hi);border-radius:6px}
 .who{border:0;border-radius:6px;padding:4px 8px;font:inherit;font-weight:700;cursor:pointer;color:#fff;min-width:48px}
 .who.y{background:var(--yr)}.who.m{background:var(--me)}
-.face{font-size:13px;padding:4px 6px}
+.face{position:relative;border:1px solid var(--line);background:var(--card);border-radius:8px;padding:2px;cursor:pointer;display:flex;flex-direction:column;align-items:center;width:58px;font:inherit;color:var(--soft)}
+.face img,.fopt img{display:block;border-radius:6px}
+.face img{width:52px;height:52px}
+.face span{font-size:10px;line-height:1.3}
+.spark{position:absolute;top:0;right:2px;font-size:13px}
+.fpop{position:absolute;z-index:20;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px;box-shadow:0 8px 24px rgba(0,0,0,.18);display:grid;grid-template-columns:repeat(4,84px);gap:6px}
+.fopt{position:relative;border:2px solid transparent;background:transparent;border-radius:10px;padding:3px;cursor:pointer;display:flex;flex-direction:column;align-items:center;font:inherit;font-size:12px;color:var(--ink)}
+.fopt img{width:72px;height:72px}
+.fopt:hover{border-color:var(--line)}.fopt.on{border-color:var(--gold)}
 textarea{width:100%;border:0;background:transparent;color:var(--ink);font:inherit;resize:vertical;min-height:2.2em;padding:4px 0;outline:none}
 .tools{display:flex;gap:4px}
 .tools button{border:1px solid var(--line);background:var(--card);color:var(--soft);border-radius:6px;width:30px;height:30px;cursor:pointer;font:inherit}
@@ -105,6 +117,34 @@ textarea{width:100%;border:0;background:transparent;color:var(--ink);font:inheri
 const BASE = ${json};
 const KEY = 'nim_script_v2';
 const FACES = {neutral:'평온',happy1:'미소',happy2:'활짝',worried1:'살짝 곤란',worried2:'당황',confident:'자신만만',thinking:'생각 중'};
+const FIMG = ${fimg};
+// 표정은 그림으로 고른다 — 활짝은 미소 그림에 반짝이(게임에서도 반짝이가 붙음)
+const faceImg = (f, cls) => { const w = document.createElement('span'); w.style.position = 'relative'; w.style.display = 'block';
+  const im = document.createElement('img'); im.src = FIMG[f] || FIMG.neutral; im.alt = FACES[f] || f; w.append(im);
+  if (f === 'happy2') w.append(el('span','spark','✨')); return w; };
+let openPop = null;
+const closePop = () => { if (openPop) { openPop.remove(); openPop = null; } };
+document.addEventListener('click', e => { if (openPop && !openPop.contains(e.target)) closePop(); });
+function facePicker(ln) {
+  const b = el('button','face'); b.type = 'button'; b.title = '표정 바꾸기';
+  b.append(faceImg(ln.face), el('span','',FACES[ln.face] || ln.face));
+  b.onclick = e => {
+    e.stopPropagation(); const was = openPop && openPop._for === b; closePop(); if (was) return;
+    const pop = el('div','fpop'); pop._for = b;
+    Object.keys(FACES).forEach(f => {
+      const o = el('button','fopt' + (f === ln.face ? ' on' : '')); o.type = 'button';
+      o.append(faceImg(f), el('span','',FACES[f]));
+      o.onclick = ev => { ev.stopPropagation(); closePop(); if (ln.face !== f) { ln.face = f; bump(); render(); } };
+      pop.append(o);
+    });
+    const r = b.getBoundingClientRect();
+    pop.style.left = (r.left + window.scrollX) + 'px'; pop.style.top = (r.bottom + window.scrollY + 4) + 'px';
+    document.body.append(pop); openPop = pop;
+    const pr = pop.getBoundingClientRect();
+    if (pr.right > window.innerWidth - 8) pop.style.left = Math.max(8, window.innerWidth - pr.width - 8 + window.scrollX) + 'px';
+  };
+  return b;
+}
 const clone = o => JSON.parse(JSON.stringify(o));
 let S = null;
 try { const sv = JSON.parse(localStorage.getItem(KEY) || 'null'); if (sv && sv.hash === BASE.hash) S = sv; } catch (e) {}
@@ -169,9 +209,7 @@ function renderStory(list){
       const row = el('div','line' + (!ob || ob.text !== ln.text || ob.who !== ln.who || ob.face !== ln.face ? ' changed' : ''));
       const who = el('button','who ' + ln.who, ln.who === 'y' ? '예린' : '나');
       who.onclick = () => { ln.who = ln.who === 'y' ? 'm' : 'y'; bump(); render(); };
-      const face = el('select','face');
-      Object.entries(FACES).forEach(([v, n]) => { const op = el('option', '', n); op.value = v; if (v === ln.face) op.selected = true; face.append(op); });
-      face.onchange = () => { ln.face = face.value; bump(); render(); };
+      const face = facePicker(ln);
       const t = ta(ln.text, v => { ln.text = v; row.classList.add('changed'); bump(); });
       const tools = el('div','tools');
       const mk = (txt, title, fn) => { const b = el('button','',txt); b.title = title; b.onclick = fn; tools.append(b); };
