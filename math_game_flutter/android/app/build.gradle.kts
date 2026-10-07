@@ -33,7 +33,7 @@ android {
     defaultConfig {
         // 방과후 님게임 — 엔돌핀 스튜디오 (2026-07-24 확정)
         applicationId = "com.endolphinstudio.nim"
-        minSdk = flutter.minSdkVersion
+        minSdk = 24 // Play 자동 보호 요구 (24 이상)
         targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName
