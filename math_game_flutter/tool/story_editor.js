@@ -82,8 +82,7 @@ input.title{flex:1;min-width:160px}
 .face img,.fopt img{display:block;border-radius:6px}
 .face img{width:52px;height:52px}
 .face span{font-size:10px;line-height:1.3}
-.spark{position:absolute;top:0;right:2px;font-size:13px}
-.fpop{position:absolute;z-index:20;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px;box-shadow:0 8px 24px rgba(0,0,0,.18);display:grid;grid-template-columns:repeat(4,84px);gap:6px}
+.fpop{position:absolute;z-index:20;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px;box-shadow:0 8px 24px rgba(0,0,0,.18);display:grid;grid-template-columns:repeat(3,84px);gap:6px}
 .fopt{position:relative;border:2px solid transparent;background:transparent;border-radius:10px;padding:3px;cursor:pointer;display:flex;flex-direction:column;align-items:center;font:inherit;font-size:12px;color:var(--ink)}
 .fopt img{width:72px;height:72px}
 .fopt:hover{border-color:var(--line)}.fopt.on{border-color:var(--gold)}
@@ -118,23 +117,25 @@ const BASE = ${json};
 const KEY = 'nim_script_v2';
 const FACES = {neutral:'평온',happy1:'미소',happy2:'활짝',worried1:'살짝 곤란',worried2:'당황',confident:'자신만만',thinking:'생각 중'};
 const FIMG = ${fimg};
-// 표정은 그림으로 고른다 — 활짝은 미소 그림에 반짝이(게임에서도 반짝이가 붙음)
-const faceImg = (f, cls) => { const w = document.createElement('span'); w.style.position = 'relative'; w.style.display = 'block';
-  const im = document.createElement('img'); im.src = FIMG[f] || FIMG.neutral; im.alt = FACES[f] || f; w.append(im);
-  if (f === 'happy2') w.append(el('span','spark','✨')); return w; };
+// 표정은 원화 6장 중에서 그림으로 고른다. 미소·활짝은 같은 원화라 한 칸(미소/활짝).
+const PICK = [['neutral','평온'],['happy1','미소/활짝'],['worried1','살짝 곤란'],['worried2','당황'],['confident','자신만만'],['thinking','생각 중']];
+const same = (a, b) => a === b || (/^happy/.test(a) && /^happy/.test(b));
+const faceName = f => (PICK.find(([k]) => same(k, f)) || [f, FACES[f] || f])[1];
+const faceImg = f => { const w = document.createElement('span'); w.style.display = 'block';
+  const im = document.createElement('img'); im.src = FIMG[f] || FIMG.neutral; im.alt = faceName(f); w.append(im); return w; };
 let openPop = null;
 const closePop = () => { if (openPop) { openPop.remove(); openPop = null; } };
 document.addEventListener('click', e => { if (openPop && !openPop.contains(e.target)) closePop(); });
 function facePicker(ln) {
   const b = el('button','face'); b.type = 'button'; b.title = '표정 바꾸기';
-  b.append(faceImg(ln.face), el('span','',FACES[ln.face] || ln.face));
+  b.append(faceImg(ln.face), el('span','',faceName(ln.face)));
   b.onclick = e => {
     e.stopPropagation(); const was = openPop && openPop._for === b; closePop(); if (was) return;
     const pop = el('div','fpop'); pop._for = b;
-    Object.keys(FACES).forEach(f => {
-      const o = el('button','fopt' + (f === ln.face ? ' on' : '')); o.type = 'button';
-      o.append(faceImg(f), el('span','',FACES[f]));
-      o.onclick = ev => { ev.stopPropagation(); closePop(); if (ln.face !== f) { ln.face = f; bump(); render(); } };
+    PICK.forEach(([f, name]) => {
+      const o = el('button','fopt' + (same(f, ln.face) ? ' on' : '')); o.type = 'button';
+      o.append(faceImg(f), el('span','',name));
+      o.onclick = ev => { ev.stopPropagation(); closePop(); if (!same(ln.face, f)) { ln.face = f; bump(); render(); } };
       pop.append(o);
     });
     const r = b.getBoundingClientRect();

@@ -24,15 +24,34 @@ class MathNimApp extends StatefulWidget {
   State<MathNimApp> createState() => _MathNimAppState();
 }
 
-class _MathNimAppState extends State<MathNimApp> {
+class _MathNimAppState extends State<MathNimApp> with WidgetsBindingObserver {
   final LocaleProvider _localeProvider = LocaleProvider();
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _localeProvider.addListener(() {
       if (mounted) setState(() {});
     });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  // 홈 버튼·다른 앱으로 나가면 배경음악을 멈춘다 (백그라운드 소리 금지).
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      MusicService.instance.onForeground();
+    } else if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.hidden ||
+        state == AppLifecycleState.detached) {
+      MusicService.instance.onBackground();
+    }
   }
 
   @override

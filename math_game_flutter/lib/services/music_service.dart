@@ -30,7 +30,27 @@ class MusicService {
     } catch (_) {}
   }
 
+  /// 앱이 뒤로 가면 멈추고, 돌아오면 (배경음악 설정이 켜져 있을 때만) 다시 튼다.
+  bool _inBackground = false;
+  Future<void> onBackground() async {
+    _inBackground = true;
+    try {
+      await _player.pause();
+    } catch (_) {}
+  }
+
+  Future<void> onForeground() async {
+    if (!_inBackground) return;
+    _inBackground = false;
+    if (_started && AppSettings.instance.music) {
+      try {
+        await _player.resume();
+      } catch (_) {}
+    }
+  }
+
   Future<void> setEnabled(bool on) async {
+    if (on && _inBackground) return;
     try {
       if (on) {
         if (_started) {
