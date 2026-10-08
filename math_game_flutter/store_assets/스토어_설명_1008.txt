@@ -1,0 +1,93 @@
+[ko-KR 간단한 설명]
+여고생 예린과 방과후 수학 게임 대결. 마지막 사탕을 먹으면 이긴다. 필승법을 찾아라.
+
+[ko-KR 자세한 설명]
+방과후, 수학 좀 하는 예린이가 사탕 한 줄을 내려놓는다.
+"마지막 사탕 먹는 사람이 이기는 거야. 자신 있어?"
+
+세상에서 가장 오래된 수학 게임 '님'을 방과후 대결로 만들었다.
+규칙은 30초면 배운다. 이기려면 머리를 써야 한다.
+
+12개 수업, 240판
+등교길 - 한 줄 님게임
+점심시간 옥상 - 두 줄 님게임
+방과후 교실 - 세 줄 님게임
+밤의 도서관 - 막대과자 쪼개기
+체육관 - 카일즈
+과학실 - 위토프
+뒤뜰 토끼장 - 피보나치 님
+매점 - 춉
+미술실 - 점과 상자
+수학 동아리실 - 심
+온실 - 스프라우트
+보드게임부 - 헥스
+
+예린이의 표정을 읽어라
+예린이는 봐주지 않는다. 대신 표정을 못 숨긴다.
+곤란한 얼굴이면 지금 유리하다는 뜻이다.
+
+수업마다 이야기가 이어진다
+이기다 보면 예린이와의 이야기가 풀린다.
+이야기 모음에서 다시 볼 수 있다.
+
+이런 사람에게
+퍼즐과 두뇌게임을 좋아하는 사람
+수학적 사고력을 기르고 싶은 학생
+아이와 같이 할 게임을 찾는 부모
+
+특징
+봐주지 않는 상대. 실수를 기다리지 말고 필승법을 찾아라.
+막히면 광고 보고 힌트.
+앞 수업 3판만 깨면 다음 수업이 열린다.
+오늘의 한 판으로 매일 한 번 승부.
+집중 모드로 판만 크게.
+10개 언어 지원. 세로 한 손 플레이.
+
+수학은 어렵다. 예린이랑 하면 재미있다.
+
+[en-US short]
+After-school math duels with Yerin. Take the last candy to win.
+
+[en-US full]
+After school, Yerin, the girl who's good at math, lines up a row of candy.
+"Whoever takes the last candy wins. You up for it?"
+
+The world's oldest math game, Nim, turned into an after-school showdown.
+The rules take 30 seconds to learn. Winning takes thinking.
+
+12 lessons, 240 rounds
+Walk to school - one-row Nim
+Rooftop at lunch - two-row Nim
+Classroom after school - three-row Nim
+Library at night - stick splitting
+Gym - Kayles
+Science lab - Wythoff
+Rabbit hutch - Fibonacci Nim
+Snack bar - Chomp
+Art room - Dots and Boxes
+Math club room - Sim
+Greenhouse - Sprouts
+Board game club - Hex
+
+Read Yerin's face
+Yerin never goes easy on you. But she can't hide her expression.
+If she looks worried, you're ahead.
+
+A story unfolds with every lesson
+Keep winning and Yerin's story opens up.
+Replay it anytime from the story gallery.
+
+Who it's for
+Puzzle and brain game fans
+Students who want sharper math thinking
+Parents looking for a game to play with their kids
+
+Features
+An opponent who never slips. Don't wait for mistakes, find the winning strategy.
+Stuck? Watch an ad for a hint.
+Clear 3 rounds of a lesson to open the next.
+Daily match, one showdown a day.
+Focus mode shows only the board.
+10 languages. Portrait, one-handed play.
+
+Math is hard. With Yerin, it's fun.
