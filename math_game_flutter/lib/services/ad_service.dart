@@ -11,7 +11,7 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 class AdIds {
   // (2026-10-06) 비공개 테스트 동안 true: 지인 테스터가 실제 광고를 눌러 무효 트래픽이 되지 않게
   // 구글 테스트 광고("Test Ad")로 흐름만 보여준다. 정식 출시 때 false.
-  static const bool useTestIds = true;
+  static const bool useTestIds = false;
 
   // Google 공식 테스트 ID (Android)
   static const String _testInterstitialId =
